@@ -1,0 +1,10 @@
+large_image>=>=1.8.0
+large-image-source-openslide>=1.8.0
+large-image-source-tiff>=1.8.0
+numpy
+pillow
+tqdm
+h5py
+matplotlib
+opencv-python-headless>=4.0.0
+pandas
