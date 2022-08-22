@@ -127,7 +127,6 @@ def main():
     p.add_argument("--batch_size", type=int, default=64)
     p.add_argument("--classes", nargs="+", help="Names of the classes (in order)")
     p.add_argument("--num_workers", type=int, default=0)
-    p.add_argument("--disable_progbar", action="store_true")
     args = p.parse_args()
 
     # The patching command runs in a different working directory, so let's make the
