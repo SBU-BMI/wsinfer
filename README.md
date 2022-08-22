@@ -1,4 +1,4 @@
-# Cancer segmentation pipelines for computational pathology
+# Patch classification pipelines for computational pathology
 
 Run patch-based classification models on whole slide images of histology.
 
