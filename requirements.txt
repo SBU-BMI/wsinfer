@@ -1,6 +1,4 @@
-large_image>=>=1.8.0
-large-image-source-openslide>=1.8.0
-large-image-source-tiff>=1.8.0
+large_image[sources]>=>=1.8.0
 numpy
 pillow
 tqdm
