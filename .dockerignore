@@ -1,6 +1,7 @@
 patch-results
 slides
 venv
+brca_models_cnn
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
