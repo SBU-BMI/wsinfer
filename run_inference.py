@@ -119,9 +119,11 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
         return patch_im, torch.as_tensor([minx, miny, width, height])
 
 
-def run_inference_on_one_whole_slide(
+def run_inference_on_slides(
+    *,
     wsi_paths: typing.Sequence[PathType],
     patch_paths: typing.Sequence[PathType],
+    results_dir: PathType,
     um_px: float,
     model: torch.nn.Module,
     patch_size: int,
@@ -129,11 +131,14 @@ def run_inference_on_one_whole_slide(
     num_workers: int = 0,
     disable_progbar: bool = False,
     classes: typing.Optional[typing.Sequence[str]] = None,
-) -> pd.DataFrame:
+):
     """"""
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    results_dir = pathlib.Path(results_dir)
+    model_output_dir = results_dir / "model-outputs"
+    model_output_dir.mkdir(exist_ok=True)
 
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model.eval()
     model.to(device)
 
@@ -150,11 +155,19 @@ def run_inference_on_one_whole_slide(
             ),
         ]
     )
-    results_for_all_slides: typing.List[pd.DataFrame] = []
+    # results_for_all_slides: typing.List[pd.DataFrame] = []
     for wsi_path, patch_path in zip(wsi_paths, patch_paths):
         print("----")
         print(f"Slide path: {wsi_path}")
         print(f"Patch path: {patch_path}")
+
+        slide_csv_name = pathlib.Path(wsi_path).with_suffix(".csv").name
+        slide_csv = model_output_dir / slide_csv_name
+        if slide_csv.exists():
+            print("Output CSV exists... skipping.")
+            print(slide_csv)
+            continue
+
         dset = WholeSlideImagePatches(
             wsi_path=wsi_path,
             patch_path=patch_path,
@@ -195,20 +208,18 @@ def run_inference_on_one_whole_slide(
         num_classes = slide_probs_arr.shape[1]
         class_names = classes or [f"cls{i}" for i in range(num_classes)]
         slide_df.loc[:, class_names] = slide_probs_arr
-
-        results_for_all_slides.append(slide_df)
-
-    df_all_slides = pd.concat(results_for_all_slides, ignore_index=True)
-    return df_all_slides
+        slide_df.to_csv(slide_csv, index=False)
+    return
 
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--wsi_dir", required=True, help="Path to input whole slide image.")
+    # TODO: add save_dir
     p.add_argument(
-        "--patch_dir",
+        "--results_dir",
         required=True,
-        help="Path to directory with patch results (HDF5 files).",
+        help="Path to directory with patch results.",
     )
     p.add_argument(
         "--patch_size",
@@ -242,13 +253,19 @@ if __name__ == "__main__":
     if not wsi_paths:
         raise FileNotFoundError(f"no files found in {args.wsi_dir}")
 
+    args.results_dir = pathlib.Path(args.results_dir)
+    if not args.results_dir.exists():
+        raise FileNotFoundError(f"Results dir not found: {args.results_dir}")
+
     if args.classes is not None:
         if len(args.classes) != args.num_classes:
             raise ValueError("length of --classes must be equal to --num_classes")
 
-    patch_paths = [
-        pathlib.Path(args.patch_dir) / p.with_suffix(".h5").name for p in wsi_paths
-    ]
+    # Check patches directory.
+    patch_dir = args.results_dir / "patches"
+    if not patch_dir.exists():
+        raise FileNotFoundError("Results dir must include 'patches' dir")
+    patch_paths = [patch_dir / p.with_suffix(".h5").name for p in wsi_paths]
     patch_paths_notfound = [p for p in patch_paths if not p.exists()]
     if patch_paths_notfound:
         raise FileNotFoundError(
@@ -257,14 +274,14 @@ if __name__ == "__main__":
 
     print(patch_paths)
 
-    if args.model == "resnet34":
-        model = models.resnet34(args.num_classes, args.weights)
-    else:
-        raise NotImplementedError(f"model {args.model} not implemented")
+    model = models.create_model(
+        args.model, num_classes=args.num_classes, state_dict_path=args.weights
+    )
 
-    results = run_inference_on_one_whole_slide(
+    results = run_inference_on_slides(
         wsi_paths=wsi_paths,
         patch_paths=patch_paths,
+        results_dir=args.results_dir,
         um_px=args.um_px,
         model=model,
         patch_size=args.patch_size,
@@ -273,5 +290,3 @@ if __name__ == "__main__":
         disable_progbar=args.disable_progbar,
         classes=args.classes,
     )
-
-    results.to_csv("RESULTS.csv")
