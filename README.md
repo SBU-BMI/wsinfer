@@ -1,27 +1,22 @@
 # Cancer segmentation pipelines for computational pathology
 
+Run patch-based classification models on whole slide images of histology.
+
 # Example
 
-First, put all of your whole slide images into a directory. The name is arbitrary.
-We will use `slides/`.
+Run a model on a directory of whole slide images. This command reads all of the images
+in `brca-samples/` and writes results to `results/`.
 
-Create patches:
-
+```bash
+CUDA_VISIBLE_DEVICES=2 singularity run --nv \
+    --bind $PWD \
+    --bind /data10:/data10:ro cancer-detection_latest.sif \
+        --wsi_dir brca-samples/ \
+        --results_dir results \
+        --patch_size 340 \
+        --um_px 0.25 \
+        --model resnet34 \
+        --num_classes 2 \
+        --weights resnet34-jakub-state-dict-with-numbatchestracked.pt \
+        --num_workers 8
 ```
-cd CLAM
-python create_patches_fp.py --source ../slides/ --save_dir ../patch-results \
-    --patch_size 340 --patch_spacing 0.25 --seg --patch --stitch --preset tcga.csv
-cd ..
-```
-
-The patch coordinates are stored in `patch-results/patches` in an HDF5 file.
-
-Run inference:
-
-```
-python run_inference.py  --wsi_dir slides/ --patch_dir patch-results/patches/ \
-    --um_px 0.25 --patch_size 340 --model resnet34
-```
-
-This saves a CSV where each row represents a patch. Columns include the slide name,
-patch location, and probabilties (in [0, 1]) for each class.
