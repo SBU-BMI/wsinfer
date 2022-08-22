@@ -1,10 +1,10 @@
 """Detect cancerous regions in a whole slide image."""
 
 import argparse
+import os
 import pathlib
 import subprocess
 import sys
-import time
 import typing
 
 PathType = typing.Union[str, pathlib.Path]
@@ -14,7 +14,7 @@ _script_path = pathlib.Path(__file__).resolve().parent
 
 def run_patching(
     slides_dir: PathType, save_dir: PathType, patch_size: int, patch_spacing: float
-) -> subprocess.CompletedProcess[bytes]:
+) -> subprocess.CompletedProcess:
     args = [
         sys.executable,
         "create_patches_fp.py",
@@ -54,7 +54,7 @@ def run_inference(
     batch_size: int,
     classes: typing.Optional[typing.Sequence[str]] = None,
     num_workers: int = 0,
-) -> subprocess.CompletedProcess[bytes]:
+) -> subprocess.CompletedProcess:
     save_dir = pathlib.Path(save_dir)
     patch_dir = save_dir / "patches"
     if not patch_dir.exists():
@@ -63,17 +63,13 @@ def run_inference(
     if not pathlib.Path(weights).exists():
         raise FileNotFoundError(f"Weights not found: {weights}")
 
-    results_csv_name = time.strftime("%Y%m%d-%H%M%S") + ".csv"
-
     args: typing.List[str] = [
         sys.executable,
         "run_inference.py",
         "--wsi_dir",
         str(slides_dir),
-        "--results_csv",
-        str(save_dir / results_csv_name),
-        "--patch_dir",
-        str(patch_dir),
+        "--results_dir",
+        str(save_dir),
         "--patch_size",
         str(patch_size),
         "--um_px",
@@ -141,14 +137,29 @@ def main():
     args.results_dir = pathlib.Path(args.results_dir).resolve()
     args.weights = pathlib.Path(args.weights).resolve()
 
+    cuda_visible_devices = os.environ.get("CUDA_VISIBLE_DEVICES")
+    if cuda_visible_devices is None or cuda_visible_devices == "":
+        print("*********************************************************")
+        print("NO GPU WILL BE USED BECAUSE CUDA_VISIBLE_DEVICES IS EMPTY")
+        print("*********************************************************")
+
     if not args.wsi_dir.exists():
         raise FileNotFoundError(
             f"Whole slide image directory not found: {args.wsi_dir}"
         )
 
-    print("Arguments")
+    # Test that wsi dir actually includes files.
+    files_in_wsi_dir = [p for p in args.wsi_dir.glob("*") if p.exists()]
+    if not files_in_wsi_dir:
+        raise FileNotFoundError(
+            f"no files exist in the slide directory: {args.wsi_dir}"
+        )
+
+    print("\nArguments")
+    print("---------")
     for key, value in vars(args).items():
         print(f"{key} = {value}")
+    print("---------\n")
 
     run_patching(
         slides_dir=args.wsi_dir,
