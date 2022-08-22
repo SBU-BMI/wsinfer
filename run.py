@@ -88,7 +88,8 @@ def run_inference(
     if classes is not None:
         args.extend(["--classes", *classes])
     cwd = _script_path
-    print("Running the model inference script:")
+    print("***********************************")
+    print("\n\nRunning the model inference script:")
     print(f"CWD {cwd}")
     print(" ".join(args), flush=True)
     proc = subprocess.run(
