@@ -60,6 +60,6 @@ if __name__ == "__main__":
     if not args.input.exists():
         raise FileNotFoundError(args.input)
     if args.output.exists():
-        p.exit(status=0, message=f"Output file exists: {args.output}")
+        p.exit(status=0, message=f"Output file exists: {args.output}\n")
     convert(input=args.input, output=args.output)
     print(f"Saved output to {args.output}")
