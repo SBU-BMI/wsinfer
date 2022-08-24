@@ -1,4 +1,9 @@
-"""Run inference."""
+"""Run inference.
+
+From the original paper (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7369575/):
+> In the prediction (test) phase, no data augmentation was applied except for the
+> normalization of the color channels.
+"""
 
 import argparse
 import pathlib
@@ -149,6 +154,7 @@ def run_inference_on_slides(
                 interpolation=transforms.InterpolationMode.BICUBIC,
             ),
             transforms.ToTensor(),
+            # This is valid for
             transforms.Normalize(
                 mean=[0.7238, 0.5716, 0.6779],
                 std=[0.1120, 0.1459, 0.1089],
