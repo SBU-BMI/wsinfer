@@ -1,6 +1,24 @@
 # Patch classification pipelines for computational pathology
 
+Original H&E                        |  Heatmap of Tumor Probability
+:----------------------------------:|:-----------------------------------:
+![](sample-images/brca-tissue.png)  | ![](sample-images/brca-heatmap.png)
+
 Run patch-based classification models on whole slide images of histology.
+
+# Installation
+
+Use the Docker / Singularity / Apptainer image, which includes all of the dependencies and scripts.
+
+Alternatively, clone this repository and install the requirements.
+
+```
+git clone --recurse-submodules https://github.com/kaczmarj/patch-classification-pipeline.git
+python -m venv venv
+source ./venv/bin/activate
+python -m pip install -U pip setuptools wheel
+python -m pip install -r requirements.txt --find-links https://girder.github.io/large_image_wheels
+```
 
 # Example
 
