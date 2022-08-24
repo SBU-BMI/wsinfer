@@ -6,3 +6,4 @@ h5py
 matplotlib
 opencv-python-headless>=4.0.0
 pandas
+pretrainedmodels
