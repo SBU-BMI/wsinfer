@@ -18,7 +18,7 @@ import torch
 from torchvision import transforms
 import tqdm
 
-import models
+from . import models
 
 PathType = typing.Union[str, pathlib.Path]
 
@@ -34,8 +34,8 @@ def _read_patch_coords(path: PathType) -> np.ndarray:
         coords_metadata = f["/coords"].attrs
         if "patch_level" not in coords_metadata.keys():
             raise KeyError(
-                "Could not find required key 'patch_level' in hdf5 of patch coordinates."
-                " Has the version of CLAM been updated?"
+                "Could not find required key 'patch_level' in hdf5 of patch "
+                "coordinates. Has the version of CLAM been updated?"
             )
         patch_level = coords_metadata["patch_level"]
         if patch_level != 0:
