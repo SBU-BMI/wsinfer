@@ -50,7 +50,7 @@ def convert(input, output):
         json.dump(geojson, f)
 
 
-if __name__ == "__main__":
+def cli():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("input", help="Input CSV")
     p.add_argument("output", help="Output GeoJSON file (with .json extension)")

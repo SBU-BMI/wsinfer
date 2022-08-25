@@ -23,6 +23,7 @@ setup(
             "wsi_create_patches=wsi_inference.patchlib.create_patches_fp:cli",
             "wsi_model_inference=wsi_inference.modellib.run_inference:cli",
             "wsi_run=wsi_inference.main:cli",
+            "wsi_convert_to_geojson=wsi_inference.convert_csv_to_geojson:cli",
         ],
     },
 )
