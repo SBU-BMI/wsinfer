@@ -1,4 +1,0 @@
-[submodule "CLAM"]
-	path = CLAM
-    url = git@github.com:kaczmarj/CLAM.git
-    branch = for-patching
