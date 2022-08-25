@@ -20,7 +20,9 @@ setup(
     extras_require=dict(dev=["black", "flake8", "mypy"]),
     entry_points={
         "console_scripts": [
-            "wsi_create_patches=wsi_inference.pathlib.create_patches_fp:cli",
+            "wsi_create_patches=wsi_inference.patchlib.create_patches_fp:cli",
+            "wsi_model_inference=wsi_inference.modellib.run_inference:cli",
+            "wsi_run=wsi_inference.main:cli",
         ],
     },
 )
