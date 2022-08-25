@@ -7,10 +7,8 @@ All model functions must have the signature:
     Function[[int, Optional[str]], torch.nn.Module]
 """
 
-import pretrainedmodels
 import torch
 import torchvision
-
 
 # TODO: consider adding the color normalization and input size here. Or maybe as a
 # command line argument.
@@ -18,6 +16,8 @@ import torchvision
 
 def inceptionv4(num_classes: int, state_dict_path=None) -> torch.nn.Module:
     """Create InceptionV4 model."""
+    import pretrainedmodels
+
     model = pretrainedmodels.inceptionv4(num_classes=num_classes, pretrained=False)
     if state_dict_path is not None:
         print("Loading state dict")
