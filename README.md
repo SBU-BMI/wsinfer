@@ -13,11 +13,17 @@ Use the Docker / Singularity / Apptainer image, which includes all of the depend
 Alternatively, clone this repository and install the requirements.
 
 ```
-git clone --recurse-submodules https://github.com/kaczmarj/patch-classification-pipeline.git
-python -m venv venv
-source ./venv/bin/activate
-python -m pip install -U pip setuptools wheel
-python -m pip install -r requirements.txt --find-links https://girder.github.io/large_image_wheels
+git clone https://github.com/kaczmarj/patch-classification-pipeline.git
+python -m pip install --editable . --find-links https://girder.github.io/large_image_wheels
+```
+
+## Developers
+
+Install the `dev` extras:
+
+```
+git clone https://github.com/kaczmarj/patch-classification-pipeline.git
+python -m pip install --editable .[dev] --find-links https://girder.github.io/large_image_wheels
 ```
 
 # Example
@@ -26,7 +32,7 @@ Run a model on a directory of whole slide images. This command reads all of the 
 in `brca-samples/` and writes results to `results/`.
 
 ```bash
-CUDA_VISIBLE_DEVICES=2 singularity run --nv \
+CUDA_VISIBLE_DEVICES=0 singularity run --nv \
     --bind $PWD \
     --bind /data10:/data10:ro cancer-detection_latest.sif \
         --wsi_dir brca-samples/ \
