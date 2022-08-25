@@ -136,7 +136,7 @@ def run_inference_on_slides(
     num_workers: int = 0,
     disable_progbar: bool = False,
     classes: typing.Optional[typing.Sequence[str]] = None,
-):
+) -> None:
     """"""
 
     results_dir = pathlib.Path(results_dir)
@@ -188,8 +188,10 @@ def run_inference_on_slides(
             num_workers=num_workers,
         )
 
-        slide_coords = []
-        slide_probs = []
+        # Store the coordinates and model probabiltiies of each patch in this slide.
+        # This lets us know where the probabiltiies map to in the slide.
+        slide_coords: typing.List[np.ndarray] = []
+        slide_probs: typing.List[np.ndarray] = []
         for batch_imgs, batch_coords in tqdm.tqdm(loader, disable=disable_progbar):
             assert batch_imgs.shape[0] == batch_coords.shape[0], "length mismatch"
             with torch.no_grad():
@@ -218,7 +220,7 @@ def run_inference_on_slides(
     return
 
 
-if __name__ == "__main__":
+def cli():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--wsi_dir", required=True, help="Path to input whole slide image.")
     # TODO: add save_dir
@@ -284,7 +286,7 @@ if __name__ == "__main__":
         args.model, num_classes=args.num_classes, state_dict_path=args.weights
     )
 
-    results = run_inference_on_slides(
+    run_inference_on_slides(
         wsi_paths=wsi_paths,
         patch_paths=patch_paths,
         results_dir=args.results_dir,

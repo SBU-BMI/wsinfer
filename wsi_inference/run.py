@@ -98,7 +98,7 @@ def run_inference(
     return proc
 
 
-def main():
+def cli():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument(
         "--wsi_dir",
@@ -182,7 +182,3 @@ def main():
     )
 
     return
-
-
-if __name__ == "__main__":
-    main()
