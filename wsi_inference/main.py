@@ -76,6 +76,7 @@ def _print_info():
     print(f"Hostname: {platform.node()}")
     print(f"Working directory: {os.getcwd()}")
     print(f"In container: {_inside_container()}")
+    print(f"Python executable: {sys.executable}")
     print(f"Python version: {platform.python_version()}")
     print(f"  Torch version: {torch.__version__}")
     print(f"  Torchvision version: {torchvision.__version__}")
