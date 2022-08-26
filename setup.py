@@ -1,5 +1,7 @@
 from setuptools import setup, find_packages
 
+import versioneer
+
 
 setup(
     name="wsi_inference",
@@ -27,4 +29,6 @@ setup(
     },
     # This is for the tissue masking presets (in patchlib).
     package_data={"wsi_inference": ["*.csv"]},
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
 )
