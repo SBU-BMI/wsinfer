@@ -10,7 +10,6 @@ import typing
 
 import click
 
-from .modellib.run_inference import DifferentNumClassesError
 from .modellib.run_inference import run_inference
 from .modellib.models import list_models
 
