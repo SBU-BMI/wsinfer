@@ -6,44 +6,93 @@ Original H&E                        |  Heatmap of Tumor Probability
 
 Run patch-based classification models on whole slide images of histology.
 
+
 # Installation
 
 Use the Docker / Singularity / Apptainer image, which includes all of the dependencies and scripts.
 
-Alternatively, clone this repository and install the requirements.
+Alternatively, install from GitHub.
 
 ```
-git clone https://github.com/kaczmarj/patch-classification-pipeline.git
-python -m pip install --editable . --find-links https://girder.github.io/large_image_wheels
+python -m pip install \
+    --find-links https://girder.github.io/large_image_wheels \
+    git+https://github.com/kaczmarj/patch-classification-pipeline.git
 ```
+
+TODO: download models.
 
 ## Developers
 
-Install the `dev` extras:
+Clone this GitHub repository and install the package (in editable mode with the `dev` extras).
 
 ```
 git clone https://github.com/kaczmarj/patch-classification-pipeline.git
+cd patch-classification-pipeline
 python -m pip install --editable .[dev] --find-links https://girder.github.io/large_image_wheels
 ```
 
 # Example
 
-Run a model on a directory of whole slide images. This command reads all of the images
-in `brca-samples/` and writes results to `results/`.
+Here we demonstrate running this pipeline on a sample image. Before going through this,
+please install the package.
 
-```bash
-CUDA_VISIBLE_DEVICES=0 singularity run --nv \
-    --bind $PWD \
-    --bind /data10:/data10:ro cancer-detection_latest.sif \
-        --wsi_dir brca-samples/ \
-        --results_dir results \
-        --patch_size 340 \
-        --um_px 0.25 \
+1. Make a new directory and change into it.
+
+    ```
+    mkdir example-wsi-inference
+    cd example-wsi-inference
+    ```
+
+2. Make a `sample-images` directory and download the sample file into it. It is important
+that this directory only contains whole slide images.
+
+    ```
+    mkdir sample-images
+    cd sample-images
+    wget https://openslide.cs.cmu.edu/download/openslide-testdata/Aperio/CMU-1.svs
+    cd ..
+    ```
+
+3. Run the pipeline (without a container). This will apply the pipeline to all of the images in `sample-images/`
+(only 1 in this example) and will write results to `results/`. `CUDA_VISIBLE_DEVICES=0`
+is set to use the first GPU listed in `nvidia-smi`. If you do not have a GPU, model
+inference can take about 20 minutes. (The patch spacing is == 88 um / 350 pixels.)
+
+    TODO: download model weights.
+
+    ```
+    CUDA_VISIBLE_DEVICES=0 wsi_run \
+        --wsi_dir sample-images/ \
+        --results_dir results/ \
+        --patch_size 350 \
+        --um_px 0.25142857142 \
         --model resnet34 \
         --num_classes 2 \
-        --weights resnet34-jakub-state-dict-with-numbatchestracked.pt \
-        --num_workers 8
-```
+        --weights resnet34-brca.pt \
+        --num_workers 8 \
+        --classes notumor,tumor
+    ```
+
+4. (Optional) Run the pipeline with a container. This is the same as the step above
+but will run the pipeline entirely in the project's container.
+
+    TODO: download container.
+
+    ```
+    CUDA_VISIBLE_DEVICES=0 singularity run \
+        --nv \
+        --bind $(pwd) \
+        --bind /data10:/data10:ro \
+        cancer-detection_latest.sif \
+            --wsi_dir brca-samples/ \
+            --results_dir results \
+            --patch_size 350 \
+            --um_px 0.25142857142 \
+            --model resnet34 \
+            --num_classes 2 \
+            --weights resnet34-brca.pt \
+            --num_workers 8
+    ```
 
 ## Output
 
@@ -65,7 +114,7 @@ results/
 ## Convert to GeoJSON (for QuPath and other viewers)
 
 ```
-python convert_csv_to_geojson.py results/model-outputs/TCGA-foobar.csv TCGA-foobar.json
+wsi_convert_to_geojson results/model-outputs/TCGA-foobar.csv TCGA-foobar.json
 ```
 
 
