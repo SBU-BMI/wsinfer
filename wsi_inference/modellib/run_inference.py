@@ -14,8 +14,16 @@ import large_image
 import numpy as np
 import pandas as pd
 from PIL import Image
-import torch
-from torchvision import transforms
+
+# Torch and torchvision are not in the requirements (setup.cfg) because the installation
+# can vary based on platform and hardware.
+try:
+    import torch
+    from torchvision import transforms
+except ImportError:
+    raise ImportError(
+        "Please install torch and torchvision: https://pytorch.org/get-started/locally/"
+    )
 import tqdm
 
 from . import models
