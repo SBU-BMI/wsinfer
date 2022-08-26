@@ -47,6 +47,7 @@ def _inside_container() -> str:
     if pathlib.Path("/.dockerenv").exists():
         return "yes, docker"
     elif pathlib.Path("/singularity.d").exists():
+        # TODO: apptainer might change the name of this directory.
         return "yes, apptainer/singularity"
     return "no"
 
@@ -59,7 +60,7 @@ def _get_timestamp() -> str:
     return dt.strftime("%c %Z")
 
 
-def _print_info():
+def _print_info() -> None:
     """Print information about the system."""
     import torch
     import torchvision
@@ -82,6 +83,19 @@ def _print_info():
     print(f"  Torchvision version: {torchvision.__version__}")
     cuda_ver = torch.version.cuda or "NOT FOUND"
     print(f"  CUDA version: {cuda_ver}")
+    cuda_visible_devices = os.environ.get("CUDA_VISIBLE_DEVICES", "NOT SET")
+    print(f"CUDA_VISIBLE_DEVICES: {cuda_visible_devices}")
+
+    if (
+        cuda_visible_devices == "NOT SET"
+        or cuda_visible_devices == ""
+        or torch.version.cuda is None
+    ):
+        click.secho("\n*******************************************", fg="yellow")
+        click.secho("GPU WILL NOT BE USED", fg="yellow")
+        if torch.version.cuda is None:
+            click.secho("  CPU-only version of PyTorch is being used", fg="yellow")
+        click.secho("*******************************************", fg="yellow")
 
 
 @click.command()
@@ -195,12 +209,6 @@ def cli(
         raise FileNotFoundError(f"no files exist in the slide directory: {wsi_dir}")
 
     _print_info()
-
-    cuda_visible_devices = os.environ.get("CUDA_VISIBLE_DEVICES")
-    if cuda_visible_devices is None or cuda_visible_devices == "":
-        click.secho("\n**************************************************", fg="yellow")
-        click.secho("NO GPU WILL BE USED: CUDA_VISIBLE_DEVICES IS EMPTY", fg="yellow")
-        click.secho("**************************************************", fg="yellow")
 
     print("\nArguments")
     print("---------")
