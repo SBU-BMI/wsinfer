@@ -1,11 +1,17 @@
 """Detect cancerous regions in a whole slide image."""
 
-import argparse
+import getpass
 import os
 import pathlib
+import platform
 import subprocess
 import sys
 import typing
+
+import click
+
+from .modellib.run_inference import run_inference
+from .modellib.models import list_models
 
 PathType = typing.Union[str, pathlib.Path]
 
@@ -31,144 +37,194 @@ def run_patching(
         # Consider customizing this...
         "tcga.csv",
     ]
-    print("-" * 20)
-    print("Running the patching script:")
-    print(" ".join(args), flush=True)
+    click.secho("\nRunning the patching script.\n", fg="green")
+    print(" ".join(args), "\n", flush=True)
     proc = subprocess.run(args, stdout=sys.stdout, stderr=sys.stderr, check=True)
     return proc
 
 
-def run_inference(
-    slides_dir: PathType,
-    save_dir: PathType,
+def _inside_container() -> str:
+    if pathlib.Path("/.dockerenv").exists():
+        return "yes, docker"
+    elif pathlib.Path("/singularity.d").exists():
+        return "yes, apptainer/singularity"
+    return "no"
+
+
+def _print_info():
+    """Print information about the system."""
+    import torch
+    import torchvision
+    from . import __version__
+
+    click.secho(f"\nRunning wsi_inference version {__version__}", fg="green")
+    print("\nIf you run into issues, please submit a new issue at")
+    print("https://github.com/kaczmarj/patch-classification-pipeline/issues/new")
+    print("\nInformation")
+    print("-----------")
+    print(f"{platform.platform()}")
+    print(f"User: {getpass.getuser()}")
+    print(f"Hostname: {platform.node()}")
+    print(f"Working directory: {os.getcwd()}")
+    print(f"In container: {_inside_container()}")
+    print(f"Python version: {platform.python_version()}")
+    print(f"  Torch version: {torch.__version__}")
+    print(f"  Torchvision version: {torchvision.__version__}")
+    cuda_ver = torch.version.cuda or "NOT FOUND"
+    print(f"  CUDA version: {cuda_ver}")
+
+
+@click.command()
+@click.pass_context
+@click.option(
+    "--wsi_dir",
+    type=click.Path(exists=True, file_okay=False, path_type=pathlib.Path),
+    required=True,
+    help="Directory containing whole slide images. This directory can *only* contain"
+    " whole slide images.",
+)
+@click.option(
+    "--results_dir",
+    type=click.Path(file_okay=False, path_type=pathlib.Path),
+    required=True,
+    help="Directory to store results. If directory exists, will skip"
+    " whole slides for which outputs exist.",
+)
+@click.option(
+    "--patch_size",
+    type=click.IntRange(min=1),
+    required=True,
+    help="Size of square patch.",
+)
+@click.option(
+    "--um_px",
+    type=click.FloatRange(min=0.0),
+    required=True,
+    help="Spacing for patches (micrometers per pixel)",
+)
+@click.option(
+    "--model",
+    type=click.Choice(list_models()),
+    required=True,
+    help="Model architecture to use.",
+)
+@click.option(
+    "--num_classes",
+    type=click.IntRange(min=1),
+    required=True,
+    help="The number of classes the model outputs.",
+)
+@click.option(
+    "--weights",
+    type=click.Path(exists=True, dir_okay=False, path_type=pathlib.Path),
+    required=True,
+    help="Path to a file containing weights of the model.",
+)
+@click.option(
+    "--batch_size",
+    type=click.IntRange(min=1),
+    default=32,
+    show_default=True,
+    help="Batch size during model inference.",
+)
+@click.option(
+    "--classes",
+    help="Names of the output classes (used in the header of the saved CSV file."
+    " Separate names with commas ('notumor,tumor').'",
+)
+@click.option(
+    "--num_workers",
+    default=0,
+    show_default=True,
+    help="Number of workers to use for data loading during model inference (default=0"
+    " for single thread). A reasonable value is 8.",
+)
+@click.version_option()
+def cli(
+    ctx: click.Context,
+    *,
+    wsi_dir: pathlib.Path,
+    results_dir: pathlib.Path,
     patch_size: int,
-    patch_spacing: float,
+    um_px: float,
     model: str,
     num_classes: int,
-    weights: PathType,
+    weights: pathlib.Path,
     batch_size: int,
-    classes: typing.Optional[typing.Sequence[str]] = None,
+    classes: typing.Optional[str] = None,
     num_workers: int = 0,
-) -> subprocess.CompletedProcess:
-    save_dir = pathlib.Path(save_dir)
-    patch_dir = save_dir / "patches"
-    if not patch_dir.exists():
-        raise FileNotFoundError(f"Patch directory not found: {patch_dir}")
+):
+    """Run model inference on a directory of whole slide images (WSI).
 
-    if not pathlib.Path(weights).exists():
-        raise FileNotFoundError(f"Weights not found: {weights}")
+    This command will create a tissue mask of each WSI. Then patch coordinates will be
+    computed. The chosen model will be applied to each patch, and the results will be
+    saved to a CSV in `RESULTS_DIR/model-output`.
 
-    args: typing.List[str] = [
-        "wsi_model_inference",
-        "--wsi_dir",
-        str(slides_dir),
-        "--results_dir",
-        str(save_dir),
-        "--patch_size",
-        str(patch_size),
-        "--um_px",
-        str(patch_spacing),
-        "--model",
-        model,
-        "--num_classes",
-        str(num_classes),
-        "--weights",
-        str(weights),
-        "--batch_size",
-        str(batch_size),
-        "--num_workers",
-        str(num_workers),
-    ]
-    if classes is not None:
-        args.extend(["--classes", *classes])
-    print("***********************************")
-    print("\n\nRunning the model inference script:")
-    print(" ".join(args), flush=True)
-    proc = subprocess.run(args, stdout=sys.stdout, stderr=sys.stderr, check=True)
-    return proc
+    Example:
 
+    CUDA_VISIBLE_DEVICES=0 wsi_run --wsi_dir slides/ --results_dir results
+    --patch_size 350 --um_px 0.250 --model resnet34
+    --weights weights/resnet34.pt --num_classes 2 --batch_size 32
+    --classes notumor,tumor --num_workers 4
+    """
 
-def cli():
-    p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument(
-        "--wsi_dir",
-        required=True,
-        help="Path to directory containing (only) whole slide images.",
-    )
-    p.add_argument(
-        "--results_dir", required=True, help="Path in which to save results."
-    )
-    p.add_argument(
-        "--patch_size",
-        type=int,
-        required=True,
-        help="Patch size for input to model in pixels at the desired spacing.",
-    )
-    p.add_argument(
-        "--um_px",
-        type=float,
-        required=True,
-        help="Scaling for patches (in micrometer per pixel).",
-    )
-    p.add_argument("--model", required=True, help="Name of the model")
-    p.add_argument("--num_classes", type=int, required=True, help="Number of classes.")
-    p.add_argument(
-        "--weights", required=True, help="Path to state dict weights for model."
-    )
-    p.add_argument("--batch_size", type=int, default=64)
-    p.add_argument("--classes", nargs="+", help="Names of the classes (in order)")
-    p.add_argument("--num_workers", type=int, default=0)
-    args = p.parse_args()
+    wsi_dir = wsi_dir.resolve()
+    results_dir = results_dir.resolve()
+    weights = weights.resolve()
 
-    # The patching command runs in a different working directory, so let's make the
-    # paths absolute.
-    # TODO: consider how to handle existing files.
-    args.wsi_dir = pathlib.Path(args.wsi_dir).resolve()
-    args.results_dir = pathlib.Path(args.results_dir).resolve()
-    args.weights = pathlib.Path(args.weights).resolve()
+    if not wsi_dir.exists():
+        raise FileNotFoundError(f"Whole slide image directory not found: {wsi_dir}")
+
+    # Test that wsi dir actually includes files. This is here for an interesting edge
+    # case. When using a Linux container and if the data directory is symlinked from a
+    # different directory, both directories need to be bind mounted onto the container.
+    # If only the symlinked directory is included, then the patching script will fail,
+    # even though it looks like there are files in the wsi_dir directory.
+    files_in_wsi_dir = [p for p in wsi_dir.glob("*") if p.exists()]
+    if not files_in_wsi_dir:
+        raise FileNotFoundError(f"no files exist in the slide directory: {wsi_dir}")
+
+    _print_info()
 
     cuda_visible_devices = os.environ.get("CUDA_VISIBLE_DEVICES")
     if cuda_visible_devices is None or cuda_visible_devices == "":
-        print("*********************************************************")
-        print("NO GPU WILL BE USED BECAUSE CUDA_VISIBLE_DEVICES IS EMPTY")
-        print("*********************************************************")
-
-    if not args.wsi_dir.exists():
-        raise FileNotFoundError(
-            f"Whole slide image directory not found: {args.wsi_dir}"
-        )
-
-    # Test that wsi dir actually includes files.
-    files_in_wsi_dir = [p for p in args.wsi_dir.glob("*") if p.exists()]
-    if not files_in_wsi_dir:
-        raise FileNotFoundError(
-            f"no files exist in the slide directory: {args.wsi_dir}"
-        )
+        click.secho("\n**************************************************", fg="yellow")
+        click.secho("NO GPU WILL BE USED: CUDA_VISIBLE_DEVICES IS EMPTY", fg="yellow")
+        click.secho("**************************************************", fg="yellow")
 
     print("\nArguments")
     print("---------")
-    for key, value in vars(args).items():
+    for key, value in ctx.params.items():
         print(f"{key} = {value}")
-    print("---------\n")
+    print("---------")
 
     run_patching(
-        slides_dir=args.wsi_dir,
-        save_dir=args.results_dir,
-        patch_size=args.patch_size,
-        patch_spacing=args.um_px,
+        slides_dir=wsi_dir,
+        save_dir=results_dir,
+        patch_size=patch_size,
+        patch_spacing=um_px,
     )
 
+    classes_list = None
+    if classes is not None:
+        classes_list = classes.split(",")
+        if len(classes_list) != num_classes:
+            raise ValueError(f"classes should have length == {num_classes}")
+
+    click.secho("\nRunning model inference.\n", fg="green")
     run_inference(
-        slides_dir=args.wsi_dir,
-        save_dir=args.results_dir,
-        patch_size=args.patch_size,
-        patch_spacing=args.um_px,
-        model=args.model,
-        num_classes=args.num_classes,
-        weights=args.weights,
-        batch_size=args.batch_size,
-        classes=args.classes,
-        num_workers=args.num_workers,
+        wsi_dir=wsi_dir,
+        results_dir=results_dir,
+        patch_size=patch_size,
+        um_px=um_px,
+        model_name=model,
+        num_classes=num_classes,
+        weights=weights,
+        batch_size=batch_size,
+        num_workers=num_workers,
+        classes=classes_list,
     )
+
+    click.secho("Finished.", fg="green")
 
     return
