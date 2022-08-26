@@ -132,7 +132,7 @@ First, pull the Docker image.
 docker pull kaczmarj/patch-classification-pipeline
 ```
 
-This requires the program `nvidia-container-runtime-hook`. Please see the
+This requires the program Docker `>=19.03` and `nvidia-container-runtime-hook`. Please see the
 [Docker documentation](https://docs.docker.com/config/containers/resource_constraints/#gpu)
 for more information. If you do not have a GPU installed, you can use CPU by removing
 `--gpus all` from the command below.
@@ -151,6 +151,7 @@ too low, a "bus error" will be thrown.
 docker run --rm -it \
     --shm-size 512m \
     --gpus all \
+    --env CUDA_VISIBLE_DEVICES=0 \
     --user $(id -u):$(id -g) \
     --mount type=bind,source=$(pwd),target=/work/ \
     kaczmarj/patch-classification-pipeline \
