@@ -27,10 +27,13 @@ from .wsi_core.batch_process_utils import initialize_df
 
 # other imports
 import os
+import pathlib
 import numpy as np
 import time
 import argparse
 import pandas as pd
+
+_script_path = pathlib.Path(__file__).resolve().parent
 
 
 def stitching(file_path, wsi_object, downscale=64):
@@ -411,7 +414,7 @@ def cli():
     patch_params = {"use_padding": True, "contour_fn": "four_pt"}
 
     if args.preset:
-        preset_df = pd.read_csv(os.path.join("presets", args.preset))
+        preset_df = pd.read_csv(_script_path / "presets" / args.preset)
         for key in seg_params.keys():
             seg_params[key] = preset_df.loc[0, key]
 

@@ -9,7 +9,6 @@ setup(
     install_requires=[
         "h5py",
         "large_image[sources]>=>=1.8.0",
-        "matplotlib",
         "numpy",
         "opencv-python-headless>=4.0.0",
         "pandas",
@@ -26,4 +25,6 @@ setup(
             "wsi_convert_to_geojson=wsi_inference.convert_csv_to_geojson:cli",
         ],
     },
+    # This is for the tissue masking presets (in patchlib).
+    package_data={"wsi_inference": ["*.csv"]},
 )
