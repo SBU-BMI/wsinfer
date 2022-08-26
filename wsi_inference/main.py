@@ -163,11 +163,6 @@ def _print_info() -> None:
     help="Batch size during model inference.",
 )
 @click.option(
-    "--classes",
-    help="Names of the output classes (used in the header of the saved CSV file."
-    " Separate names with commas ('notumor,tumor').'",
-)
-@click.option(
     "--num_workers",
     default=0,
     show_default=True,
@@ -186,7 +181,6 @@ def cli(
     num_classes: int,
     weights: str,
     batch_size: int,
-    classes: typing.Optional[str] = None,
     num_workers: int = 0,
 ):
     """Run model inference on a directory of whole slide images (WSI).
@@ -199,8 +193,7 @@ def cli(
 
     CUDA_VISIBLE_DEVICES=0 wsi_run --wsi_dir slides/ --results_dir results
     --patch_size 350 --um_px 0.250 --model resnet34
-    --weights weights/resnet34.pt --num_classes 2 --batch_size 32
-    --classes notumor,tumor --num_workers 4
+    --weights weights/resnet34.pt --num_classes 2 --batch_size 32 --num_workers 4
     """
 
     wsi_dir = wsi_dir.resolve()
@@ -236,17 +229,6 @@ def cli(
         patch_spacing=um_px,
     )
 
-    classes_list = None
-    if classes is not None:
-        classes_list = classes.split(",")
-        # Convert to set to make sure we don't have any duplicates...
-        # But do not use the set as the new classes list because sets do not preserve
-        # order.
-        if len(set(classes_list)) != num_classes:
-            raise DifferentNumClassesError(
-                f"classes should have length == {num_classes}, got {set(classes_list)}"
-            )
-
     click.secho("\nRunning model inference.\n", fg="green")
     run_inference(
         wsi_dir=wsi_dir,
@@ -258,7 +240,6 @@ def cli(
         weights=weights,
         batch_size=batch_size,
         num_workers=num_workers,
-        classes=classes_list,
     )
 
     click.secho("Finished.", fg="green")

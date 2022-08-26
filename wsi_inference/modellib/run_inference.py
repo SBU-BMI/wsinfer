@@ -152,7 +152,7 @@ def run_inference_on_slides(
     transform: typing.Callable[..., torch.Tensor],
     batch_size: int = 64,
     num_workers: int = 0,
-    classes: typing.Optional[typing.Sequence[str]] = None,
+    class_names: typing.Optional[typing.Sequence[str]] = None,
 ) -> None:
     """Apply a model to a set of whole slide images.
 
@@ -206,7 +206,7 @@ def run_inference_on_slides(
                 logits: torch.Tensor = model(batch_imgs.to(device)).detach().cpu()
             # probs has shape (batch_size, num_classes)
             probs = torch.nn.functional.softmax(logits, dim=1)
-            if classes is not None and len(classes) != probs.shape[1]:
+            if class_names is not None and len(class_names) != probs.shape[1]:
                 raise ValueError(f"classes must have length {probs.shape[1]}")
 
             slide_coords.append(batch_coords.numpy())
@@ -224,7 +224,7 @@ def run_inference_on_slides(
         )
         slide_probs_arr = np.concatenate(slide_probs, axis=0)
         num_classes = slide_probs_arr.shape[1]
-        class_names = classes or [f"cls{i}" for i in range(num_classes)]
+        class_names = class_names or [f"cls{i}" for i in range(num_classes)]
         slide_df.loc[:, class_names] = slide_probs_arr
         slide_df.to_csv(slide_csv, index=False)
         print("-" * 40)
@@ -241,7 +241,7 @@ def run_inference(
     patch_size: int,
     batch_size: int = 32,
     num_workers: int = 0,
-    classes: typing.Optional[typing.List[str]] = None,
+    class_names: typing.Optional[typing.List[str]] = None,
 ) -> None:
     """Run model inference on a directory of whole slide images.
 
@@ -273,7 +273,7 @@ def run_inference(
         The batch size during the forward pass (default is 32).
     num_workers : int
         Number of workers for data loading (default is 0, meaning use a single thread).
-    classes : list of str, optional
+    classes_names : list of str, optional
         Names of the classes. This is used for the header of the saved CSV. The length
         of this list must be equal to `num_classes`. For example: ["notumor", "tumor"].
 
@@ -291,8 +291,8 @@ def run_inference(
     results_dir = pathlib.Path(results_dir)
     if not results_dir.exists():
         raise FileNotFoundError(f"Results dir not found: {results_dir}")
-    if classes is not None:
-        if len(classes) != num_classes:
+    if class_names is not None:
+        if len(class_names) != num_classes:
             raise ValueError(
                 f"length of classes must be equal to num_classes={num_classes}"
             )
@@ -307,7 +307,7 @@ def run_inference(
             f"could not find patch hdf5 files: {patch_paths_notfound}"
         )
 
-    model, weights_obj = models.create_model(model_name, weights=weights)
+    weights_obj = models.create_model(model_name, weights=weights)
 
     if patch_size != weights_obj.patch_size_pixels:
         raise DifferentPatchSizeError(
@@ -323,14 +323,17 @@ def run_inference(
             f"got {num_classes} classes but expected {weights_obj.num_classes} classes"
         )
 
+    if weights_obj.model is None:
+        raise RuntimeError("we should never get here... contact dev")
+
     run_inference_on_slides(
         wsi_paths=wsi_paths,
         patch_paths=patch_paths,
         results_dir=results_dir,
         um_px=um_px,
-        model=model,
+        model=weights_obj.model,
         transform=weights_obj.transform,
         batch_size=batch_size,
         num_workers=num_workers,
-        classes=classes,
+        class_names=weights_obj.class_names,
     )
