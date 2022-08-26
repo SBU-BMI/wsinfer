@@ -7,4 +7,6 @@ RUN apt-get update \
         --find-links https://girder.github.io/large_image_wheels \
     && apt-get autoremove --yes gcc \
     && rm -rf /var/lib/apt/lists/*
+WORKDIR /work
 ENTRYPOINT ["wsi_run"]
+LABEL maintainer="Jakub Kaczmarzyk <jakub.kaczmarzyk@stonybrookmedicine.edu>"
