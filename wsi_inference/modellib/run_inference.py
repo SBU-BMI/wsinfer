@@ -245,7 +245,7 @@ def run_inference(
     patch_size: int,
     batch_size: int = 32,
     num_workers: int = 0,
-    classes: typing.Optional[typing.Sequence[str]] = None,
+    classes: typing.Optional[typing.List[str]] = None,
 ) -> None:
     """Run model inference on a directory of whole slide images.
 
