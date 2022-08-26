@@ -50,7 +50,7 @@ that this directory only contains whole slide images.
     ```
     mkdir sample-images
     cd sample-images
-    wget https://openslide.cs.cmu.edu/download/openslide-testdata/Aperio/CMU-1.svs
+    wget -nc https://openslide.cs.cmu.edu/download/openslide-testdata/Aperio/CMU-1.svs
     cd ..
     ```
 
