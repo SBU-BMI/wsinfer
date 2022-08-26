@@ -51,6 +51,14 @@ def _inside_container() -> str:
     return "no"
 
 
+def _get_timestamp() -> str:
+    from datetime import datetime
+
+    dt = datetime.now().astimezone()
+    # Thu Aug 25 23:32:17 2022 EDT
+    return dt.strftime("%c %Z")
+
+
 def _print_info():
     """Print information about the system."""
     import torch
@@ -62,6 +70,7 @@ def _print_info():
     print("https://github.com/kaczmarj/patch-classification-pipeline/issues/new")
     print("\nInformation")
     print("-----------")
+    print(f"Timestamp: {_get_timestamp()}")
     print(f"{platform.platform()}")
     print(f"User: {getpass.getuser()}")
     print(f"Hostname: {platform.node()}")
