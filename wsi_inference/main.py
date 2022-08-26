@@ -10,6 +10,7 @@ import typing
 
 import click
 
+from .modellib.run_inference import DifferentNumClassesError
 from .modellib.run_inference import run_inference
 from .modellib.models import list_models
 
@@ -238,8 +239,13 @@ def cli(
     classes_list = None
     if classes is not None:
         classes_list = classes.split(",")
-        if len(classes_list) != num_classes:
-            raise ValueError(f"classes should have length == {num_classes}")
+        # Convert to set to make sure we don't have any duplicates...
+        # But do not use the set as the new classes list because sets do not preserve
+        # order.
+        if len(set(classes_list)) != num_classes:
+            raise DifferentNumClassesError(
+                f"classes should have length == {num_classes}, got {set(classes_list)}"
+            )
 
     click.secho("\nRunning model inference.\n", fg="green")
     run_inference(
