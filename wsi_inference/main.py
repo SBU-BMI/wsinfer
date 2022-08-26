@@ -9,15 +9,13 @@ import typing
 
 PathType = typing.Union[str, pathlib.Path]
 
-_script_path = pathlib.Path(__file__).resolve().parent
-
 
 def run_patching(
     slides_dir: PathType, save_dir: PathType, patch_size: int, patch_spacing: float
 ) -> subprocess.CompletedProcess:
     args = [
-        sys.executable,
-        "create_patches_fp.py",
+        # This command is created when installing this package.
+        "wsi_create_patches",
         "--source",
         str(slides_dir),
         "--save_dir",
@@ -33,13 +31,10 @@ def run_patching(
         # Consider customizing this...
         "tcga.csv",
     ]
-    cwd = _script_path / "CLAM"
+    print("-" * 20)
     print("Running the patching script:")
-    print(f"CWD {cwd}")
     print(" ".join(args), flush=True)
-    proc = subprocess.run(
-        args, stdout=sys.stdout, stderr=sys.stderr, cwd=cwd, check=True
-    )
+    proc = subprocess.run(args, stdout=sys.stdout, stderr=sys.stderr, check=True)
     return proc
 
 
@@ -64,8 +59,7 @@ def run_inference(
         raise FileNotFoundError(f"Weights not found: {weights}")
 
     args: typing.List[str] = [
-        sys.executable,
-        "run_inference.py",
+        "wsi_model_inference",
         "--wsi_dir",
         str(slides_dir),
         "--results_dir",
@@ -87,14 +81,10 @@ def run_inference(
     ]
     if classes is not None:
         args.extend(["--classes", *classes])
-    cwd = _script_path
     print("***********************************")
     print("\n\nRunning the model inference script:")
-    print(f"CWD {cwd}")
     print(" ".join(args), flush=True)
-    proc = subprocess.run(
-        args, stdout=sys.stdout, stderr=sys.stderr, cwd=cwd, check=True
-    )
+    proc = subprocess.run(args, stdout=sys.stdout, stderr=sys.stderr, check=True)
     return proc
 
 
