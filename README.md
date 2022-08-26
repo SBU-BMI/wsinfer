@@ -4,45 +4,166 @@ Original H&E                        |  Heatmap of Tumor Probability
 :----------------------------------:|:-----------------------------------:
 ![](sample-images/brca-tissue.png)  | ![](sample-images/brca-heatmap.png)
 
-Run patch-based classification models on whole slide images of histology.
+🔥 🚀 Blazingly fast pipeline to run patch-based classification models on whole slide images.
 
 # Installation
 
+## Containers
+
 Use the Docker / Singularity / Apptainer image, which includes all of the dependencies and scripts.
 
-Alternatively, clone this repository and install the requirements.
+- Apptainer / Singularity
+
+    Replace apptainer with singularity if you do not have apptainer
+
+    ```
+    apptainer pull docker://kaczmarj/patch-classification-pipeline
+    ```
+
+- Docker
+
+    ```
+    docker pull kaczmarj/patch-classification-pipeline
+    ```
+
+## Without a container (using pip)
+
+Alternatively, install from GitHub. You will also have to install `torch` and
+`torchvision` (please see [the PyTorch documentation](https://pytorch.org/get-started/locally/)).
+We do not install these dependencies automatically because their installation can vary based
+on a user's system.
 
 ```
-git clone https://github.com/kaczmarj/patch-classification-pipeline.git
-python -m pip install --editable . --find-links https://girder.github.io/large_image_wheels
+python -m pip install \
+    --find-links https://girder.github.io/large_image_wheels \
+    git+https://github.com/kaczmarj/patch-classification-pipeline.git
 ```
+
+TODO: download pretrained weights.
 
 ## Developers
 
-Install the `dev` extras:
+Clone this GitHub repository and install the package (in editable mode with the `dev` extras).
 
 ```
 git clone https://github.com/kaczmarj/patch-classification-pipeline.git
+cd patch-classification-pipeline
 python -m pip install --editable .[dev] --find-links https://girder.github.io/large_image_wheels
 ```
 
 # Example
 
-Run a model on a directory of whole slide images. This command reads all of the images
-in `brca-samples/` and writes results to `results/`.
+Here we demonstrate running this pipeline on a sample image. Before going through this,
+please install the package (see [Installation](#installation)).
 
-```bash
-CUDA_VISIBLE_DEVICES=0 singularity run --nv \
-    --bind $PWD \
-    --bind /data10:/data10:ro cancer-detection_latest.sif \
-        --wsi_dir brca-samples/ \
-        --results_dir results \
-        --patch_size 340 \
-        --um_px 0.25 \
+## Setup directories and data
+
+We make a new directory to store this example, including data and results. Enter the
+following commands into a terminal. This will download a sample whole slide image
+(170 MB). For this example, we only use one whole slide image, but you can apply this
+pipeline to an arbitrary number of whole slide images &mdash; simply put them all in the
+same directory.
+
+```
+mkdir -p example-wsi-inference
+cd example-wsi-inference
+mkdir -p sample-images
+cd sample-images
+wget -nc https://openslide.cs.cmu.edu/download/openslide-testdata/Aperio/CMU-1.svs
+cd ..
+```
+
+## On "bare metal" (not inside a container)
+
+Run the pipeline (without a container). This will apply the pipeline to all of the
+images in `sample-images/` (only 1 in this example) and will write results to
+`results/`. We set `CUDA_VISIBLE_DEVICES=0` to use the first GPU listed in
+`nvidia-smi`. If you do not have a GPU, model inference can take about 20 minutes.
+(The patch spacing is == 88 um / 350 pixels.)
+
+TODO: download model weights.
+
+```
+CUDA_VISIBLE_DEVICES=0 wsi_run \
+    --wsi_dir sample-images/ \
+    --results_dir results/ \
+    --patch_size 350 \
+    --um_px 0.25142857142 \
+    --model resnet34 \
+    --num_classes 2 \
+    --weights resnet34-brca.pt \
+    --num_workers 8 \
+    --classes notumor,tumor
+```
+
+## Run in an Apptainer container (formerly Singularity)
+
+I use the commands `apptainer` here, but if you don't have `apptainer`, you can simply
+replace that with `singularity`. The command line interfaces are the same (as of August 26, 2022).
+
+```
+apptainer pull docker://kaczmarj/patch-classification-pipeline
+```
+
+Run the pipeline in Apptainer.
+
+```
+CUDA_VISIBLE_DEVICES=0 apptainer run \
+    --nv \
+    --bind $(pwd) \
+    --pwd $(pwd) \
+    patch-classification-pipeline_latest.sif \
+        --wsi_dir sample-images/ \
+        --results_dir results/ \
+        --patch_size 350 \
+        --um_px 0.25142857142 \
         --model resnet34 \
         --num_classes 2 \
-        --weights resnet34-jakub-state-dict-with-numbatchestracked.pt \
-        --num_workers 8
+        --weights weights/resnet34-brca.pt \
+        --num_workers 8 \
+        --classes notumor,tumor
+```
+
+## Run in a Docker container
+
+First, pull the Docker image.
+
+```
+docker pull kaczmarj/patch-classification-pipeline
+```
+
+This requires the program Docker `>=19.03` and `nvidia-container-runtime-hook`. Please see the
+[Docker documentation](https://docs.docker.com/config/containers/resource_constraints/#gpu)
+for more information. If you do not have a GPU installed, you can use CPU by removing
+`--gpus all` from the command below.
+
+We use `--user $(id -u):$(id -g)` to run the container as a non-root user (as ourself).
+This way, the output files are owned by us. Without specifying this option, the output
+files would be owned by the root user.
+
+When mounting data, keep in mind that the workdir in the Docker container is `/work`
+(one can override this with `--workdir`). Relative paths must be relative to the workdir.
+
+Note: using `--num_workers > 0` will require a `--shm-size > 256mb`. If the shm size is
+too low, a "bus error" will be thrown.
+
+```
+docker run --rm -it \
+    --shm-size 512m \
+    --gpus all \
+    --env CUDA_VISIBLE_DEVICES=0 \
+    --user $(id -u):$(id -g) \
+    --mount type=bind,source=$(pwd),target=/work/ \
+    kaczmarj/patch-classification-pipeline \
+        --wsi_dir sample-images/ \
+        --results_dir results/ \
+        --patch_size 350 \
+        --um_px 0.25142857142 \
+        --model resnet34 \
+        --num_classes 2 \
+        --weights weights/resnet34-brca.pt \
+        --num_workers 2 \
+        --classes notumor,tumor
 ```
 
 ## Output
@@ -64,8 +185,12 @@ results/
 
 ## Convert to GeoJSON (for QuPath and other viewers)
 
+GeoJSON is a standardized format to represent geometry. The results of model inference
+are a type of geometric data structure. Popular whole slide image viewers like QuPath
+are able to load labels in GeoJSON format.
+
 ```
-python convert_csv_to_geojson.py results/model-outputs/TCGA-foobar.csv TCGA-foobar.json
+wsi_convert_csv_to_geojson results/model-outputs/CMU-1.csv CMU-1.json
 ```
 
 

@@ -47,11 +47,20 @@ def _inside_container() -> str:
     if pathlib.Path("/.dockerenv").exists():
         return "yes, docker"
     elif pathlib.Path("/singularity.d").exists():
+        # TODO: apptainer might change the name of this directory.
         return "yes, apptainer/singularity"
     return "no"
 
 
-def _print_info():
+def _get_timestamp() -> str:
+    from datetime import datetime
+
+    dt = datetime.now().astimezone()
+    # Thu Aug 25 23:32:17 2022 EDT
+    return dt.strftime("%c %Z")
+
+
+def _print_info() -> None:
     """Print information about the system."""
     import torch
     import torchvision
@@ -62,16 +71,40 @@ def _print_info():
     print("https://github.com/kaczmarj/patch-classification-pipeline/issues/new")
     print("\nInformation")
     print("-----------")
+    print(f"Timestamp: {_get_timestamp()}")
     print(f"{platform.platform()}")
-    print(f"User: {getpass.getuser()}")
+    try:
+        print(f"User: {getpass.getuser()}")
+    except KeyError:
+        # If /etc/passwd does not include the username of the current user ID, a
+        # KeyError is thrown. This could happen in a Docker image running as a different
+        # user with `--user $(id -u):$(id -g)` but that does not bind mount the
+        # /etc/passwd file.
+        print("User: UNKNOWN")
     print(f"Hostname: {platform.node()}")
     print(f"Working directory: {os.getcwd()}")
     print(f"In container: {_inside_container()}")
+    print(f"Python executable: {sys.executable}")
     print(f"Python version: {platform.python_version()}")
     print(f"  Torch version: {torch.__version__}")
     print(f"  Torchvision version: {torchvision.__version__}")
     cuda_ver = torch.version.cuda or "NOT FOUND"
     print(f"  CUDA version: {cuda_ver}")
+    cuda_visible_devices = os.environ.get("CUDA_VISIBLE_DEVICES", "NOT SET")
+    print(f"CUDA_VISIBLE_DEVICES: {cuda_visible_devices}")
+
+    if torch.version.cuda is None:
+        click.secho("\n*******************************************", fg="yellow")
+        click.secho("GPU WILL NOT BE USED", fg="yellow")
+        if torch.version.cuda is None:
+            click.secho("  CPU-only version of PyTorch is being used", fg="yellow")
+        click.secho("*******************************************", fg="yellow")
+    elif cuda_visible_devices == "NOT SET" or cuda_visible_devices == "":
+        click.secho("\n*******************************************", fg="yellow")
+        click.secho("GPU WILL NOT BE USED", fg="yellow")
+        if torch.version.cuda is None:
+            click.secho("  CUDA_VISIBLE_DEVICES empty or not set", fg="yellow")
+        click.secho("*******************************************", fg="yellow")
 
 
 @click.command()
@@ -185,12 +218,6 @@ def cli(
         raise FileNotFoundError(f"no files exist in the slide directory: {wsi_dir}")
 
     _print_info()
-
-    cuda_visible_devices = os.environ.get("CUDA_VISIBLE_DEVICES")
-    if cuda_visible_devices is None or cuda_visible_devices == "":
-        click.secho("\n**************************************************", fg="yellow")
-        click.secho("NO GPU WILL BE USED: CUDA_VISIBLE_DEVICES IS EMPTY", fg="yellow")
-        click.secho("**************************************************", fg="yellow")
 
     print("\nArguments")
     print("---------")
