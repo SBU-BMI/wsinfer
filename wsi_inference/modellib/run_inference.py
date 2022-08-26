@@ -18,7 +18,7 @@ import torch
 from torchvision import transforms
 import tqdm
 
-import models
+from . import models
 
 PathType = typing.Union[str, pathlib.Path]
 
@@ -34,8 +34,8 @@ def _read_patch_coords(path: PathType) -> np.ndarray:
         coords_metadata = f["/coords"].attrs
         if "patch_level" not in coords_metadata.keys():
             raise KeyError(
-                "Could not find required key 'patch_level' in hdf5 of patch coordinates."
-                " Has the version of CLAM been updated?"
+                "Could not find required key 'patch_level' in hdf5 of patch "
+                "coordinates. Has the version of CLAM been updated?"
             )
         patch_level = coords_metadata["patch_level"]
         if patch_level != 0:
@@ -136,7 +136,7 @@ def run_inference_on_slides(
     num_workers: int = 0,
     disable_progbar: bool = False,
     classes: typing.Optional[typing.Sequence[str]] = None,
-):
+) -> None:
     """"""
 
     results_dir = pathlib.Path(results_dir)
@@ -188,8 +188,10 @@ def run_inference_on_slides(
             num_workers=num_workers,
         )
 
-        slide_coords = []
-        slide_probs = []
+        # Store the coordinates and model probabiltiies of each patch in this slide.
+        # This lets us know where the probabiltiies map to in the slide.
+        slide_coords: typing.List[np.ndarray] = []
+        slide_probs: typing.List[np.ndarray] = []
         for batch_imgs, batch_coords in tqdm.tqdm(loader, disable=disable_progbar):
             assert batch_imgs.shape[0] == batch_coords.shape[0], "length mismatch"
             with torch.no_grad():
@@ -218,7 +220,7 @@ def run_inference_on_slides(
     return
 
 
-if __name__ == "__main__":
+def cli():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--wsi_dir", required=True, help="Path to input whole slide image.")
     # TODO: add save_dir
@@ -284,7 +286,7 @@ if __name__ == "__main__":
         args.model, num_classes=args.num_classes, state_dict_path=args.weights
     )
 
-    results = run_inference_on_slides(
+    run_inference_on_slides(
         wsi_paths=wsi_paths,
         patch_paths=patch_paths,
         results_dir=args.results_dir,
