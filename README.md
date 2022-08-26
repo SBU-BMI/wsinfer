@@ -184,8 +184,12 @@ results/
 
 ## Convert to GeoJSON (for QuPath and other viewers)
 
+GeoJSON is a standardized format to represent geometry. The results of model inference
+are a type of geometric data structure. Popular whole slide image viewers like QuPath
+are able to load labels in GeoJSON format.
+
 ```
-wsi_convert_csv_to_geojson results/model-outputs/TCGA-foobar.csv TCGA-foobar.json
+wsi_convert_csv_to_geojson results/model-outputs/CMU-1.csv CMU-1.json
 ```
 
 
