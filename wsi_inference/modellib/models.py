@@ -7,11 +7,15 @@ All model functions must have the signature:
     Function[[int, Optional[str]], torch.nn.Module]
 """
 
+import typing
+
 import torch
 import torchvision
 
 # TODO: consider adding the color normalization and input size here. Or maybe as a
 # command line argument.
+
+PathType = typing.Union[str, pathlib.Path]
 
 
 def inceptionv4(num_classes: int, state_dict_path=None) -> torch.nn.Module:
@@ -60,14 +64,26 @@ def vgg16_modified(num_classes: int, state_dict_path=None) -> torch.nn.Module:
     return model
 
 
-MODELS = dict(inceptionv4=inceptionv4, resnet34=resnet34, vgg16_modified=vgg16_modified)
+MODELS: typing.Dict[str, typing.Callable[..., torch.nn.Module]] = dict(
+    inceptionv4=inceptionv4,
+    resnet34=resnet34,
+    vgg16_modified=vgg16_modified,
+)
 
 
 class ModelNotFoundError(Exception):
     ...
 
 
-def create_model(model_name: str, num_classes: int, state_dict_path=None):
+def list_models() -> typing.List[str]:
+    return list(MODELS.keys())
+
+
+def create_model(
+    model_name: str,
+    num_classes: int,
+    state_dict_path: typing.Optional[PathType] = None,
+) -> torch.nn.Module:
     """Create a model."""
     if model_name not in MODELS.keys():
         raise ModelNotFoundError(
