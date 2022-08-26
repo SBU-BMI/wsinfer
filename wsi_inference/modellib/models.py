@@ -7,6 +7,7 @@ All model functions must have the signature:
     Function[[int, Optional[str]], torch.nn.Module]
 """
 
+import pathlib
 import typing
 
 import torch
