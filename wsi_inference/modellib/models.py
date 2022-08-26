@@ -13,17 +13,18 @@ import typing
 import torch
 import torchvision
 
+from .inceptionv4 import inceptionv4 as _inceptionv4
+from .inceptionv4 import InceptionV4 as _InceptionV4
+
 # TODO: consider adding the color normalization and input size here. Or maybe as a
 # command line argument.
 
 PathType = typing.Union[str, pathlib.Path]
 
 
-def inceptionv4(num_classes: int, state_dict_path=None) -> torch.nn.Module:
+def inceptionv4(num_classes: int, state_dict_path=None) -> _InceptionV4:
     """Create InceptionV4 model."""
-    import pretrainedmodels
-
-    model = pretrainedmodels.inceptionv4(num_classes=num_classes, pretrained=False)
+    model = _inceptionv4(num_classes=num_classes, pretrained=False)
     if state_dict_path is not None:
         print("Loading state dict")
         print(f"  {state_dict_path}")
