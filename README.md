@@ -4,14 +4,16 @@ Original H&E                        |  Heatmap of Tumor Probability
 :----------------------------------:|:-----------------------------------:
 ![](sample-images/brca-tissue.png)  | ![](sample-images/brca-heatmap.png)
 
-Run patch-based classification models on whole slide images of histology.
-
+🔥 🚀 Blazingly fast pipeline to run patch-based classification models on whole slide images.
 
 # Installation
 
 Use the Docker / Singularity / Apptainer image, which includes all of the dependencies and scripts.
 
-Alternatively, install from GitHub. You will also have to install `torch` and `torchvision` (please see [the PyTorch documentation](https://pytorch.org/get-started/locally/)). We do not install these dependencies automatically because their installation can vary based on a user's system.
+Alternatively, install from GitHub. You will also have to install `torch` and
+`torchvision` (please see [the PyTorch documentation](https://pytorch.org/get-started/locally/)).
+We do not install these dependencies automatically because their installation can vary based
+on a user's system.
 
 ```
 python -m pip install \
@@ -37,29 +39,30 @@ python -m pip install --editable .[dev] --find-links https://girder.github.io/la
 Here we demonstrate running this pipeline on a sample image. Before going through this,
 please install the package.
 
-1. Make a new directory and change into it.
+## Setup directories and data
 
-    ```
-    mkdir example-wsi-inference
-    cd example-wsi-inference
-    ```
+We make a new directory to store this example, including data and results. Enter the
+following commands into a terminal. This will download a sample whole slide image
+(170 MB). For this example, we only use one whole slide image, but you can apply this
+pipeline to an arbitrary number of whole slide images &mdash; simply put them all in the
+same directory.
 
-2. Make a `sample-images` directory and download the sample file into it. It is important
-that this directory only contains whole slide images.
-
-    ```
-    mkdir sample-images
-    cd sample-images
-    wget -nc https://openslide.cs.cmu.edu/download/openslide-testdata/Aperio/CMU-1.svs
-    cd ..
-    ```
+```
+mkdir -p example-wsi-inference
+cd example-wsi-inference
+mkdir -p sample-images
+cd sample-images
+wget -nc https://openslide.cs.cmu.edu/download/openslide-testdata/Aperio/CMU-1.svs
+cd ..
+```
 
 ## On "bare metal" (not inside a container)
 
-Run the pipeline (without a container). This will apply the pipeline to all of the images in `sample-images/`
-(only 1 in this example) and will write results to `results/`. `CUDA_VISIBLE_DEVICES=0`
-is set to use the first GPU listed in `nvidia-smi`. If you do not have a GPU, model
-inference can take about 20 minutes. (The patch spacing is == 88 um / 350 pixels.)
+Run the pipeline (without a container). This will apply the pipeline to all of the
+images in `sample-images/` (only 1 in this example) and will write results to
+`results/`. We set `CUDA_VISIBLE_DEVICES=0` to use the first GPU listed in
+`nvidia-smi`. If you do not have a GPU, model inference can take about 20 minutes.
+(The patch spacing is == 88 um / 350 pixels.)
 
 TODO: download model weights.
 
@@ -92,7 +95,7 @@ CUDA_VISIBLE_DEVICES=0 singularity run \
         --um_px 0.25142857142 \
         --model resnet34 \
         --num_classes 2 \
-        --weights resnet34-brca.pt \
+        --weights weights/resnet34-brca.pt \
         --num_workers 8
 ```
 
