@@ -54,7 +54,7 @@ python -m pip install --editable .[dev] --find-links https://girder.github.io/la
 # Example
 
 Here we demonstrate running this pipeline on a sample image. Before going through this,
-please install the package.
+please install the package (see [Installation](#installation)).
 
 ## Setup directories and data
 
