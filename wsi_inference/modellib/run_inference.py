@@ -175,10 +175,11 @@ def run_inference_on_slides(
         ]
     )
     # results_for_all_slides: typing.List[pd.DataFrame] = []
-    for wsi_path, patch_path in zip(wsi_paths, patch_paths):
-        print("----")
-        print(f"Slide path: {wsi_path}")
-        print(f"Patch path: {patch_path}")
+    for i, (wsi_path, patch_path) in enumerate(zip(wsi_paths, patch_paths)):
+        print("-" * 40)
+        print(f"Slide {i+1} of {len(wsi_paths)}")
+        print(f" Slide path: {wsi_path}")
+        print(f" Patch path: {patch_path}")
 
         slide_csv_name = pathlib.Path(wsi_path).with_suffix(".csv").name
         slide_csv = model_output_dir / slide_csv_name
