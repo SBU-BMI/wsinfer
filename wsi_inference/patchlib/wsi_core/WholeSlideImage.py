@@ -12,10 +12,8 @@ from .wsi_utils import (
     savePatchIter_bag_hdf5,
     initialize_hdf5_bag,
     save_hdf5,
-    screen_coords,
     isBlackPatch,
     isWhitePatch,
-    to_percentiles,
 )
 from .util_classes import (
     isInContourV1,
