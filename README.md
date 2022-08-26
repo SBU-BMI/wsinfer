@@ -81,25 +81,39 @@ CUDA_VISIBLE_DEVICES=0 wsi_run \
 
 ## Run in an Apptainer container (formerly Singularity)
 
-TODO: download container.
+I use the commands `apptainer` here, but if you don't have `apptainer`, you can simply
+replace that with `singularity`. The command line interfaces are the same (as of August 26, 2022).
 
 ```
-CUDA_VISIBLE_DEVICES=0 singularity run \
+apptainer pull docker://kaczmarj/patch-classification-pipeline
+```
+
+Run the pipeline in Apptainer.
+
+```
+CUDA_VISIBLE_DEVICES=0 apptainer run \
     --nv \
     --bind $(pwd) \
-    --bind /data10:/data10:ro \
-    cancer-detection_latest.sif \
-        --wsi_dir brca-samples/ \
-        --results_dir results \
+    --pwd $(pwd) \
+    patch-classification-pipeline_latest.sif \
+        --wsi_dir sample-images/ \
+        --results_dir results/ \
         --patch_size 350 \
         --um_px 0.25142857142 \
         --model resnet34 \
         --num_classes 2 \
         --weights weights/resnet34-brca.pt \
-        --num_workers 8
+        --num_workers 8 \
+        --classes notumor,tumor
 ```
 
 ## Run in a Docker container
+
+First, pull the Docker image.
+
+```
+docker pull kaczmarj/patch-classification-pipeline
+```
 
 This requires the program `nvidia-container-runtime-hook`. Please see the
 [Docker documentation](https://docs.docker.com/config/containers/resource_constraints/#gpu)
