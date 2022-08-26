@@ -1,3 +1,13 @@
+# Data
+scratch/
+*.csv
+*.h5
+*.jpg
+*.json
+*.png
+*.svs
+*.tif
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

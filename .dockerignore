@@ -1,7 +1,12 @@
-patch-results
-slides
-venv
-brca_models_cnn
+# Data
+scratch/
+*.csv
+*.h5
+*.jpg
+*.json
+*.png
+*.svs
+*.tif
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
