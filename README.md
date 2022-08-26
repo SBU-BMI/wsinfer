@@ -54,46 +54,79 @@ that this directory only contains whole slide images.
     cd ..
     ```
 
-3. Run the pipeline (without a container). This will apply the pipeline to all of the images in `sample-images/`
+## On "bare metal" (not inside a container)
+
+Run the pipeline (without a container). This will apply the pipeline to all of the images in `sample-images/`
 (only 1 in this example) and will write results to `results/`. `CUDA_VISIBLE_DEVICES=0`
 is set to use the first GPU listed in `nvidia-smi`. If you do not have a GPU, model
 inference can take about 20 minutes. (The patch spacing is == 88 um / 350 pixels.)
 
-    TODO: download model weights.
+TODO: download model weights.
 
-    ```
-    CUDA_VISIBLE_DEVICES=0 wsi_run \
+```
+CUDA_VISIBLE_DEVICES=0 wsi_run \
+    --wsi_dir sample-images/ \
+    --results_dir results/ \
+    --patch_size 350 \
+    --um_px 0.25142857142 \
+    --model resnet34 \
+    --num_classes 2 \
+    --weights resnet34-brca.pt \
+    --num_workers 8 \
+    --classes notumor,tumor
+```
+
+## Run in an Apptainer container (formerly Singularity)
+
+TODO: download container.
+
+```
+CUDA_VISIBLE_DEVICES=0 singularity run \
+    --nv \
+    --bind $(pwd) \
+    --bind /data10:/data10:ro \
+    cancer-detection_latest.sif \
+        --wsi_dir brca-samples/ \
+        --results_dir results \
+        --patch_size 350 \
+        --um_px 0.25142857142 \
+        --model resnet34 \
+        --num_classes 2 \
+        --weights resnet34-brca.pt \
+        --num_workers 8
+```
+
+## Run in a Docker container
+
+This requires the program `nvidia-container-runtime-hook`. Please see the
+[Docker documentation](https://docs.docker.com/config/containers/resource_constraints/#gpu)
+for more information. If you do not have a GPU installed, you can use CPU by removing
+`--gpus all` from the command below.
+
+We use `--user $(id -u):$(id -g)` to run the container as a non-root user (as ourself).
+This way, the output files are owned by us. Without specifying this option, the output
+files would be owned by the root user.
+
+Note: using `--num_workers > 0` will require a `--shm-size > 256mb`. If the shm size is
+too low, a "bus error" will be thrown.
+
+```
+docker run --rm -it \
+    --shm-size 512m \
+    --gpus all \
+    --user $(id -u):$(id -g) \
+    --mount type=bind,source=$(pwd),target=/work/ \
+    kaczmarj/patch-classification-pipeline \
         --wsi_dir sample-images/ \
         --results_dir results/ \
         --patch_size 350 \
         --um_px 0.25142857142 \
         --model resnet34 \
         --num_classes 2 \
-        --weights resnet34-brca.pt \
-        --num_workers 8 \
+        --weights weights/resnet34-brca.pt \
+        --num_workers 2 \
         --classes notumor,tumor
-    ```
-
-4. (Optional) Run the pipeline with a container. This is the same as the step above
-but will run the pipeline entirely in the project's container.
-
-    TODO: download container.
-
-    ```
-    CUDA_VISIBLE_DEVICES=0 singularity run \
-        --nv \
-        --bind $(pwd) \
-        --bind /data10:/data10:ro \
-        cancer-detection_latest.sif \
-            --wsi_dir brca-samples/ \
-            --results_dir results \
-            --patch_size 350 \
-            --um_px 0.25142857142 \
-            --model resnet34 \
-            --num_classes 2 \
-            --weights resnet34-brca.pt \
-            --num_workers 8
-    ```
+```
 
 ## Output
 
@@ -115,7 +148,7 @@ results/
 ## Convert to GeoJSON (for QuPath and other viewers)
 
 ```
-wsi_convert_to_geojson results/model-outputs/TCGA-foobar.csv TCGA-foobar.json
+wsi_convert_csv_to_geojson results/model-outputs/TCGA-foobar.csv TCGA-foobar.json
 ```
 
 
