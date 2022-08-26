@@ -5,7 +5,6 @@ From the original paper (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7369575/):
 > normalization of the color channels.
 """
 
-import argparse
 import pathlib
 import typing
 
@@ -142,10 +141,14 @@ def run_inference_on_slides(
     patch_size: int,
     batch_size: int = 64,
     num_workers: int = 0,
-    disable_progbar: bool = False,
     classes: typing.Optional[typing.Sequence[str]] = None,
 ) -> None:
-    """"""
+    """Apply a model to a set of whole slide images.
+
+    This differs from `run_inference` in that this function expects a sequence of
+    paths of whole slide images and patch coordinates. In addition, this function
+    expects a `torch.nn.Module` model.
+    """
 
     results_dir = pathlib.Path(results_dir)
     model_output_dir = results_dir / "model-outputs"
@@ -157,12 +160,14 @@ def run_inference_on_slides(
 
     transform = transforms.Compose(
         [
+            # TODO: consider how to customize the transform. Different models will
+            # require different types of transforms.
             transforms.Resize(
                 (patch_size, patch_size),
-                interpolation=transforms.InterpolationMode.BICUBIC,
+                interpolation=transforms.InterpolationMode.BILINEAR,
             ),
             transforms.ToTensor(),
-            # This is valid for
+            # TODO: this may have to be customized.
             transforms.Normalize(
                 mean=[0.7238, 0.5716, 0.6779],
                 std=[0.1120, 0.1459, 0.1089],
@@ -200,12 +205,14 @@ def run_inference_on_slides(
         # This lets us know where the probabiltiies map to in the slide.
         slide_coords: typing.List[np.ndarray] = []
         slide_probs: typing.List[np.ndarray] = []
-        for batch_imgs, batch_coords in tqdm.tqdm(loader, disable=disable_progbar):
+        for batch_imgs, batch_coords in tqdm.tqdm(loader):
             assert batch_imgs.shape[0] == batch_coords.shape[0], "length mismatch"
             with torch.no_grad():
                 logits: torch.Tensor = model(batch_imgs.to(device)).detach().cpu()
             # probs has shape (batch_size, num_classes)
             probs = torch.nn.functional.softmax(logits, dim=1)
+            if classes is not None and len(classes) != probs.shape[1]:
+                raise ValueError(f"classes must have length {probs.shape[1]}")
 
             slide_coords.append(batch_coords.numpy())
             slide_probs.append(probs.numpy())
@@ -228,57 +235,71 @@ def run_inference_on_slides(
     return
 
 
-def cli():
-    p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--wsi_dir", required=True, help="Path to input whole slide image.")
-    # TODO: add save_dir
-    p.add_argument(
-        "--results_dir",
-        required=True,
-        help="Path to directory with patch results.",
-    )
-    p.add_argument(
-        "--patch_size",
-        type=int,
-        required=True,
-        help=(
-            "Patch size for input to model in pixels at the desired spacing. The"
-            " same spacing is used as when patching was done."
-        ),
-    )
-    p.add_argument(
-        "--um_px",
-        type=float,
-        required=True,
-        help="Scaling for patches (in micrometer per pixel).",
-    )
-    p.add_argument("--model", type=str, required=True, help="Name of the model")
-    p.add_argument("--num_classes", type=int, required=True, help="Number of classes.")
-    p.add_argument("--weights", type=str, help="Path to state dict weights for model.")
-    p.add_argument("--batch_size", type=int, default=64)
-    p.add_argument("--classes", nargs="+", help="Names of the classes (in order)")
-    p.add_argument("--num_workers", type=int, default=0)
-    p.add_argument("--disable_progbar", action="store_true")
+def run_inference(
+    wsi_dir: PathType,
+    results_dir: PathType,
+    um_px: float,
+    model_name: str,
+    weights: PathType,
+    num_classes: int,
+    patch_size: int,
+    batch_size: int = 32,
+    num_workers: int = 0,
+    classes: typing.Optional[typing.Sequence[str]] = None,
+) -> None:
+    """Run model inference on a directory of whole slide images.
 
-    args = p.parse_args()
+    This assumes the patching has already been done and the results are stored in
+    `results_dir`.
 
-    args.wsi_dir = pathlib.Path(args.wsi_dir)
-    if not args.wsi_dir.exists():
-        raise FileNotFoundError(args.wsi_dir)
-    wsi_paths = list(args.wsi_dir.glob("*"))
+    Parameters
+    ----------
+    wsi_dir : str or pathlib.Path
+        Directory containing whole slide images. This directory can *only* contain
+        whole slide images. Otherwise, an error will be raised during model inference.
+    results_dir : str or pathlib.Path
+        Directory containing results of patching.
+    um_px : float
+        The spacing of each patch in micrometers per pixel. This is necessary because
+        the patch coordinates are stored at the highest resolution, and the `um_px`
+        value is used to resize the patches to their desired spacing.
+    model_name : str
+        Name of the model to create.
+    weights : str or pathlib.Path
+        Path to the weights for the model.
+    num_classes : int
+        The number of classes the model outputs.
+    patch_size : int
+        The width and height in pixels. This assumes the patch is square.
+    batch_size : int
+        The batch size during the forward pass (default is 32).
+    num_workers : int
+        Number of workers for data loading (default is 0, meaning use a single thread).
+    classes : list of str, optional
+        Names of the classes. This is used for the header of the saved CSV. The length
+        of this list must be equal to `num_classes`. For example: ["notumor", "tumor"].
+
+    Returns
+    -------
+    None
+    """
+    # Make sure required directories exist.
+    wsi_dir = pathlib.Path(wsi_dir)
+    if not wsi_dir.exists():
+        raise FileNotFoundError(f"directory not found: {wsi_dir}")
+    wsi_paths = list(wsi_dir.glob("*"))
     if not wsi_paths:
-        raise FileNotFoundError(f"no files found in {args.wsi_dir}")
-
-    args.results_dir = pathlib.Path(args.results_dir)
-    if not args.results_dir.exists():
-        raise FileNotFoundError(f"Results dir not found: {args.results_dir}")
-
-    if args.classes is not None:
-        if len(args.classes) != args.num_classes:
-            raise ValueError("length of --classes must be equal to --num_classes")
-
+        raise FileNotFoundError(f"no files found in {wsi_dir}")
+    results_dir = pathlib.Path(results_dir)
+    if not results_dir.exists():
+        raise FileNotFoundError(f"Results dir not found: {results_dir}")
+    if classes is not None:
+        if len(classes) != num_classes:
+            raise ValueError(
+                f"length of classes must be equal to num_classes={num_classes}"
+            )
     # Check patches directory.
-    patch_dir = args.results_dir / "patches"
+    patch_dir = results_dir / "patches"
     if not patch_dir.exists():
         raise FileNotFoundError("Results dir must include 'patches' dir")
     patch_paths = [patch_dir / p.with_suffix(".h5").name for p in wsi_paths]
@@ -288,21 +309,18 @@ def cli():
             f"could not find patch hdf5 files: {patch_paths_notfound}"
         )
 
-    print(patch_paths)
-
     model = models.create_model(
-        args.model, num_classes=args.num_classes, state_dict_path=args.weights
+        model_name, num_classes=num_classes, state_dict_path=weights
     )
 
-    run_inference_on_slides(
+    return run_inference_on_slides(
         wsi_paths=wsi_paths,
         patch_paths=patch_paths,
-        results_dir=args.results_dir,
-        um_px=args.um_px,
+        results_dir=results_dir,
+        um_px=um_px,
         model=model,
-        patch_size=args.patch_size,
-        batch_size=args.batch_size,
-        num_workers=args.num_workers,
-        disable_progbar=args.disable_progbar,
-        classes=args.classes,
+        patch_size=patch_size,
+        batch_size=batch_size,
+        num_workers=num_workers,
+        classes=classes,
     )
