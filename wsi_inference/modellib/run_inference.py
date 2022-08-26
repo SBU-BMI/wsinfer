@@ -241,7 +241,7 @@ def run_inference(
     results_dir: PathType,
     um_px: float,
     model_name: str,
-    weights: PathType,
+    weights: str,
     num_classes: int,
     patch_size: int,
     batch_size: int = 32,
@@ -266,8 +266,8 @@ def run_inference(
         value is used to resize the patches to their desired spacing.
     model_name : str
         Name of the model to create.
-    weights : str or pathlib.Path
-        Path to the weights for the model.
+    weights : str
+        Name of the weights to use.
     num_classes : int
         The number of classes the model outputs.
     patch_size : int
@@ -310,9 +310,7 @@ def run_inference(
             f"could not find patch hdf5 files: {patch_paths_notfound}"
         )
 
-    model = models.create_model(
-        model_name, num_classes=num_classes, state_dict_path=weights
-    )
+    model = models.create_model(model_name, num_classes=num_classes, weights=weights)
 
     return run_inference_on_slides(
         wsi_paths=wsi_paths,

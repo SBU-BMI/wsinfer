@@ -149,9 +149,10 @@ def _print_info() -> None:
 )
 @click.option(
     "--weights",
-    type=click.Path(exists=True, dir_okay=False, path_type=pathlib.Path),
-    required=True,
-    help="Path to a file containing weights of the model.",
+    type=str,
+    default="TCGA-BRCA-v1",
+    show_default=True,
+    help="Weights to use for the model.",
 )
 @click.option(
     "--batch_size",
@@ -182,7 +183,7 @@ def cli(
     um_px: float,
     model: str,
     num_classes: int,
-    weights: pathlib.Path,
+    weights: str,
     batch_size: int,
     classes: typing.Optional[str] = None,
     num_workers: int = 0,
@@ -203,7 +204,6 @@ def cli(
 
     wsi_dir = wsi_dir.resolve()
     results_dir = results_dir.resolve()
-    weights = weights.resolve()
 
     if not wsi_dir.exists():
         raise FileNotFoundError(f"Whole slide image directory not found: {wsi_dir}")
@@ -216,6 +216,9 @@ def cli(
     files_in_wsi_dir = [p for p in wsi_dir.glob("*") if p.exists()]
     if not files_in_wsi_dir:
         raise FileNotFoundError(f"no files exist in the slide directory: {wsi_dir}")
+
+    if weights != "TCGA-BRCA-v1":
+        raise ctx.fail("Only 'TCGA-BRCA-v1' weights are available at this time.")
 
     _print_info()
 
