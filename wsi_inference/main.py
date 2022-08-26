@@ -73,7 +73,14 @@ def _print_info() -> None:
     print("-----------")
     print(f"Timestamp: {_get_timestamp()}")
     print(f"{platform.platform()}")
-    print(f"User: {getpass.getuser()}")
+    try:
+        print(f"User: {getpass.getuser()}")
+    except KeyError:
+        # If /etc/passwd does not include the username of the current user ID, a
+        # KeyError is thrown. This could happen in a Docker image running as a different
+        # user with `--user $(id -u):$(id -g)` but that does not bind mount the
+        # /etc/passwd file.
+        print("User: UNKNOWN")
     print(f"Hostname: {platform.node()}")
     print(f"Working directory: {os.getcwd()}")
     print(f"In container: {_inside_container()}")
