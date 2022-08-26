@@ -10,6 +10,22 @@ Original H&E                        |  Heatmap of Tumor Probability
 
 Use the Docker / Singularity / Apptainer image, which includes all of the dependencies and scripts.
 
+- Apptainer / Singularity
+
+    Replace apptainer with singularity if you do not have apptainer
+
+    ```
+    apptainer pull docker://kaczmarj/patch-classification-pipeline
+    ```
+
+- Docker
+
+    ```
+    docker pull kaczmarj/patch-classification-pipeline
+    ```
+
+---
+
 Alternatively, install from GitHub. You will also have to install `torch` and
 `torchvision` (please see [the PyTorch documentation](https://pytorch.org/get-started/locally/)).
 We do not install these dependencies automatically because their installation can vary based
@@ -19,10 +35,9 @@ on a user's system.
 python -m pip install \
     --find-links https://girder.github.io/large_image_wheels \
     git+https://github.com/kaczmarj/patch-classification-pipeline.git
-
 ```
 
-TODO: download models.
+TODO: download pretrained weights.
 
 ## Developers
 
