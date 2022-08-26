@@ -5,7 +5,6 @@ import versioneer
 
 setup(
     name="wsi_inference",
-    version="0.1.0",
     packages=find_packages(),
     python_requires=">=3.6, <4",
     install_requires=[
