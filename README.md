@@ -8,6 +8,8 @@ Original H&E                        |  Heatmap of Tumor Probability
 
 # Installation
 
+## Containers
+
 Use the Docker / Singularity / Apptainer image, which includes all of the dependencies and scripts.
 
 - Apptainer / Singularity
@@ -24,7 +26,7 @@ Use the Docker / Singularity / Apptainer image, which includes all of the depend
     docker pull kaczmarj/patch-classification-pipeline
     ```
 
----
+## Without a container (using pip)
 
 Alternatively, install from GitHub. You will also have to install `torch` and
 `torchvision` (please see [the PyTorch documentation](https://pytorch.org/get-started/locally/)).
