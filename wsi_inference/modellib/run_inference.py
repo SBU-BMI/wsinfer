@@ -18,7 +18,6 @@ from PIL import Image
 # can vary based on platform and hardware.
 try:
     import torch
-    from torchvision import transforms
 except ImportError:
     raise ImportError(
         "Please install torch and torchvision: https://pytorch.org/get-started/locally/"
@@ -28,6 +27,18 @@ import tqdm
 from . import models
 
 PathType = typing.Union[str, pathlib.Path]
+
+
+class DifferentPatchSizeError(Exception):
+    ...
+
+
+class DifferentSpacingError(Exception):
+    ...
+
+
+class DifferentNumClassesError(Exception):
+    ...
 
 
 def _read_patch_coords(path: PathType) -> np.ndarray:
@@ -138,7 +149,7 @@ def run_inference_on_slides(
     results_dir: PathType,
     um_px: float,
     model: torch.nn.Module,
-    patch_size: int,
+    transform: typing.Callable[..., torch.Tensor],
     batch_size: int = 64,
     num_workers: int = 0,
     classes: typing.Optional[typing.Sequence[str]] = None,
@@ -158,25 +169,8 @@ def run_inference_on_slides(
     model.eval()
     model.to(device)
 
-    transform = transforms.Compose(
-        [
-            # TODO: consider how to customize the transform. Different models will
-            # require different types of transforms.
-            transforms.Resize(
-                (patch_size, patch_size),
-                interpolation=transforms.InterpolationMode.BILINEAR,
-            ),
-            transforms.ToTensor(),
-            # TODO: this may have to be customized.
-            transforms.Normalize(
-                mean=[0.7238, 0.5716, 0.6779],
-                std=[0.1120, 0.1459, 0.1089],
-            ),
-        ]
-    )
     # results_for_all_slides: typing.List[pd.DataFrame] = []
     for i, (wsi_path, patch_path) in enumerate(zip(wsi_paths, patch_paths)):
-        print("-" * 40)
         print(f"Slide {i+1} of {len(wsi_paths)}")
         print(f" Slide path: {wsi_path}")
         print(f" Patch path: {patch_path}")
@@ -233,6 +227,7 @@ def run_inference_on_slides(
         class_names = classes or [f"cls{i}" for i in range(num_classes)]
         slide_df.loc[:, class_names] = slide_probs_arr
         slide_df.to_csv(slide_csv, index=False)
+        print("-" * 40)
     return
 
 
@@ -260,6 +255,8 @@ def run_inference(
         whole slide images. Otherwise, an error will be raised during model inference.
     results_dir : str or pathlib.Path
         Directory containing results of patching.
+    patch_size : int
+        Size
     um_px : float
         The spacing of each patch in micrometers per pixel. This is necessary because
         the patch coordinates are stored at the highest resolution, and the `um_px`
@@ -310,15 +307,29 @@ def run_inference(
             f"could not find patch hdf5 files: {patch_paths_notfound}"
         )
 
-    model = models.create_model(model_name, num_classes=num_classes, weights=weights)
+    model, weights_obj = models.create_model(model_name, weights=weights)
 
-    return run_inference_on_slides(
+    if patch_size != weights_obj.patch_size_pixels:
+        raise DifferentPatchSizeError(
+            f"got {patch_size} px but model expects {weights_obj.patch_size_pixels} px"
+        )
+    if not np.allclose(um_px, weights_obj.spacing_um_px):
+        raise DifferentSpacingError(
+            f"got {um_px} um/px but model expects {weights_obj.spacing_um_px} um/px"
+        )
+
+    if num_classes != weights_obj.num_classes:
+        raise DifferentNumClassesError(
+            f"got {num_classes} classes but expected {weights_obj.num_classes} classes"
+        )
+
+    run_inference_on_slides(
         wsi_paths=wsi_paths,
         patch_paths=patch_paths,
         results_dir=results_dir,
         um_px=um_px,
         model=model,
-        patch_size=patch_size,
+        transform=weights_obj.transform,
         batch_size=batch_size,
         num_workers=num_workers,
         classes=classes,
