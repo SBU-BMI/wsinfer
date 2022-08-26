@@ -110,6 +110,9 @@ We use `--user $(id -u):$(id -g)` to run the container as a non-root user (as ou
 This way, the output files are owned by us. Without specifying this option, the output
 files would be owned by the root user.
 
+When mounting data, keep in mind that the workdir in the Docker container is `/work`
+(one can override this with `--workdir`). Relative paths must be relative to the workdir.
+
 Note: using `--num_workers > 0` will require a `--shm-size > 256mb`. If the shm size is
 too low, a "bus error" will be thrown.
 
