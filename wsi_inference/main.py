@@ -65,18 +65,17 @@ def _print_system_info() -> None:
     print(f"  CUDA version: {cuda_ver}")
     cuda_visible_devices = os.environ.get("CUDA_VISIBLE_DEVICES", "NOT SET")
     print(f"CUDA_VISIBLE_DEVICES: {cuda_visible_devices}")
-
     if torch.version.cuda is None:
         click.secho("\n*******************************************", fg="yellow")
         click.secho("GPU WILL NOT BE USED", fg="yellow")
         if torch.version.cuda is None:
-            click.secho("  CPU-only version of PyTorch is being used", fg="yellow")
+            click.secho("  CPU-only version of PyTorch", fg="yellow")
         click.secho("*******************************************", fg="yellow")
-    elif cuda_visible_devices == "NOT SET" or cuda_visible_devices == "":
+    elif not torch.cuda.is_available():
         click.secho("\n*******************************************", fg="yellow")
         click.secho("GPU WILL NOT BE USED", fg="yellow")
         if torch.version.cuda is None:
-            click.secho("  CUDA_VISIBLE_DEVICES empty or not set", fg="yellow")
+            click.secho("  CUDA DEVICES NOT AVAILABLE", fg="yellow")
         click.secho("*******************************************", fg="yellow")
 
 
