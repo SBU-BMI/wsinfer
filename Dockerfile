@@ -9,4 +9,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /work
 ENTRYPOINT ["wsi_run"]
+# Use a writable directory for downloading model weights. Default is ~/.cache, which is
+# not guaranteed to be writable in a Docker container.
+ENV TORCH_HOME=/tmp/torch
 LABEL maintainer="Jakub Kaczmarzyk <jakub.kaczmarzyk@stonybrookmedicine.edu>"
