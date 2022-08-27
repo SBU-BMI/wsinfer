@@ -63,11 +63,11 @@ def _print_system_info() -> None:
     print(f"  Torchvision version: {torchvision.__version__}")
     cuda_is_available = torch.cuda.is_available()
     if cuda_is_available:
-        print("CUDA is available: TRUE")
+        click.secho("GPU available", fg="green")
         cuda_ver = torch.version.cuda or "NOT FOUND"
         print(f"  CUDA version: {cuda_ver}")
     else:
-        print("CUDA is available: FALSE")
+        click.secho("GPU not available", bg="red", fg="black")
     cuda_visible_devices = os.environ.get("CUDA_VISIBLE_DEVICES", "NOT SET")
     print(f"CUDA_VISIBLE_DEVICES: {cuda_visible_devices}")
     if torch.version.cuda is None:
