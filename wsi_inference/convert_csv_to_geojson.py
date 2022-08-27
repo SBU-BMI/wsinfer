@@ -73,6 +73,7 @@ def cli(*, input: Path, output: Path):
     GeoJSON files can be used with pathology viewers like QuPath.
 
     INPUT       Path to input CSV
+
     OUTPUT      Path to output GeoJSON file (with .json extension)
     """
     click.echo(f"Reading CSV: {input}")
