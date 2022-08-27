@@ -20,7 +20,7 @@ def _box_to_polygon(
     return [(maxx, miny), (maxx, maxy), (minx, maxy), (minx, miny), (maxx, miny)]
 
 
-def _row_to_geojson(row: pd.Series) -> typing.Dict:
+def _row_to_geojson(row: pd.Series, class_name: str) -> typing.Dict:
     minx, miny, width, height = row["minx"], row["miny"], row["width"], row["height"]
     coords = _box_to_polygon(minx=minx, miny=miny, width=width, height=height)
     return {
@@ -32,23 +32,23 @@ def _row_to_geojson(row: pd.Series) -> typing.Dict:
         },
         "properties": {
             "isLocked": True,
-            "measurements": [{"name": "Probability", "value": row["cls1"]}],
+            "measurements": [{"name": "Probability", "value": row[class_name]}],
             "classification": {"name": "Tumor"},
         },
     }
 
 
-def _dataframe_to_geojson(df: pd.DataFrame) -> typing.Dict:
-    features = df.apply(_row_to_geojson, axis=1)
+def _dataframe_to_geojson(df: pd.DataFrame, class_name: str) -> typing.Dict:
+    features = df.apply(_row_to_geojson, axis=1, class_name=class_name)
     return {
         "type": "FeatureCollection",
         "features": features.tolist(),
     }
 
 
-def convert(input, output) -> None:
+def convert(input, output, class_name: str) -> None:
     df = pd.read_csv(input)
-    geojson = _dataframe_to_geojson(df)
+    geojson = _dataframe_to_geojson(df, class_name=class_name)
     with open(output, "w") as f:
         json.dump(geojson, f)
 
@@ -66,8 +66,9 @@ def _version() -> str:
     "output",
     type=click.Path(dir_okay=False, exists=False, writable=True, path_type=Path),
 )
+@click.option("--class-name", help="Name of the class to use for probability values.")
 @click.version_option(version=_version())
-def cli(*, input: Path, output: Path):
+def cli(*, input: Path, output: Path, class_name: str):
     """Convert CSV of patch predictions to a GeoJSON file.
 
     GeoJSON files can be used with pathology viewers like QuPath.
@@ -77,5 +78,5 @@ def cli(*, input: Path, output: Path):
     OUTPUT      Path to output GeoJSON file (with .json extension)
     """
     click.echo(f"Reading CSV: {input}")
-    convert(input=input, output=output)
+    convert(input=input, output=output, class_name=class_name)
     click.secho(f"Saved output to {output}", fg="green")
