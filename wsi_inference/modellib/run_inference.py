@@ -29,18 +29,6 @@ from . import models
 PathType = typing.Union[str, pathlib.Path]
 
 
-class DifferentPatchSizeError(Exception):
-    ...
-
-
-class DifferentSpacingError(Exception):
-    ...
-
-
-class DifferentNumClassesError(Exception):
-    ...
-
-
 def _read_patch_coords(path: PathType) -> np.ndarray:
     """Read HDF5 file of patch coordinates are return numpy array.
 
