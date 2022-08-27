@@ -197,7 +197,7 @@ def cli(
     print("---------")
     for key, value in ctx.params.items():
         print(f"{key} = {value}")
-    print("---------")
+    print("---------\n")
 
     # Get model before running the patching script because we need to get the necessary
     # spacing and patch size.
