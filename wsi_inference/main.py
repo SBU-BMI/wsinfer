@@ -11,7 +11,7 @@ import typing
 import click
 
 from .modellib.run_inference import run_inference
-from .modellib.models import list_models
+from .modellib import models
 
 PathType = typing.Union[str, pathlib.Path]
 
@@ -124,28 +124,10 @@ def _print_info() -> None:
     " whole slides for which outputs exist.",
 )
 @click.option(
-    "--patch_size",
-    type=click.IntRange(min=1),
-    required=True,
-    help="Size of square patch.",
-)
-@click.option(
-    "--um_px",
-    type=click.FloatRange(min=0.0),
-    required=True,
-    help="Spacing for patches (micrometers per pixel)",
-)
-@click.option(
     "--model",
-    type=click.Choice(list_models()),
+    type=click.Choice(models.list_models()),
     required=True,
     help="Model architecture to use.",
-)
-@click.option(
-    "--num_classes",
-    type=click.IntRange(min=1),
-    required=True,
-    help="The number of classes the model outputs.",
 )
 @click.option(
     "--weights",
@@ -174,10 +156,7 @@ def cli(
     *,
     wsi_dir: pathlib.Path,
     results_dir: pathlib.Path,
-    patch_size: int,
-    um_px: float,
     model: str,
-    num_classes: int,
     weights: str,
     batch_size: int,
     num_workers: int = 0,
@@ -191,8 +170,7 @@ def cli(
     Example:
 
     CUDA_VISIBLE_DEVICES=0 wsi_run --wsi_dir slides/ --results_dir results
-    --patch_size 350 --um_px 0.250 --model resnet34
-    --weights weights/resnet34.pt --num_classes 2 --batch_size 32 --num_workers 4
+    --model resnet34 --weights TCGA-BRCA-v1 --batch_size 32 --num_workers 4
     """
 
     wsi_dir = wsi_dir.resolve()
@@ -221,22 +199,23 @@ def cli(
         print(f"{key} = {value}")
     print("---------")
 
+    # Get model before running the patching script because we need to get the necessary
+    # spacing and patch size.
+    weights_obj = models.create_model(model, weights=weights)
+
     run_patching(
         slides_dir=wsi_dir,
         save_dir=results_dir,
-        patch_size=patch_size,
-        patch_spacing=um_px,
+        patch_size=weights_obj.patch_size_pixels,
+        patch_spacing=weights_obj.spacing_um_px,
     )
 
     click.secho("\nRunning model inference.\n", fg="green")
+
     run_inference(
         wsi_dir=wsi_dir,
         results_dir=results_dir,
-        patch_size=patch_size,
-        um_px=um_px,
-        model_name=model,
-        num_classes=num_classes,
-        weights=weights,
+        weights=weights_obj,
         batch_size=batch_size,
         num_workers=num_workers,
     )

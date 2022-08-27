@@ -234,14 +234,9 @@ def run_inference_on_slides(
 def run_inference(
     wsi_dir: PathType,
     results_dir: PathType,
-    um_px: float,
-    model_name: str,
-    weights: str,
-    num_classes: int,
-    patch_size: int,
+    weights: models.Weights,
     batch_size: int = 32,
     num_workers: int = 0,
-    class_names: typing.Optional[typing.List[str]] = None,
 ) -> None:
     """Run model inference on a directory of whole slide images.
 
@@ -255,20 +250,6 @@ def run_inference(
         whole slide images. Otherwise, an error will be raised during model inference.
     results_dir : str or pathlib.Path
         Directory containing results of patching.
-    patch_size : int
-        Size
-    um_px : float
-        The spacing of each patch in micrometers per pixel. This is necessary because
-        the patch coordinates are stored at the highest resolution, and the `um_px`
-        value is used to resize the patches to their desired spacing.
-    model_name : str
-        Name of the model to create.
-    weights : str
-        Name of the weights to use.
-    num_classes : int
-        The number of classes the model outputs.
-    patch_size : int
-        The width and height in pixels. This assumes the patch is square.
     batch_size : int
         The batch size during the forward pass (default is 32).
     num_workers : int
@@ -291,11 +272,7 @@ def run_inference(
     results_dir = pathlib.Path(results_dir)
     if not results_dir.exists():
         raise FileNotFoundError(f"Results dir not found: {results_dir}")
-    if class_names is not None:
-        if len(class_names) != num_classes:
-            raise ValueError(
-                f"length of classes must be equal to num_classes={num_classes}"
-            )
+
     # Check patches directory.
     patch_dir = results_dir / "patches"
     if not patch_dir.exists():
@@ -307,33 +284,17 @@ def run_inference(
             f"could not find patch hdf5 files: {patch_paths_notfound}"
         )
 
-    weights_obj = models.create_model(model_name, weights=weights)
-
-    if patch_size != weights_obj.patch_size_pixels:
-        raise DifferentPatchSizeError(
-            f"got {patch_size} px but model expects {weights_obj.patch_size_pixels} px"
-        )
-    if not np.allclose(um_px, weights_obj.spacing_um_px):
-        raise DifferentSpacingError(
-            f"got {um_px} um/px but model expects {weights_obj.spacing_um_px} um/px"
-        )
-
-    if num_classes != weights_obj.num_classes:
-        raise DifferentNumClassesError(
-            f"got {num_classes} classes but expected {weights_obj.num_classes} classes"
-        )
-
-    if weights_obj.model is None:
-        raise RuntimeError("we should never get here... contact dev")
+    if weights.model is None:
+        raise RuntimeError("model cannot be None in the weights object")
 
     run_inference_on_slides(
         wsi_paths=wsi_paths,
         patch_paths=patch_paths,
         results_dir=results_dir,
-        um_px=um_px,
-        model=weights_obj.model,
-        transform=weights_obj.transform,
+        um_px=weights.spacing_um_px,
+        model=weights.model,
+        transform=weights.transform,
         batch_size=batch_size,
         num_workers=num_workers,
-        class_names=weights_obj.class_names,
+        class_names=weights.class_names,
     )
