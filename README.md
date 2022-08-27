@@ -174,7 +174,7 @@ are a type of geometric data structure. Popular whole slide image viewers like Q
 are able to load labels in GeoJSON format.
 
 ```
-wsi_convert_csv_to_geojson results/model-outputs/CMU-1.csv CMU-1.json
+wsi_convert_csv_to_geojson --class-name tumor results/model-outputs/CMU-1.csv CMU-1.json
 ```
 
 
