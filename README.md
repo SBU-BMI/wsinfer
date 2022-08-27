@@ -39,8 +39,6 @@ python -m pip install \
     git+https://github.com/kaczmarj/patch-classification-pipeline.git
 ```
 
-TODO: download pretrained weights.
-
 ## Developers
 
 Clone this GitHub repository and install the package (in editable mode with the `dev` extras).
@@ -81,19 +79,13 @@ images in `sample-images/` (only 1 in this example) and will write results to
 `nvidia-smi`. If you do not have a GPU, model inference can take about 20 minutes.
 (The patch spacing is == 88 um / 350 pixels.)
 
-TODO: download model weights.
-
 ```
 CUDA_VISIBLE_DEVICES=0 wsi_run \
     --wsi_dir sample-images/ \
     --results_dir results/ \
-    --patch_size 350 \
-    --um_px 0.25142857142 \
     --model resnet34 \
-    --num_classes 2 \
-    --weights resnet34-brca.pt \
-    --num_workers 8 \
-    --classes notumor,tumor
+    --weights TCGA-BRCA-v1 \
+    --num_workers 8
 ```
 
 ## Run in an Apptainer container (formerly Singularity)
@@ -115,13 +107,9 @@ CUDA_VISIBLE_DEVICES=0 apptainer run \
     patch-classification-pipeline_latest.sif \
         --wsi_dir sample-images/ \
         --results_dir results/ \
-        --patch_size 350 \
-        --um_px 0.25142857142 \
         --model resnet34 \
-        --num_classes 2 \
-        --weights weights/resnet34-brca.pt \
-        --num_workers 8 \
-        --classes notumor,tumor
+        --weights TCGA-BRCA-v1 \
+        --num_workers 8
 ```
 
 ## Run in a Docker container
@@ -132,7 +120,7 @@ First, pull the Docker image.
 docker pull kaczmarj/patch-classification-pipeline
 ```
 
-This requires the program Docker `>=19.03` and `nvidia-container-runtime-hook`. Please see the
+This requires Docker `>=19.03` and the program `nvidia-container-runtime-hook`. Please see the
 [Docker documentation](https://docs.docker.com/config/containers/resource_constraints/#gpu)
 for more information. If you do not have a GPU installed, you can use CPU by removing
 `--gpus all` from the command below.
@@ -157,13 +145,9 @@ docker run --rm -it \
     kaczmarj/patch-classification-pipeline \
         --wsi_dir sample-images/ \
         --results_dir results/ \
-        --patch_size 350 \
-        --um_px 0.25142857142 \
         --model resnet34 \
-        --num_classes 2 \
-        --weights weights/resnet34-brca.pt \
-        --num_workers 2 \
-        --classes notumor,tumor
+        --weights TCGA-BRCA-v1 \
+        --num_workers 2
 ```
 
 ## Output
@@ -190,7 +174,7 @@ are a type of geometric data structure. Popular whole slide image viewers like Q
 are able to load labels in GeoJSON format.
 
 ```
-wsi_convert_csv_to_geojson results/model-outputs/CMU-1.csv CMU-1.json
+wsi_convert_csv_to_geojson --class-name tumor results/model-outputs/CMU-1.csv CMU-1.json
 ```
 
 

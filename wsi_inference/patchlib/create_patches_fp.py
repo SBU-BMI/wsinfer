@@ -235,9 +235,8 @@ def seg_and_patch(
         w, h = WSI_object.level_dim[current_seg_params["seg_level"]]
         if w * h > 1e8:
             print(
-                "level_dim {} x {} is likely too large for successful segmentation, aborting".format(
-                    w, h
-                )
+                "level_dim {} x {} is likely too large for successful segmentation,"
+                " aborting".format(w, h)
             )
             df.loc[idx, "status"] = "failed_seg"
             continue
@@ -325,71 +324,37 @@ def seg_and_patch(
     return seg_times, patch_times
 
 
-parser = argparse.ArgumentParser(description="seg and patch")
-parser.add_argument(
-    "--source",
-    type=str,
-    required=True,
-    help="path to folder containing raw wsi image files",
-)
-parser.add_argument("--step_size", type=int, default=None, help="step_size")
-parser.add_argument("--patch_size", type=int, required=True, help="patch_size")
-parser.add_argument("--patch", default=False, action="store_true")
-parser.add_argument("--seg", default=False, action="store_true")
-parser.add_argument("--stitch", default=False, action="store_true")
-parser.add_argument("--no_auto_skip", default=True, action="store_false")
-parser.add_argument(
-    "--save_dir", type=str, required=True, help="directory to save processed data"
-)
-parser.add_argument(
-    "--preset",
-    default=None,
-    type=str,
-    help="predefined profile of default segmentation and filter parameters (.csv)",
-)
-# parser.add_argument(
-#     "--patch_level", type=int, default=0, help="downsample level at which to patch"
-# )
-parser.add_argument(
-    "--process_list",
-    type=str,
-    default=None,
-    help="name of list of images to process with parameters (.csv)",
-)
-parser.add_argument(
-    "--patch_spacing",
-    type=float,
-    required=True,
-    help="Patch spacing in micrometers per pixel.",
-)
+def create_patches(
+    source: str,
+    patch_size: int,
+    patch_spacing: float,
+    save_dir: str,
+    step_size: int = None,
+    patch: bool = True,
+    seg: bool = True,
+    stitch: bool = True,
+    no_auto_skip: bool = True,
+    preset=None,
+    process_list=None,
+):
+    patch_save_dir = os.path.join(save_dir, "patches")
+    mask_save_dir = os.path.join(save_dir, "masks")
+    stitch_save_dir = os.path.join(save_dir, "stitches")
 
-
-def cli():
-    print("create_patches_fp.py  Copyright (C) 2022  Mahmood Lab")
-    print("This program comes with ABSOLUTELY NO WARRANTY.")
-    print("This is free software, and you are welcome to redistribute it")
-    print("under certain conditions.")
-
-    args = parser.parse_args()
-
-    patch_save_dir = os.path.join(args.save_dir, "patches")
-    mask_save_dir = os.path.join(args.save_dir, "masks")
-    stitch_save_dir = os.path.join(args.save_dir, "stitches")
-
-    if args.process_list:
-        process_list = os.path.join(args.save_dir, args.process_list)
+    if process_list:
+        process_list = os.path.join(save_dir, process_list)
 
     else:
         process_list = None
 
-    print("source: ", args.source)
+    print("source: ", source)
     print("patch_save_dir: ", patch_save_dir)
     print("mask_save_dir: ", mask_save_dir)
     print("stitch_save_dir: ", stitch_save_dir)
 
     directories = {
-        "source": args.source,
-        "save_dir": args.save_dir,
+        "source": source,
+        "save_dir": save_dir,
         "patch_save_dir": patch_save_dir,
         "mask_save_dir": mask_save_dir,
         "stitch_save_dir": stitch_save_dir,
@@ -413,8 +378,8 @@ def cli():
     vis_params = {"vis_level": -1, "line_thickness": 250}
     patch_params = {"use_padding": True, "contour_fn": "four_pt"}
 
-    if args.preset:
-        preset_df = pd.read_csv(_script_path / "presets" / args.preset)
+    if preset:
+        preset_df = pd.read_csv(_script_path / "presets" / preset)
         for key in seg_params.keys():
             seg_params[key] = preset_df.loc[0, key]
 
@@ -439,15 +404,73 @@ def cli():
     seg_and_patch(
         **directories,
         **parameters,
-        patch_size=args.patch_size,
-        step_size=args.step_size,
-        seg=args.seg,
+        patch_size=patch_size,
+        step_size=step_size,
+        seg=seg,
         use_default_params=False,
         save_mask=True,
-        stitch=args.stitch,
+        stitch=stitch,
         patch_level=0,  # args.patch_level,
-        patch=args.patch,
+        patch=patch,
         process_list=process_list,
-        auto_skip=args.no_auto_skip,
+        auto_skip=no_auto_skip,
+        patch_spacing=patch_spacing,
+    )
+
+
+def cli():
+    print("create_patches_fp.py  Copyright (C) 2022  Mahmood Lab")
+    print("This program comes with ABSOLUTELY NO WARRANTY.")
+    print("This is free software, and you are welcome to redistribute it")
+    print("under certain conditions.")
+
+    parser = argparse.ArgumentParser(description="seg and patch")
+    parser.add_argument(
+        "--source",
+        type=str,
+        required=True,
+        help="path to folder containing raw wsi image files",
+    )
+    parser.add_argument("--step_size", type=int, default=None, help="step_size")
+    parser.add_argument("--patch_size", type=int, required=True, help="patch_size")
+    parser.add_argument("--patch", default=False, action="store_true")
+    parser.add_argument("--seg", default=False, action="store_true")
+    parser.add_argument("--stitch", default=False, action="store_true")
+    parser.add_argument("--no_auto_skip", default=True, action="store_false")
+    parser.add_argument(
+        "--save_dir", type=str, required=True, help="directory to save processed data"
+    )
+    parser.add_argument(
+        "--preset",
+        default=None,
+        type=str,
+        help="predefined profile of default segmentation and filter parameters (.csv)",
+    )
+    parser.add_argument(
+        "--process_list",
+        type=str,
+        default=None,
+        help="name of list of images to process with parameters (.csv)",
+    )
+    parser.add_argument(
+        "--patch_spacing",
+        type=float,
+        required=True,
+        help="Patch spacing in micrometers per pixel.",
+    )
+
+    args = parser.parse_args()
+
+    create_patches(
+        source=args.source,
+        step_size=args.step_size,
+        patch_size=args.patch_size,
         patch_spacing=args.patch_spacing,
+        save_dir=args.save_dir,
+        patch=args.patch,
+        seg=args.seg,
+        stitch=args.stitch,
+        no_auto_skip=args.no_auto_skip,
+        preset=args.preset,
+        process_list=args.process_list,
     )

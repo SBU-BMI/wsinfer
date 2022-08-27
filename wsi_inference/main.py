@@ -4,43 +4,16 @@ import getpass
 import os
 import pathlib
 import platform
-import subprocess
 import sys
 import typing
 
 import click
 
 from .modellib.run_inference import run_inference
-from .modellib.models import list_models
+from .modellib import models
+from .patchlib.create_patches_fp import create_patches
 
 PathType = typing.Union[str, pathlib.Path]
-
-
-def run_patching(
-    slides_dir: PathType, save_dir: PathType, patch_size: int, patch_spacing: float
-) -> subprocess.CompletedProcess:
-    args = [
-        # This command is created when installing this package.
-        "wsi_create_patches",
-        "--source",
-        str(slides_dir),
-        "--save_dir",
-        str(save_dir),
-        "--patch_size",
-        str(patch_size),
-        "--patch_spacing",
-        str(patch_spacing),
-        "--seg",
-        "--patch",
-        "--stitch",
-        "--preset",
-        # Consider customizing this...
-        "tcga.csv",
-    ]
-    click.secho("\nRunning the patching script.\n", fg="green")
-    print(" ".join(args), "\n", flush=True)
-    proc = subprocess.run(args, stdout=sys.stdout, stderr=sys.stderr, check=True)
-    return proc
 
 
 def _inside_container() -> str:
@@ -60,7 +33,7 @@ def _get_timestamp() -> str:
     return dt.strftime("%c %Z")
 
 
-def _print_info() -> None:
+def _print_system_info() -> None:
     """Print information about the system."""
     import torch
     import torchvision
@@ -69,8 +42,8 @@ def _print_info() -> None:
     click.secho(f"\nRunning wsi_inference version {__version__}", fg="green")
     print("\nIf you run into issues, please submit a new issue at")
     print("https://github.com/kaczmarj/patch-classification-pipeline/issues/new")
-    print("\nInformation")
-    print("-----------")
+    print("\nSystem information")
+    print("------------------")
     print(f"Timestamp: {_get_timestamp()}")
     print(f"{platform.platform()}")
     try:
@@ -88,22 +61,26 @@ def _print_info() -> None:
     print(f"Python version: {platform.python_version()}")
     print(f"  Torch version: {torch.__version__}")
     print(f"  Torchvision version: {torchvision.__version__}")
-    cuda_ver = torch.version.cuda or "NOT FOUND"
-    print(f"  CUDA version: {cuda_ver}")
+    cuda_is_available = torch.cuda.is_available()
+    if cuda_is_available:
+        click.secho("GPU available", fg="green")
+        cuda_ver = torch.version.cuda or "NOT FOUND"
+        print(f"  CUDA version: {cuda_ver}")
+    else:
+        click.secho("GPU not available", bg="red", fg="black")
     cuda_visible_devices = os.environ.get("CUDA_VISIBLE_DEVICES", "NOT SET")
     print(f"CUDA_VISIBLE_DEVICES: {cuda_visible_devices}")
-
     if torch.version.cuda is None:
         click.secho("\n*******************************************", fg="yellow")
         click.secho("GPU WILL NOT BE USED", fg="yellow")
         if torch.version.cuda is None:
-            click.secho("  CPU-only version of PyTorch is being used", fg="yellow")
+            click.secho("  CPU-only version of PyTorch", fg="yellow")
         click.secho("*******************************************", fg="yellow")
-    elif cuda_visible_devices == "NOT SET" or cuda_visible_devices == "":
+    elif not torch.cuda.is_available():
         click.secho("\n*******************************************", fg="yellow")
         click.secho("GPU WILL NOT BE USED", fg="yellow")
         if torch.version.cuda is None:
-            click.secho("  CUDA_VISIBLE_DEVICES empty or not set", fg="yellow")
+            click.secho("  CUDA DEVICES NOT AVAILABLE", fg="yellow")
         click.secho("*******************************************", fg="yellow")
 
 
@@ -111,47 +88,32 @@ def _print_info() -> None:
 @click.pass_context
 @click.option(
     "--wsi_dir",
-    type=click.Path(exists=True, file_okay=False, path_type=pathlib.Path),
+    type=click.Path(
+        exists=True, file_okay=False, path_type=pathlib.Path, resolve_path=True
+    ),
     required=True,
     help="Directory containing whole slide images. This directory can *only* contain"
     " whole slide images.",
 )
 @click.option(
     "--results_dir",
-    type=click.Path(file_okay=False, path_type=pathlib.Path),
+    type=click.Path(file_okay=False, path_type=pathlib.Path, resolve_path=True),
     required=True,
     help="Directory to store results. If directory exists, will skip"
     " whole slides for which outputs exist.",
 )
 @click.option(
-    "--patch_size",
-    type=click.IntRange(min=1),
-    required=True,
-    help="Size of square patch.",
-)
-@click.option(
-    "--um_px",
-    type=click.FloatRange(min=0.0),
-    required=True,
-    help="Spacing for patches (micrometers per pixel)",
-)
-@click.option(
     "--model",
-    type=click.Choice(list_models()),
+    type=click.Choice(models.list_models()),
     required=True,
     help="Model architecture to use.",
 )
 @click.option(
-    "--num_classes",
-    type=click.IntRange(min=1),
-    required=True,
-    help="The number of classes the model outputs.",
-)
-@click.option(
     "--weights",
-    type=click.Path(exists=True, dir_okay=False, path_type=pathlib.Path),
-    required=True,
-    help="Path to a file containing weights of the model.",
+    type=str,
+    default="TCGA-BRCA-v1",
+    show_default=True,
+    help="Weights to use for the model.",
 )
 @click.option(
     "--batch_size",
@@ -159,11 +121,6 @@ def _print_info() -> None:
     default=32,
     show_default=True,
     help="Batch size during model inference.",
-)
-@click.option(
-    "--classes",
-    help="Names of the output classes (used in the header of the saved CSV file."
-    " Separate names with commas ('notumor,tumor').'",
 )
 @click.option(
     "--num_workers",
@@ -178,13 +135,9 @@ def cli(
     *,
     wsi_dir: pathlib.Path,
     results_dir: pathlib.Path,
-    patch_size: int,
-    um_px: float,
     model: str,
-    num_classes: int,
-    weights: pathlib.Path,
+    weights: str,
     batch_size: int,
-    classes: typing.Optional[str] = None,
     num_workers: int = 0,
 ):
     """Run model inference on a directory of whole slide images (WSI).
@@ -196,14 +149,11 @@ def cli(
     Example:
 
     CUDA_VISIBLE_DEVICES=0 wsi_run --wsi_dir slides/ --results_dir results
-    --patch_size 350 --um_px 0.250 --model resnet34
-    --weights weights/resnet34.pt --num_classes 2 --batch_size 32
-    --classes notumor,tumor --num_workers 4
+    --model resnet34 --weights TCGA-BRCA-v1 --batch_size 32 --num_workers 4
     """
 
     wsi_dir = wsi_dir.resolve()
     results_dir = results_dir.resolve()
-    weights = weights.resolve()
 
     if not wsi_dir.exists():
         raise FileNotFoundError(f"Whole slide image directory not found: {wsi_dir}")
@@ -217,41 +167,39 @@ def cli(
     if not files_in_wsi_dir:
         raise FileNotFoundError(f"no files exist in the slide directory: {wsi_dir}")
 
-    _print_info()
+    if weights != "TCGA-BRCA-v1":
+        raise ctx.fail("Only 'TCGA-BRCA-v1' weights are available at this time.")
 
-    print("\nArguments")
-    print("---------")
+    _print_system_info()
+
+    print("\nCommand line arguments")
+    print("----------------------")
     for key, value in ctx.params.items():
         print(f"{key} = {value}")
-    print("---------")
+    print("----------------------\n")
 
-    run_patching(
-        slides_dir=wsi_dir,
-        save_dir=results_dir,
-        patch_size=patch_size,
-        patch_spacing=um_px,
+    # Get model before running the patching script because we need to get the necessary
+    # spacing and patch size.
+    weights_obj = models.create_model(model, weights=weights)
+
+    click.secho("\nFinding patch coordinates...\n", fg="green")
+    create_patches(
+        source=str(wsi_dir),
+        save_dir=str(results_dir),
+        patch_size=weights_obj.patch_size_pixels,
+        patch_spacing=weights_obj.spacing_um_px,
+        seg=True,
+        patch=True,
+        preset="tcga.csv",
     )
-
-    classes_list = None
-    if classes is not None:
-        classes_list = classes.split(",")
-        if len(classes_list) != num_classes:
-            raise ValueError(f"classes should have length == {num_classes}")
 
     click.secho("\nRunning model inference.\n", fg="green")
     run_inference(
         wsi_dir=wsi_dir,
         results_dir=results_dir,
-        patch_size=patch_size,
-        um_px=um_px,
-        model_name=model,
-        num_classes=num_classes,
-        weights=weights,
+        weights=weights_obj,
         batch_size=batch_size,
         num_workers=num_workers,
-        classes=classes_list,
     )
 
     click.secho("Finished.", fg="green")
-
-    return
