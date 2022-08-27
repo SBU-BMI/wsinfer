@@ -87,13 +87,9 @@ TODO: download model weights.
 CUDA_VISIBLE_DEVICES=0 wsi_run \
     --wsi_dir sample-images/ \
     --results_dir results/ \
-    --patch_size 350 \
-    --um_px 0.25142857142 \
     --model resnet34 \
-    --num_classes 2 \
-    --weights resnet34-brca.pt \
-    --num_workers 8 \
-    --classes notumor,tumor
+    --weights TCGA-BRCA-v1 \
+    --num_workers 8
 ```
 
 ## Run in an Apptainer container (formerly Singularity)
@@ -115,13 +111,9 @@ CUDA_VISIBLE_DEVICES=0 apptainer run \
     patch-classification-pipeline_latest.sif \
         --wsi_dir sample-images/ \
         --results_dir results/ \
-        --patch_size 350 \
-        --um_px 0.25142857142 \
         --model resnet34 \
-        --num_classes 2 \
-        --weights weights/resnet34-brca.pt \
-        --num_workers 8 \
-        --classes notumor,tumor
+        --weights TCGA-BRCA-v1 \
+        --num_workers 8
 ```
 
 ## Run in a Docker container
@@ -157,13 +149,9 @@ docker run --rm -it \
     kaczmarj/patch-classification-pipeline \
         --wsi_dir sample-images/ \
         --results_dir results/ \
-        --patch_size 350 \
-        --um_px 0.25142857142 \
         --model resnet34 \
-        --num_classes 2 \
-        --weights weights/resnet34-brca.pt \
-        --num_workers 2 \
-        --classes notumor,tumor
+        --weights TCGA-BRCA-v1 \
+        --num_workers 2
 ```
 
 ## Output
