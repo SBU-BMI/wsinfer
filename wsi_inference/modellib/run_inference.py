@@ -29,6 +29,26 @@ from . import models
 PathType = typing.Union[str, pathlib.Path]
 
 
+class WholeSlideImageDirectoryNotFound(FileNotFoundError):
+    ...
+
+
+class WholeSlideImagesNotFound(FileNotFoundError):
+    ...
+
+
+class ResultsDirectoryNotFound(FileNotFoundError):
+    ...
+
+
+class PatchDirectoryNotFound(FileNotFoundError):
+    ...
+
+
+class PatchFilesNotFound(FileNotFoundError):
+    ...
+
+
 def _read_patch_coords(path: PathType) -> np.ndarray:
     """Read HDF5 file of patch coordinates are return numpy array.
 
@@ -130,28 +150,70 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
         return patch_im, torch.as_tensor([minx, miny, width, height])
 
 
-def run_inference_on_slides(
-    *,
-    wsi_paths: typing.Sequence[PathType],
-    patch_paths: typing.Sequence[PathType],
+def run_inference(
+    wsi_dir: PathType,
     results_dir: PathType,
-    um_px: float,
-    model: torch.nn.Module,
-    transform: typing.Callable[..., torch.Tensor],
-    batch_size: int = 64,
+    weights: models.Weights,
+    batch_size: int = 32,
     num_workers: int = 0,
-    class_names: typing.Optional[typing.Sequence[str]] = None,
 ) -> None:
-    """Apply a model to a set of whole slide images.
+    """Run model inference on a directory of whole slide images and save results to CSV.
 
-    This differs from `run_inference` in that this function expects a sequence of
-    paths of whole slide images and patch coordinates. In addition, this function
-    expects a `torch.nn.Module` model.
+    This assumes the patching has already been done and the results are stored in
+    `results_dir`. An error will be raised otherwise.
+
+    Output CSV files are written to `{results_dir}/model-outputs/`.
+
+    Parameters
+    ----------
+    wsi_dir : str or pathlib.Path
+        Directory containing whole slide images. This directory can *only* contain
+        whole slide images. Otherwise, an error will be raised during model inference.
+    results_dir : str or pathlib.Path
+        Directory containing results of patching.
+    weights : wsi_inference.modellib.models.Weights
+        Instance of Weights including the model object and information about how to
+        apply the model to new data.
+    batch_size : int
+        The batch size during the forward pass (default is 32).
+    num_workers : int
+        Number of workers for data loading (default is 0, meaning use a single thread).
+
+    Returns
+    -------
+    None
     """
-
+    # Make sure required directories exist.
+    wsi_dir = pathlib.Path(wsi_dir)
+    if not wsi_dir.exists():
+        raise WholeSlideImageDirectoryNotFound(f"directory not found: {wsi_dir}")
+    wsi_paths = list(wsi_dir.glob("*"))
+    if not wsi_paths:
+        raise WholeSlideImagesNotFound(wsi_dir)
     results_dir = pathlib.Path(results_dir)
+    if not results_dir.exists():
+        raise ResultsDirectoryNotFound(results_dir)
+
+    # Check patches directory.
+    patch_dir = results_dir / "patches"
+    if not patch_dir.exists():
+        raise PatchDirectoryNotFound("Results dir must include 'patches' dir")
+    # Create the patch paths based on the whole slide image paths. In effect, only
+    # create patch paths if the whole slide image patch exists.
+    patch_paths = [patch_dir / p.with_suffix(".h5").name for p in wsi_paths]
+    patch_paths_notfound = [p for p in patch_paths if not p.exists()]
+    if patch_paths_notfound:
+        raise PatchFilesNotFound(patch_paths_notfound)
+
+    if weights.model is None:
+        raise RuntimeError("model cannot be None in the weights object")
+
     model_output_dir = results_dir / "model-outputs"
     model_output_dir.mkdir(exist_ok=True)
+
+    model = weights.model
+    if model is None:
+        raise ValueError("Model was not instantiated... use `create_model`.")
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model.eval()
@@ -173,8 +235,8 @@ def run_inference_on_slides(
         dset = WholeSlideImagePatches(
             wsi_path=wsi_path,
             patch_path=patch_path,
-            um_px=um_px,
-            transform=transform,
+            um_px=weights.spacing_um_px,
+            transform=weights.transform,
         )
 
         loader = torch.utils.data.DataLoader(
@@ -194,8 +256,6 @@ def run_inference_on_slides(
                 logits: torch.Tensor = model(batch_imgs.to(device)).detach().cpu()
             # probs has shape (batch_size, num_classes)
             probs = torch.nn.functional.softmax(logits, dim=1)
-            if class_names is not None and len(class_names) != probs.shape[1]:
-                raise ValueError(f"classes must have length {probs.shape[1]}")
 
             slide_coords.append(batch_coords.numpy())
             slide_probs.append(probs.numpy())
@@ -211,78 +271,8 @@ def run_inference_on_slides(
             )
         )
         slide_probs_arr = np.concatenate(slide_probs, axis=0)
-        num_classes = slide_probs_arr.shape[1]
-        class_names = class_names or [f"cls{i}" for i in range(num_classes)]
-        slide_df.loc[:, class_names] = slide_probs_arr
+        slide_df.loc[:, weights.class_names] = slide_probs_arr
         slide_df.to_csv(slide_csv, index=False)
         print("-" * 40)
+
     return
-
-
-def run_inference(
-    wsi_dir: PathType,
-    results_dir: PathType,
-    weights: models.Weights,
-    batch_size: int = 32,
-    num_workers: int = 0,
-) -> None:
-    """Run model inference on a directory of whole slide images.
-
-    This assumes the patching has already been done and the results are stored in
-    `results_dir`.
-
-    Parameters
-    ----------
-    wsi_dir : str or pathlib.Path
-        Directory containing whole slide images. This directory can *only* contain
-        whole slide images. Otherwise, an error will be raised during model inference.
-    results_dir : str or pathlib.Path
-        Directory containing results of patching.
-    batch_size : int
-        The batch size during the forward pass (default is 32).
-    num_workers : int
-        Number of workers for data loading (default is 0, meaning use a single thread).
-    classes_names : list of str, optional
-        Names of the classes. This is used for the header of the saved CSV. The length
-        of this list must be equal to `num_classes`. For example: ["notumor", "tumor"].
-
-    Returns
-    -------
-    None
-    """
-    # Make sure required directories exist.
-    wsi_dir = pathlib.Path(wsi_dir)
-    if not wsi_dir.exists():
-        raise FileNotFoundError(f"directory not found: {wsi_dir}")
-    wsi_paths = list(wsi_dir.glob("*"))
-    if not wsi_paths:
-        raise FileNotFoundError(f"no files found in {wsi_dir}")
-    results_dir = pathlib.Path(results_dir)
-    if not results_dir.exists():
-        raise FileNotFoundError(f"Results dir not found: {results_dir}")
-
-    # Check patches directory.
-    patch_dir = results_dir / "patches"
-    if not patch_dir.exists():
-        raise FileNotFoundError("Results dir must include 'patches' dir")
-    patch_paths = [patch_dir / p.with_suffix(".h5").name for p in wsi_paths]
-    patch_paths_notfound = [p for p in patch_paths if not p.exists()]
-    if patch_paths_notfound:
-        raise FileNotFoundError(
-            f"could not find patch hdf5 files: {patch_paths_notfound}"
-        )
-
-    if weights.model is None:
-        raise RuntimeError("model cannot be None in the weights object")
-
-    run_inference_on_slides(
-        wsi_paths=wsi_paths,
-        patch_paths=patch_paths,
-        results_dir=results_dir,
-        um_px=weights.spacing_um_px,
-        model=weights.model,
-        transform=weights.transform,
-        batch_size=batch_size,
-        num_workers=num_workers,
-        class_names=weights.class_names,
-    )
