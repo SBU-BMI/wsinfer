@@ -326,10 +326,10 @@ def seg_and_patch(
 
 def create_patches(
     source: str,
-    step_size: int,
     patch_size: int,
     patch_spacing: float,
     save_dir: str,
+    step_size: int = None,
     patch: bool = True,
     seg: bool = True,
     stitch: bool = True,
