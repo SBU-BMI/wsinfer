@@ -4,7 +4,6 @@ import getpass
 import os
 import pathlib
 import platform
-import subprocess
 import sys
 import typing
 
@@ -12,35 +11,9 @@ import click
 
 from .modellib.run_inference import run_inference
 from .modellib import models
+from .patchlib.create_patches_fp import create_patches
 
 PathType = typing.Union[str, pathlib.Path]
-
-
-def run_patching(
-    slides_dir: PathType, save_dir: PathType, patch_size: int, patch_spacing: float
-) -> subprocess.CompletedProcess:
-    args = [
-        # This command is created when installing this package.
-        "wsi_create_patches",
-        "--source",
-        str(slides_dir),
-        "--save_dir",
-        str(save_dir),
-        "--patch_size",
-        str(patch_size),
-        "--patch_spacing",
-        str(patch_spacing),
-        "--seg",
-        "--patch",
-        "--stitch",
-        "--preset",
-        # Consider customizing this...
-        "tcga.csv",
-    ]
-    click.secho("\nRunning the patching script.\n", fg="green")
-    print(" ".join(args), "\n", flush=True)
-    proc = subprocess.run(args, stdout=sys.stdout, stderr=sys.stderr, check=True)
-    return proc
 
 
 def _inside_container() -> str:
@@ -60,7 +33,7 @@ def _get_timestamp() -> str:
     return dt.strftime("%c %Z")
 
 
-def _print_info() -> None:
+def _print_system_info() -> None:
     """Print information about the system."""
     import torch
     import torchvision
@@ -69,8 +42,8 @@ def _print_info() -> None:
     click.secho(f"\nRunning wsi_inference version {__version__}", fg="green")
     print("\nIf you run into issues, please submit a new issue at")
     print("https://github.com/kaczmarj/patch-classification-pipeline/issues/new")
-    print("\nInformation")
-    print("-----------")
+    print("\nSystem information")
+    print("------------------")
     print(f"Timestamp: {_get_timestamp()}")
     print(f"{platform.platform()}")
     try:
@@ -111,14 +84,16 @@ def _print_info() -> None:
 @click.pass_context
 @click.option(
     "--wsi_dir",
-    type=click.Path(exists=True, file_okay=False, path_type=pathlib.Path),
+    type=click.Path(
+        exists=True, file_okay=False, path_type=pathlib.Path, resolve_path=True
+    ),
     required=True,
     help="Directory containing whole slide images. This directory can *only* contain"
     " whole slide images.",
 )
 @click.option(
     "--results_dir",
-    type=click.Path(file_okay=False, path_type=pathlib.Path),
+    type=click.Path(file_okay=False, path_type=pathlib.Path, resolve_path=True),
     required=True,
     help="Directory to store results. If directory exists, will skip"
     " whole slides for which outputs exist.",
@@ -191,27 +166,30 @@ def cli(
     if weights != "TCGA-BRCA-v1":
         raise ctx.fail("Only 'TCGA-BRCA-v1' weights are available at this time.")
 
-    _print_info()
+    _print_system_info()
 
-    print("\nArguments")
-    print("---------")
+    print("\nCommand line arguments")
+    print("----------------------")
     for key, value in ctx.params.items():
         print(f"{key} = {value}")
-    print("---------\n")
+    print("----------------------\n")
 
     # Get model before running the patching script because we need to get the necessary
     # spacing and patch size.
     weights_obj = models.create_model(model, weights=weights)
 
-    run_patching(
-        slides_dir=wsi_dir,
-        save_dir=results_dir,
+    click.secho("\nFinding patch coordinates...\n", fg="green")
+    create_patches(
+        source=str(wsi_dir),
+        save_dir=str(results_dir),
         patch_size=weights_obj.patch_size_pixels,
         patch_spacing=weights_obj.spacing_um_px,
+        seg=True,
+        patch=True,
+        preset="tcga.csv",
     )
 
     click.secho("\nRunning model inference.\n", fg="green")
-
     run_inference(
         wsi_dir=wsi_dir,
         results_dir=results_dir,
@@ -221,5 +199,3 @@ def cli(
     )
 
     click.secho("Finished.", fg="green")
-
-    return
