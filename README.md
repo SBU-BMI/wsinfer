@@ -39,8 +39,6 @@ python -m pip install \
     git+https://github.com/kaczmarj/patch-classification-pipeline.git
 ```
 
-TODO: download pretrained weights.
-
 ## Developers
 
 Clone this GitHub repository and install the package (in editable mode with the `dev` extras).
@@ -80,8 +78,6 @@ images in `sample-images/` (only 1 in this example) and will write results to
 `results/`. We set `CUDA_VISIBLE_DEVICES=0` to use the first GPU listed in
 `nvidia-smi`. If you do not have a GPU, model inference can take about 20 minutes.
 (The patch spacing is == 88 um / 350 pixels.)
-
-TODO: download model weights.
 
 ```
 CUDA_VISIBLE_DEVICES=0 wsi_run \
