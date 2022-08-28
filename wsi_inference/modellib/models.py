@@ -135,7 +135,7 @@ def _load_state_into_model(model: torch.nn.Module, weights: Weights):
 def inceptionv4(weights: str = "TCGA-BRCA-v1") -> Weights:
     """Create InceptionV4 model."""
     weights_obj = _get_model_weights("inceptionv4", weights=weights)
-    model = _inceptionv4(num_classes=weights_obj.num_classes)
+    model = _inceptionv4(num_classes=weights_obj.num_classes, pretrained=False)
     model = _load_state_into_model(model=model, weights=weights_obj)
     weights_obj.model = model
     return weights_obj
