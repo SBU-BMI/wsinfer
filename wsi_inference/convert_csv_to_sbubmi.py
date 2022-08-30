@@ -91,7 +91,7 @@ def _row_to_heatmap_row(
                 "heatname_array": ["tumor", "necrosis"],
                 "weight_array": ["0.5", "0.5"],
             },
-            "metric_value": 0.0,
+            "metric_value": class_probability,
             "metric_type": "tile_dice",
             "human_mark": -1,
         },
