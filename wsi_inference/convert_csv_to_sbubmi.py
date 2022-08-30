@@ -28,7 +28,7 @@ def _box_to_polygon(
 def _get_timestamp() -> str:
     dt = datetime.now().astimezone()
     # 2022-08-29 13:46:28 EDT
-    return dt.strftime("%Y-%m-%d %H:%M:%S %Z")
+    return dt.strftime("%Y-%m-%d_%H:%M:%S %Z")
 
 
 def _row_to_heatmap_row(
@@ -42,68 +42,61 @@ def _row_to_heatmap_row(
 ) -> typing.Dict:
     minx, miny, width, height = row["minx"], row["miny"], row["width"], row["height"]
     patch_area_base_pixels = width * height
-    # Scale the values to be a ratio of the whole slide dimensions.
+    # Scale the values to be a ratio of the whole slide dimensions. All of the values
+    # in the dictionary (except 'footprint') use these normalized coordinates.
     minx = float(minx / slide_width)
     miny = float(miny / slide_height)
     width = float(width / slide_width)
     height = float(height / slide_height)
     maxx = minx + width
     maxy = miny + height
+    centerx = (minx + maxx) / 2
+    centery = (miny + maxy) / 2
     coords = _box_to_polygon(minx=minx, miny=miny, width=width, height=height)
 
     # Get the probabilites from the model.
     if class_name not in row.index:
         raise KeyError(f"class name not found in results: {class_name}")
     class_probability: float = row[class_name]
-    d = {
+    return {
         "type": "Feature",
         "parent_id": "self",
-        # This seems to be the only un-normalized value.
-        "footprint": patch_area_base_pixels,
-        "x": (minx + maxx) / 2,
-        "y": (miny + maxy) / 2,
-        "normalized": "true",
         "object_type": "heatmap_multiple",
-        "bbox": [
-            minx / slide_width,
-            miny / slide_height,
-            maxx / slide_width,
-            maxy / slide_height,
-        ],
+        "x": centerx,
+        "y": centery,
+        "normalized": "true",
+        "footprint": patch_area_base_pixels,
         "geometry": {
-            "type": "Polygon",
             "coordinates": [coords],
-        },
-        "properties": {
-            # TODO: what should metric_* be?
-            "metric_value": 0.0,
-            "metric_type": "tile_dice",
-            "human_mark": -1,
-            "multiheat_param": {
-                "human_weight": -1,
-                "weight_array": ["1.0"],
-                "heatname_array": [class_name],
-                "metric_array": [class_probability],
-            },
+            "type": "Polygon",
         },
         "provenance": {
+            "analysis": {
+                "source": "computer",
+                "execution_id": "tcga-brca-jakub-refactor-pipeline",
+                "cancer_type": "quip",
+                "study_id": "TCGA-BRCA",
+                "computation": "heatmap",
+            },
             "image": {
                 "case_id": case_id,
                 "subject_id": subject_id,
             },
-            "analysis": {
-                "study_id": "brca",
-                "execution_id": "cancer-brca-high_res",
-                "source": "computer",
-                "computation": "heatmap",
-                "execution_date": _get_timestamp(),
-            },
-            "version": {},
         },
-        # Epoch time in seconds.
+        "bbox": [minx, miny, maxx, maxy],
+        "properties": {
+            "multiheat_param": {
+                "human_weight": -1,
+                "metric_array": [class_probability, 0.0],
+                "heatname_array": ["tumor", "necrosis"],
+                "weight_array": ["0.5", "0.5"],
+            },
+            "metric_value": 0.0,
+            "metric_type": "tile_dice",
+            "human_mark": -1,
+        },
         "date": {"$date": int(time.time())},
     }
-    return d
 
 
 def write_heatmap_json_like(
