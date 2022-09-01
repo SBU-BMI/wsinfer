@@ -216,6 +216,7 @@ def cli(
         ts: large_image.tilesource.TileSource = large_image.getTileSource(slide)
         slide_width = ts.getMetadata()["sizeX"]
         slide_height = ts.getMetadata()["sizeY"]
+    print(f"Slide dimensions: {slide_width} x {slide_height} (width x height)")
 
     write_heatmap_json_like(
         input=input,
