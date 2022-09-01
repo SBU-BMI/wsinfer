@@ -150,13 +150,13 @@ def _version() -> str:
 @click.command()
 @click.argument("input", type=click.Path(exists=True, dir_okay=False, path_type=Path))
 @click.option(
-    "--output_jsonl",
+    "--output-jsonl",
     required=True,
     type=click.Path(dir_okay=False, exists=False, writable=True, path_type=Path),
     help="Path to write the JSON file (.json) file.",
 )
 @click.option(
-    "--output_table",
+    "--output-table",
     required=True,
     type=click.Path(dir_okay=False, exists=False, writable=True, path_type=Path),
     help="Path to write the text (.txt) file.",
