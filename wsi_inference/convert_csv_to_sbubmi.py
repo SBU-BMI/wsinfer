@@ -10,6 +10,7 @@ import time
 import typing
 
 import click
+import large_image
 import pandas as pd
 
 
@@ -148,13 +149,17 @@ def _version() -> str:
 
 @click.command()
 @click.argument("input", type=click.Path(exists=True, dir_okay=False, path_type=Path))
-@click.argument(
-    "output_jsonl",
+@click.option(
+    "--output_jsonl",
+    required=True,
     type=click.Path(dir_okay=False, exists=False, writable=True, path_type=Path),
+    help="Path to write the JSON file (.json) file.",
 )
-@click.argument(
-    "output_table",
+@click.option(
+    "--output_table",
+    required=True,
     type=click.Path(dir_okay=False, exists=False, writable=True, path_type=Path),
+    help="Path to write the text (.txt) file.",
 )
 @click.option(
     "--class-name",
@@ -162,19 +167,26 @@ def _version() -> str:
     help="Name of the class to use for probability values.",
 )
 @click.option(
+    "--slide",
+    type=click.Path(exists=True, path_type=Path),
+    default=None,
+    help="Path to original whole slide image (mutually exclusive with slide_width"
+    " and slide_height)",
+)
+@click.option(
     "--slide-width",
-    required=True,
     type=int,
-    help="Width of the slide in pixels (highest mag)",
+    default=None,
+    help="Width of the slide in pixels (highest mag) (mutually exclusive with slide)",
 )
 @click.option(
     "--slide-height",
-    required=True,
     type=int,
-    help="Height of the slide in pixels (highest mag)",
+    default=None,
+    help="Height of the slide in pixels (highest mag) (mutually exclusive with slide)",
 )
-@click.option("--subject-id", default=None, help="Subject ID", show_default=True)
-@click.option("--case-id", default=None, help="Subject's case ID", show_default=True)
+@click.option("--subject-id", default=None, help="Subject ID")
+@click.option("--case-id", default=None, help="Subject's case ID")
 @click.version_option(version=_version())
 def cli(
     *,
@@ -182,29 +194,35 @@ def cli(
     output_jsonl: Path,
     output_table: Path,
     class_name: str,
-    slide_width: int,
-    slide_height: int,
-    subject_id: typing.Optional[str],
-    case_id: typing.Optional[str],
+    slide: typing.Optional[Path] = None,
+    slide_width: typing.Optional[int] = None,
+    slide_height: typing.Optional[int] = None,
+    subject_id: typing.Optional[str] = None,
+    case_id: typing.Optional[str] = None,
 ):
-    """Convert CSV of patch predictions to a GeoJSON file.
-
-    GeoJSON files can be used with pathology viewers like QuPath.
+    """Convert CSV of patch predictions to .txt and .json formats for use with Stony
+    Brook Biomedical Informatics viewers.
 
     INPUT           Path to input CSV
-
-    OUTPUT_JSONL    Path to output JSON lines file (with .jsonl extension)
-
-    OUTPUT_TABLE    Path to output table files (with .txt extension)
     """
     click.echo(f"Reading CSV: {input}")
+    if slide is None and (slide_width is None or slide_height is None):
+        raise click.ClickException("slide or slide_width/slide_height must be provided")
+    if slide is not None and (slide_width is not None or slide_height is not None):
+        raise click.ClickException(
+            "slide is mutually exclusive with slide_width and slide_height"
+        )
+    if slide_width is None and slide_height is None:
+        ts: large_image.tilesource.TileSource = large_image.getTileSource(slide)
+        slide_width = ts.getMetadata()["sizeX"]
+        slide_height = ts.getMetadata()["sizeY"]
 
     write_heatmap_json_like(
         input=input,
         output=output_jsonl,
         class_name=class_name,
-        slide_width=slide_width,
-        slide_height=slide_height,
+        slide_width=slide_width,  # type: ignore
+        slide_height=slide_height,  # type: ignore
         case_id=case_id,
         subject_id=subject_id,
     )
