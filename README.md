@@ -179,8 +179,6 @@ wsi_convert_csv_to_geojson --class-name tumor results/model-outputs/CMU-1.csv CM
 
 ## Convert to Stony Brook QuIP format
 
-# Converting
-
 This code assumes one is working with TCGA slides, where the first 12 characters represent
 the subject ID and the first 23 represent the case ID.
 
