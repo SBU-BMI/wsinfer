@@ -11,6 +11,7 @@ import click
 
 from .modellib.run_inference import run_inference
 from .modellib import models
+from .patchlib.create_dense_patch_grid import create_grid_and_save_multi_slides
 from .patchlib.create_patches_fp import create_patches
 
 PathType = typing.Union[str, pathlib.Path]
@@ -129,6 +130,13 @@ def _print_system_info() -> None:
     help="Number of workers to use for data loading during model inference (default=0"
     " for single thread). A reasonable value is 8.",
 )
+@click.option(
+    "--dense-grid/--no-dense-grid",
+    default=False,
+    show_default=True,
+    help="Use a dense grid of patch coordinates. Patches will be present even if no"
+    " tissue is present",
+)
 @click.version_option()
 def cli(
     ctx: click.Context,
@@ -139,6 +147,7 @@ def cli(
     weights: str,
     batch_size: int,
     num_workers: int = 0,
+    dense_grid: bool = False,
 ):
     """Run model inference on a directory of whole slide images (WSI).
 
@@ -183,15 +192,24 @@ def cli(
     weights_obj = models.create_model(model, weights=weights)
 
     click.secho("\nFinding patch coordinates...\n", fg="green")
-    create_patches(
-        source=str(wsi_dir),
-        save_dir=str(results_dir),
-        patch_size=weights_obj.patch_size_pixels,
-        patch_spacing=weights_obj.spacing_um_px,
-        seg=True,
-        patch=True,
-        preset="tcga.csv",
-    )
+    if dense_grid:
+        click.echo("Not using a tissue mask.")
+        create_grid_and_save_multi_slides(
+            wsi_dir=wsi_dir,
+            results_dir=results_dir,
+            orig_patch_size=weights_obj.patch_size_pixels,
+            patch_spacing_um_px=weights_obj.spacing_um_px,
+        )
+    else:
+        create_patches(
+            source=str(wsi_dir),
+            save_dir=str(results_dir),
+            patch_size=weights_obj.patch_size_pixels,
+            patch_spacing=weights_obj.spacing_um_px,
+            seg=True,
+            patch=True,
+            preset="tcga.csv",
+        )
 
     click.secho("\nRunning model inference.\n", fg="green")
     run_inference(
