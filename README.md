@@ -177,6 +177,30 @@ are able to load labels in GeoJSON format.
 wsi_convert_csv_to_geojson --class-name tumor results/model-outputs/CMU-1.csv CMU-1.json
 ```
 
+## Convert to Stony Brook QuIP format
+
+This code assumes one is working with TCGA slides, where the first 12 characters represent
+the subject ID and the first 23 represent the case ID.
+
+```bash
+mkdir -p model-outputs-sbubmi
+for filename in model-outputs/*; do
+    filename=$(basename $filename .csv)
+    subjectID=${filename::12}
+    caseID=${filename::23}
+    echo "Subject ID $subjectID"
+    echo "Case ID $caseID"
+    wsi_convert_csv_to_sbubmi \
+        --output-jsonl model-outputs-sbubmi/${filename}.json \
+        --output-table model-outputs-sbubmi/${filename}.txt \
+        --slide ../slides/${filename}.svs \
+        --subject-id $subjectID \
+        --case-id $caseID \
+        --class-name tumor model-outputs/${filename}.csv
+done
+```
+
+
 
 # Convert original models to newer PyTorch format
 

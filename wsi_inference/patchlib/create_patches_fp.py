@@ -19,6 +19,16 @@
 #   spacing. The patch coordinates are calculated at the base (highest) resolution.
 # - format code with black
 
+"""Create tissue mask and patch a whole slide image.
+Copyright (C) 2022  Mahmood Lab
+
+Modified by Jakub Kaczmarzyk.
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+"""
 
 # internal imports
 from .wsi_core.WholeSlideImage import WholeSlideImage
@@ -34,6 +44,13 @@ import argparse
 import pandas as pd
 
 _script_path = pathlib.Path(__file__).resolve().parent
+
+
+def _version() -> str:
+    """Closure to get version without potential for circular imports."""
+    from .. import __version__
+
+    return __version__
 
 
 def stitching(file_path, wsi_object, downscale=64):
@@ -419,12 +436,7 @@ def create_patches(
 
 
 def cli():
-    print("create_patches_fp.py  Copyright (C) 2022  Mahmood Lab")
-    print("This program comes with ABSOLUTELY NO WARRANTY.")
-    print("This is free software, and you are welcome to redistribute it")
-    print("under certain conditions.")
-
-    parser = argparse.ArgumentParser(description="seg and patch")
+    parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--source",
         type=str,
@@ -458,8 +470,14 @@ def cli():
         required=True,
         help="Patch spacing in micrometers per pixel.",
     )
+    parser.add_argument("--version", action="version", version=f"%(prog)s {_version()}")
 
     args = parser.parse_args()
+
+    print("create_patches_fp.py  Copyright (C) 2022  Mahmood Lab")
+    print("This program comes with ABSOLUTELY NO WARRANTY.")
+    print("This is free software, and you are welcome to redistribute it")
+    print("under certain conditions.")
 
     create_patches(
         source=args.source,
