@@ -86,7 +86,31 @@ WEIGHTS: Dict[str, Dict[str, Weights]] = {
             spacing_um_px=88 / 350,
             class_names=["notumor", "tumor"],
             metadata={"patch-size": "350 pixels (88 microns)."},
-        )
+        ),
+        # Original model is on GitHub
+        # https://github.com/SBU-BMI/quip_lung_cancer_detection/blob/8eac86e837baa371a98ce2fe08348dcf0400a317/models_cnn/train_lung_john_6classes_netDepth-34_APS-350_randomSeed-2954321_numBenign-80000_0131_1818_bestF1_0.8273143068611924_5.t7
+        "TCGA-LUAD-v1": Weights(
+            url="https://stonybrookmedicine.box.com/shared/static/d6g9huv1olfu2mt9yaud9xqf9bdqx38i.pt",  # noqa
+            file_name="train_lung_john_6classes.pt",
+            num_classes=6,
+            transform=PatchClassification(
+                resize_size=224,
+                mean=(0.8301, 0.6600, 0.8054),
+                std=(0.0864, 0.1602, 0.0647),
+            ),
+            patch_size_pixels=350,
+            spacing_um_px=88 / 350,
+            # TODO: double check the class names.
+            class_names=[
+                "NSCLC-Lapidic",
+                "NSCLC-Benign",
+                "NSCLC-Acinar",
+                "NSCLC-Micropapillary",
+                "NSCLC-Adeno CA (all)",
+                "NSCLC-Solid",
+            ],
+            metadata={},
+        ),
     },
     "vgg16_modified": {
         "TCGA-BRCA-v1": Weights(
