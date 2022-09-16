@@ -157,6 +157,42 @@ WEIGHTS: Dict[str, Dict[str, Weights]] = {
             class_names=["unknown", "grade3", "grade4+5", "benign"],
             metadata={},
         ),
+        # TODO: check this. Jakub has not yet.
+        "TCGA-TILs-v1": Weights(
+            url="https://stonybrookmedicine.box.com/shared/static/a3pxqblrahanfxztn32xyxd9cveon3ga.pt",  # noqa
+            file_name="resnet34-tils-v1-20200719-fd908d3f.pt",
+            num_classes=1,
+            transform=PatchClassification(
+                resize_size=224,
+                mean=(0.6462, 0.5070, 0.8055),
+                std=(0.1381, 0.1674, 0.1358),
+            ),
+            patch_size_pixels=175,
+            spacing_um_px=88 / 350,  # TODO: is this correct?
+            class_names=["tils"],
+            metadata={
+                "publication": "https://doi.org/10.3389/fonc.2021.806603",
+            },
+        ),
+    },
+    "vgg16": {
+        # TODO: check this. Jakub has not yet.
+        "TCGA-TILs-v1": Weights(
+            url="https://stonybrookmedicine.box.com/shared/static/95aqe9ww82zs1ydcya3srpctxa5jbcyy.pt",  # noqa
+            file_name="vgg16-tils-v1-20200920-851af48a.pt",
+            num_classes=1,
+            transform=PatchClassification(
+                resize_size=224,
+                mean=(0.6462, 0.5070, 0.8055),
+                std=(0.1381, 0.1674, 0.1358),
+            ),
+            patch_size_pixels=175,
+            spacing_um_px=88 / 350,  # TODO: is this correct?
+            class_names=["tils"],
+            metadata={
+                "publication": "https://doi.org/10.3389/fonc.2021.806603",
+            },
+        ),
     },
     "vgg16_modified": {
         "TCGA-BRCA-v1": Weights(
@@ -225,15 +261,9 @@ def resnet34(weights: str = "TCGA-BRCA-v1") -> Weights:
     return weights_obj
 
 
-def vgg16_modified(weights="TCGA-BRCA-v1") -> Weights:
-    """Create modified VGG16 model.
-
-    The classifier of this model is
-        Linear (25,088, 4096)
-        ReLU -> Dropout
-        Linear (1024, num_classes)
-    """
-    weights_obj = _get_model_weights("vgg16_modified", weights=weights)
+def vgg16(weights="TCGA-TILs-v1") -> Weights:
+    """Create VGG16 model."""
+    weights_obj = _get_model_weights("vgg16", weights=weights)
     model = torchvision.models.vgg16()
     model.classifier = model.classifier[:4]
     in_features = model.classifier[0].in_features
@@ -244,9 +274,28 @@ def vgg16_modified(weights="TCGA-BRCA-v1") -> Weights:
     return weights_obj
 
 
+def vgg16_modified(weights="TCGA-BRCA-v1") -> Weights:
+    """Create modified VGG16 model.
+
+    The classifier of this model is
+        Linear (25,088, 4096)
+        ReLU -> Dropout
+        Linear (1024, num_classes)
+    """
+    weights_obj = _get_model_weights("vgg16_modified", weights=weights)
+    model = torchvision.models.vgg16()
+    in_features = model.classifier[6].in_features
+    model.classifier[6] = torch.nn.Linear(in_features, weights_obj.num_classes)
+    in_features = model.classifier[0].in_features
+    model = _load_state_into_model(model=model, weights=weights_obj)
+    weights_obj.model = model
+    return weights_obj
+
+
 MODELS = dict(
     inceptionv4=inceptionv4,
     resnet34=resnet34,
+    vgg16=vgg16,
     vgg16_modified=vgg16_modified,
 )
 
