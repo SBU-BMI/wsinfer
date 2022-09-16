@@ -4,7 +4,6 @@ See https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7369575/table/tbl3/ for modific
 that were made to the original architectures.
 """
 
-from ctypes import resize
 import dataclasses
 import pathlib
 from typing import Any
@@ -78,14 +77,14 @@ WEIGHTS: Dict[str, Dict[str, Weights]] = {
         # TODO: check the processing steps. Jakub has not checked these yet.
         "TCGA-TILs-v1": Weights(
             url="https://stonybrookmedicine.box.com/shared/static/sz1gpc6u3mftadh4g6x3csxnpmztj8po.pt",  # noqa
-            file_name="inceptionv4-tils-v1-20200920-23e50374.pt",
-            num_classes=1,
+            file_name="inceptionv4-tils-v1-20200920-e3e72cd2.pt",
+            num_classes=2,
             transform=PatchClassification(
                 resize_size=299, mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)
             ),
             patch_size_pixels=350,
             spacing_um_px=88 / 350,
-            class_names=["tils"],
+            class_names=["notils", "tils"],
             metadata={
                 "publication": "https://doi.org/10.3389/fonc.2021.806603",
                 "notes": (
@@ -180,7 +179,7 @@ WEIGHTS: Dict[str, Dict[str, Weights]] = {
         "TCGA-TILs-v1": Weights(
             url="https://stonybrookmedicine.box.com/shared/static/95aqe9ww82zs1ydcya3srpctxa5jbcyy.pt",  # noqa
             file_name="vgg16-tils-v1-20200920-851af48a.pt",
-            num_classes=1,
+            num_classes=2,
             transform=PatchClassification(
                 resize_size=224,
                 mean=(0.6462, 0.5070, 0.8055),
@@ -188,7 +187,7 @@ WEIGHTS: Dict[str, Dict[str, Weights]] = {
             ),
             patch_size_pixels=175,
             spacing_um_px=88 / 350,  # TODO: is this correct?
-            class_names=["tils"],
+            class_names=["notils", "tils"],
             metadata={
                 "publication": "https://doi.org/10.3389/fonc.2021.806603",
             },
@@ -265,10 +264,9 @@ def vgg16(weights="TCGA-TILs-v1") -> Weights:
     """Create VGG16 model."""
     weights_obj = _get_model_weights("vgg16", weights=weights)
     model = torchvision.models.vgg16()
-    model.classifier = model.classifier[:4]
+    in_features = model.classifier[6].in_features
+    model.classifier[6] = torch.nn.Linear(in_features, weights_obj.num_classes)
     in_features = model.classifier[0].in_features
-    model.classifier[0] = torch.nn.Linear(in_features, 1024)
-    model.classifier[3] = torch.nn.Linear(1024, weights_obj.num_classes)
     model = _load_state_into_model(model=model, weights=weights_obj)
     weights_obj.model = model
     return weights_obj
@@ -284,9 +282,10 @@ def vgg16_modified(weights="TCGA-BRCA-v1") -> Weights:
     """
     weights_obj = _get_model_weights("vgg16_modified", weights=weights)
     model = torchvision.models.vgg16()
-    in_features = model.classifier[6].in_features
-    model.classifier[6] = torch.nn.Linear(in_features, weights_obj.num_classes)
+    model.classifier = model.classifier[:4]
     in_features = model.classifier[0].in_features
+    model.classifier[0] = torch.nn.Linear(in_features, 1024)
+    model.classifier[3] = torch.nn.Linear(1024, weights_obj.num_classes)
     model = _load_state_into_model(model=model, weights=weights_obj)
     weights_obj.model = model
     return weights_obj
