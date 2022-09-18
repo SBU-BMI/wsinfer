@@ -124,12 +124,12 @@ WEIGHTS: Dict[str, Dict[str, Weights]] = {
             spacing_um_px=88 / 350,
             # TODO: double check the class names.
             class_names=[
-                "NSCLC-Lapidic",
-                "NSCLC-Benign",
-                "NSCLC-Acinar",
-                "NSCLC-Micropapillary",
-                "NSCLC-Adeno CA (all)",
-                "NSCLC-Solid",
+                "lepidic",
+                "benign",
+                "acinar",
+                "micropapillary",
+                "mucinous",
+                "solid",
             ],
             metadata={},
         ),
