@@ -144,7 +144,7 @@ WEIGHTS: Dict[str, Dict[str, Weights]] = {
         "TCGA-PRAD-v1": Weights(
             url="https://stonybrookmedicine.box.com/shared/static/nxyr5atk2nlvgibck3l0q6rjin2g7n38.pt",  # noqa
             file_name="resnet34-prad-20210101-ea6c004c.pt",
-            num_classes=4,
+            num_classes=3,
             transform=PatchClassification(
                 resize_size=224,
                 mean=(0.6462, 0.5070, 0.8055),
@@ -153,7 +153,7 @@ WEIGHTS: Dict[str, Dict[str, Weights]] = {
             # TODO: check these values
             patch_size_pixels=175,
             spacing_um_px=88 / 350,  # TODO: is this correct?
-            class_names=["unknown", "grade3", "grade4+5", "benign"],
+            class_names=["benign", "grade3", "grade4+5"],
             metadata={},
         ),
         # TODO: check this. Jakub has not yet.
