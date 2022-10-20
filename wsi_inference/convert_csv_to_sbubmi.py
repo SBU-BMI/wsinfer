@@ -11,7 +11,10 @@ import typing
 
 import click
 import large_image
+import multiprocessing
+import numpy as np
 import pandas as pd
+import tqdm
 
 
 PathType = typing.Union[str, Path]
@@ -140,8 +143,69 @@ def write_heatmap_txt(input: PathType, output: PathType, class_name: str):
         f.writelines(line + "\n" for line in lines)
 
 
+def write_color_txt(
+    input: PathType,
+    output: PathType,
+    ts: large_image.tilesource.TileSource,
+    num_processes: int = 6,
+):
+    def whiteness(arr):
+        arr = np.asarray(arr)
+        return np.std(arr, axis=(0, 1)).mean()
+
+    def blackness(arr):
+        arr = np.asarray(arr)
+        return arr.mean()
+
+    def redness(arr):
+        arr = np.asarray(arr)
+        r, g, b = arr[:, :, 0], arr[:, :, 1], arr[:, :, 2]
+        # boolean multiplication is logical and
+        return np.mean((r >= 190) * (g <= 100) * (b <= 100))
+
+    def get_color(row: pd.Series):
+        arr, _ = ts.getRegion(
+            format=large_image.constants.TILE_FORMAT_NUMPY,
+            region=dict(
+                left=row["minx"],
+                top=row["miny"],
+                width=row["width"],
+                height=row["height"],
+            ),
+        )
+        white = whiteness(arr)
+        black = blackness(arr)
+        red = redness(arr)
+        return white, black, red
+
+    df = pd.read_csv(input)
+    df_rows_as_dicts = df.to_dict("records")
+
+    # https://stackoverflow.com/a/45276885/5666087
+    with multiprocessing.Pool(num_processes) as p:
+        results = list(
+            tqdm.tqdm(
+                p.imap(get_color, df_rows_as_dicts, chunksize=16),
+                total=len(df_rows_as_dicts),
+            )
+        )
+    df.loc[:, ["whiteness", "blackness", "redness"]] = results
+    cx = df.minx + ((df.minx + df.width) / 2)
+    assert np.array_equal(cx.astype(int), cx), "not all center x's are integer"
+    df.loc[:, "cx"] = cx.astype(int)
+    del cx  # sanity
+
+    cy = df.miny + ((df.miny + df.height) / 2)
+    assert np.array_equal(cy.astype(int), cy), "not all center y's are integer"
+    df.loc[:, "cy"] = cy.astype(int)
+    del cy
+
+    df = df.loc[:, ["cx", "cy", "whiteness", "blackness", "redness"]]
+    df.to_csv(output, header=False, index=False, sep=" ")
+
+
 def _version() -> str:
-    """Closure to return version (avoid possibility of a circular import)."""
+    """Return version (avoid possibility of a circular import)."""
     from . import __version__
 
     return __version__
@@ -159,7 +223,13 @@ def _version() -> str:
     "--output-table",
     required=True,
     type=click.Path(dir_okay=False, exists=False, writable=True, path_type=Path),
-    help="Path to write the text (.txt) file.",
+    help="Path to write the text file.",
+)
+@click.option(
+    "--output-color-table",
+    required=True,
+    type=click.Path(dir_okay=False, exists=False, writable=True, path_type=Path),
+    help="Path to write the color text file.",
 )
 @click.option(
     "--class-name",
@@ -169,36 +239,30 @@ def _version() -> str:
 @click.option(
     "--slide",
     type=click.Path(exists=True, path_type=Path),
-    default=None,
+    required=True,
     help="Path to original whole slide image (mutually exclusive with slide_width"
     " and slide_height)",
 )
-@click.option(
-    "--slide-width",
-    type=int,
-    default=None,
-    help="Width of the slide in pixels (highest mag) (mutually exclusive with slide)",
-)
-@click.option(
-    "--slide-height",
-    type=int,
-    default=None,
-    help="Height of the slide in pixels (highest mag) (mutually exclusive with slide)",
-)
 @click.option("--subject-id", default=None, help="Subject ID")
 @click.option("--case-id", default=None, help="Subject's case ID")
+@click.option(
+    "--num-processes",
+    type=int,
+    default=4,
+    help="Number of processes to use when creating color text file.",
+)
 @click.version_option(version=_version())
 def cli(
     *,
     input: Path,
     output_jsonl: Path,
     output_table: Path,
+    output_color_table: Path,
     class_name: str,
-    slide: typing.Optional[Path] = None,
-    slide_width: typing.Optional[int] = None,
-    slide_height: typing.Optional[int] = None,
+    slide: Path,
     subject_id: typing.Optional[str] = None,
     case_id: typing.Optional[str] = None,
+    num_processes: int = 4,
 ):
     """Convert CSV of patch predictions to .txt and .json formats for use with Stony
     Brook Biomedical Informatics viewers.
@@ -206,27 +270,26 @@ def cli(
     INPUT           Path to input CSV
     """
     click.echo(f"Reading CSV: {input}")
-    if slide is None and (slide_width is None or slide_height is None):
-        raise click.ClickException("slide or slide_width/slide_height must be provided")
-    if slide is not None and (slide_width is not None or slide_height is not None):
-        raise click.ClickException(
-            "slide is mutually exclusive with slide_width and slide_height"
-        )
-    if slide_width is None and slide_height is None:
-        ts: large_image.tilesource.TileSource = large_image.getTileSource(slide)
-        slide_width = ts.getMetadata()["sizeX"]
-        slide_height = ts.getMetadata()["sizeY"]
+    ts: large_image.tilesource.TileSource = large_image.getTileSource(slide)
+    slide_width: int = ts.getMetadata()["sizeX"]
+    slide_height: int = ts.getMetadata()["sizeY"]
     print(f"Slide dimensions: {slide_width} x {slide_height} (width x height)")
 
     write_heatmap_json_like(
         input=input,
         output=output_jsonl,
         class_name=class_name,
-        slide_width=slide_width,  # type: ignore
-        slide_height=slide_height,  # type: ignore
+        slide_width=slide_width,
+        slide_height=slide_height,
         case_id=case_id,
         subject_id=subject_id,
     )
     click.secho(f"Saved JSON lines output to {output_jsonl}", fg="green")
     write_heatmap_txt(input=input, output=output_table, class_name=class_name)
+    click.secho(f"Saved table output to {output_table}", fg="green")
+
+    # Write color text file.
+    write_color_txt(
+        input=input, output=output_color_table, ts=ts, num_processes=num_processes
+    )
     click.secho(f"Saved table output to {output_table}", fg="green")
