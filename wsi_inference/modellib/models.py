@@ -107,7 +107,7 @@ WEIGHTS: Dict[str, Dict[str, Weights]] = {
             patch_size_pixels=350,
             spacing_um_px=0.25,
             class_names=["notumor", "tumor"],
-            metadata={"patch-size": "350 pixels (88 microns)."},
+            metadata={"patch-size": "350 pixels (87.5 microns)."},
         ),
         # Original model is on GitHub
         # https://github.com/SBU-BMI/quip_lung_cancer_detection/blob/8eac86e837baa371a98ce2fe08348dcf0400a317/models_cnn/train_lung_john_6classes_netDepth-34_APS-350_randomSeed-2954321_numBenign-80000_0131_1818_bestF1_0.8273143068611924_5.t7
