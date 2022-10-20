@@ -68,9 +68,9 @@ WEIGHTS: Dict[str, Dict[str, Weights]] = {
                 std=(0.5, 0.5, 0.5),
             ),
             patch_size_pixels=350,
-            spacing_um_px=88 / 350,
+            spacing_um_px=0.25,
             class_names=["notumor", "tumor"],
-            metadata={"patch-size": "350 pixels (88 microns)."},
+            metadata={"patch-size": "350 pixels (87.5 microns)"},
         ),
         # This uses an implementation without batchnorm. Model was trained with TF Slim
         # and weights were converted to PyTorch (see 'scripts' directory).
@@ -105,7 +105,7 @@ WEIGHTS: Dict[str, Dict[str, Weights]] = {
                 std=(0.1120, 0.1459, 0.1089),
             ),
             patch_size_pixels=350,
-            spacing_um_px=88 / 350,
+            spacing_um_px=0.25,
             class_names=["notumor", "tumor"],
             metadata={"patch-size": "350 pixels (88 microns)."},
         ),
@@ -204,9 +204,9 @@ WEIGHTS: Dict[str, Dict[str, Weights]] = {
                 std=(0.1120, 0.1459, 0.1089),
             ),
             patch_size_pixels=350,
-            spacing_um_px=88 / 350,
+            spacing_um_px=0.25,
             class_names=["notumor", "tumor"],
-            metadata={"patch-size": "350 pixels (88 microns)."},
+            metadata={"patch-size": "350 pixels (87.5 microns)"},
         )
     },
 }
