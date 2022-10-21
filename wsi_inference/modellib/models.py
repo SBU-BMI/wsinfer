@@ -82,8 +82,8 @@ WEIGHTS: Dict[str, Dict[str, Weights]] = {
             transform=PatchClassification(
                 resize_size=299, mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)
             ),
-            patch_size_pixels=350,
-            spacing_um_px=88 / 350,
+            patch_size_pixels=100,
+            spacing_um_px=0.5,
             class_names=["notils", "tils"],
             metadata={
                 "publication": "https://doi.org/10.3389/fonc.2021.806603",
@@ -166,8 +166,8 @@ WEIGHTS: Dict[str, Dict[str, Weights]] = {
                 mean=(0.6462, 0.5070, 0.8055),
                 std=(0.1381, 0.1674, 0.1358),
             ),
-            patch_size_pixels=175,
-            spacing_um_px=88 / 350,  # TODO: is this correct?
+            patch_size_pixels=100,
+            spacing_um_px=0.5,
             class_names=["tils"],
             metadata={
                 "publication": "https://doi.org/10.3389/fonc.2021.806603",
@@ -175,7 +175,6 @@ WEIGHTS: Dict[str, Dict[str, Weights]] = {
         ),
     },
     "vgg16": {
-        # TODO: check this. Jakub has not yet.
         "TCGA-TILs-v1": Weights(
             url="https://stonybrookmedicine.box.com/shared/static/95aqe9ww82zs1ydcya3srpctxa5jbcyy.pt",  # noqa
             file_name="vgg16-tils-v1-20200920-851af48a.pt",
@@ -185,8 +184,8 @@ WEIGHTS: Dict[str, Dict[str, Weights]] = {
                 mean=(0.6462, 0.5070, 0.8055),
                 std=(0.1381, 0.1674, 0.1358),
             ),
-            patch_size_pixels=175,
-            spacing_um_px=88 / 350,  # TODO: is this correct?
+            patch_size_pixels=100,
+            spacing_um_px=0.5,
             class_names=["notils", "tils"],
             metadata={
                 "publication": "https://doi.org/10.3389/fonc.2021.806603",
