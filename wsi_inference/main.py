@@ -176,9 +176,6 @@ def cli(
     if not files_in_wsi_dir:
         raise FileNotFoundError(f"no files exist in the slide directory: {wsi_dir}")
 
-    if weights != "TCGA-BRCA-v1":
-        raise ctx.fail("Only 'TCGA-BRCA-v1' weights are available at this time.")
-
     _print_system_info()
 
     print("\nCommand line arguments")
