@@ -109,6 +109,55 @@ WEIGHTS: Dict[str, Dict[str, Weights]] = {
             class_names=["notumor", "tumor"],
             metadata={"patch-size": "350 pixels (87.5 microns)."},
         ),
+        # Original model is on GitHub
+        # https://github.com/SBU-BMI/quip_lung_cancer_detection/blob/8eac86e837baa371a98ce2fe08348dcf0400a317/models_cnn/train_lung_john_6classes_netDepth-34_APS-350_randomSeed-2954321_numBenign-80000_0131_1818_bestF1_0.8273143068611924_5.t7
+        "TCGA-LUAD-v1": Weights(
+            url="https://stonybrookmedicine.box.com/shared/static/d6g9huv1olfu2mt9yaud9xqf9bdqx38i.pt",  # noqa
+            file_name="resnet34-luad-20210102-93038ae6.pt",
+            num_classes=6,
+            transform=PatchClassification(
+                resize_size=224,
+                # Mean and std from
+                # https://github.com/SBU-BMI/quip_lung_cancer_detection/blob/8eac86e837baa371a98ce2fe08348dcf0400a317/prediction_6classes/tumor_pred/pred.py#L29-L30
+                mean=(0.8301, 0.6600, 0.8054),
+                std=(0.0864, 0.1602, 0.0647),
+            ),
+            patch_size_pixels=350,
+            spacing_um_px=0.5,
+            # TODO: double check the class names.
+            class_names=[
+                "lepidic",
+                "benign",
+                "acinar",
+                "micropapillary",
+                "mucinous",
+                "solid",
+            ],
+            metadata={},
+        ),
+        # Original model is on GitHub
+        # https://github.com/SBU-BMI/quip_prad_cancer_detection/tree/d80052e0d098a1211432f9abff086974edd9c669/models_cnn
+        # Original file name is
+        # RESNET_34_prostate_beatrice_john___1117_1038_0.9533516227597434_87.t7
+        #
+        # TODO: there seems to be some post-processing... We should double check and
+        # implement it. See
+        # https://github.com/SBU-BMI/quip_prad_cancer_detection/blob/53870a7db8e48673bee1d60db6f561d39483b859/heatmap_gen_separate_classes/3_thresholded_heatmap_txt.py#L20
+        "TCGA-PRAD-v1": Weights(
+            url="https://stonybrookmedicine.box.com/shared/static/nxyr5atk2nlvgibck3l0q6rjin2g7n38.pt",  # noqa
+            file_name="resnet34-prad-20210101-ea6c004c.pt",
+            num_classes=3,
+            transform=PatchClassification(
+                resize_size=224,
+                mean=(0.6462, 0.5070, 0.8055),
+                std=(0.1381, 0.1674, 0.1358),
+            ),
+            # TODO: check these values
+            patch_size_pixels=175,
+            spacing_um_px=88 / 350,  # TODO: is this correct?
+            class_names=["benign", "grade3", "grade4+5"],
+            metadata={},
+        ),
     },
     "vgg16_modified": {
         "TCGA-BRCA-v1": Weights(
