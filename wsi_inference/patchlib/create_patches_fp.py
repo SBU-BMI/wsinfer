@@ -294,6 +294,7 @@ def seg_and_patch(
                     print("SKIPPING this slide because I cannot find the spacing!")
                     print(full_path)
                     print("!" * 40)
+                    continue
                 patch_mm = patch_spacing / 1000  # convert micrometer to millimeter.
                 patch_size = orig_patch_size * patch_mm / ts.getMetadata()["mm_x"]
                 patch_size = round(patch_size)
