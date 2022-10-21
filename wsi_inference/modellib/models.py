@@ -149,13 +149,14 @@ WEIGHTS: Dict[str, Dict[str, Weights]] = {
             num_classes=3,
             transform=PatchClassification(
                 resize_size=224,
+                # Mean and std from
+                # https://github.com/SBU-BMI/quip_prad_cancer_detection/blob/b71d8440eab090cb789281b33fbf89011e924fb9/prediction_3classes/tumor_pred/pred.py#L27-L28
                 mean=(0.6462, 0.5070, 0.8055),
                 std=(0.1381, 0.1674, 0.1358),
             ),
-            # TODO: check these values
             patch_size_pixels=175,
-            spacing_um_px=88 / 350,  # TODO: is this correct?
-            class_names=["benign", "grade3", "grade4+5"],
+            spacing_um_px=0.5,
+            class_names=["grade3", "grade4+5", "benign"],
             metadata={},
         ),
     },
