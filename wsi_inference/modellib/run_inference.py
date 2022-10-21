@@ -7,6 +7,7 @@ From the original paper (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7369575/):
 
 import pathlib
 import typing
+import warnings
 
 import h5py
 import large_image
@@ -45,7 +46,7 @@ class PatchDirectoryNotFound(FileNotFoundError):
     ...
 
 
-class PatchFilesNotFound(FileNotFoundError):
+class PatchFilesNotFoundWarning(UserWarning):
     ...
 
 
@@ -203,7 +204,11 @@ def run_inference(
     patch_paths = [patch_dir / p.with_suffix(".h5").name for p in wsi_paths]
     patch_paths_notfound = [p for p in patch_paths if not p.exists()]
     if patch_paths_notfound:
-        raise PatchFilesNotFound(patch_paths_notfound)
+        warnings.warn(
+            "Patch extraction seems to have failed for the following slides:"
+            + " ".join(str(p) for p in patch_paths_notfound),
+            category=PatchFilesNotFoundWarning,
+        )
 
     if weights.model is None:
         raise RuntimeError("model cannot be None in the weights object")
