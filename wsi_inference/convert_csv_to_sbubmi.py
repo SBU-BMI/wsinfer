@@ -1,6 +1,12 @@
 """Convert CSV of model outputs to Stony Brook BMI formats.
 
-This creates a JSON-lines file and a space-delimited table.
+Directories:
+heatmap_jsons (same as json)
+heatmap_txt
+json (same as heatmap_jsons)
+patch-level-color
+patch-level-lym
+patch-level-merged
 """
 
 from datetime import datetime
@@ -14,6 +20,7 @@ import large_image
 import multiprocessing
 import numpy as np
 import pandas as pd
+import shutil
 import tqdm
 
 
@@ -163,6 +170,8 @@ def write_color_txt(
         # boolean multiplication is logical and
         return np.mean((r >= 190) * (g <= 100) * (b <= 100))
 
+    global get_color  # Hack to please multiprocessing.
+
     def get_color(row: pd.Series):
         arr, _ = ts.getRegion(
             format=large_image.constants.TILE_FORMAT_NUMPY,
@@ -181,11 +190,15 @@ def write_color_txt(
     df = pd.read_csv(input)
     df_rows_as_dicts = df.to_dict("records")
 
+    print("Calculating color information for each patch in the whole slide image...")
+    print("This might take some time.")
+    print("Use a large --num-processes value to hopefully speed it up.")
+
     # https://stackoverflow.com/a/45276885/5666087
     with multiprocessing.Pool(num_processes) as p:
         results = list(
             tqdm.tqdm(
-                p.imap(get_color, df_rows_as_dicts, chunksize=16),
+                p.imap(get_color, df_rows_as_dicts, chunksize=16),  # type: ignore
                 total=len(df_rows_as_dicts),
             )
         )
@@ -214,23 +227,11 @@ def _version() -> str:
 @click.command()
 @click.argument("input", type=click.Path(exists=True, dir_okay=False, path_type=Path))
 @click.option(
-    "--output-jsonl",
-    required=True,
-    type=click.Path(dir_okay=False, exists=False, writable=True, path_type=Path),
-    help="Path to write the JSON file (.json) file.",
+    "--output-dir",
+    type=click.Path(path_type=Path),
+    help="Directory in which to save outputs.",
 )
-@click.option(
-    "--output-table",
-    required=True,
-    type=click.Path(dir_okay=False, exists=False, writable=True, path_type=Path),
-    help="Path to write the text file.",
-)
-@click.option(
-    "--output-color-table",
-    required=True,
-    type=click.Path(dir_okay=False, exists=False, writable=True, path_type=Path),
-    help="Path to write the color text file.",
-)
+# TODO: how are multi-class predictions saved?
 @click.option(
     "--class-name",
     required=True,
@@ -255,9 +256,7 @@ def _version() -> str:
 def cli(
     *,
     input: Path,
-    output_jsonl: Path,
-    output_table: Path,
-    output_color_table: Path,
+    output_dir: Path,
     class_name: str,
     slide: Path,
     subject_id: typing.Optional[str] = None,
@@ -275,21 +274,47 @@ def cli(
     slide_height: int = ts.getMetadata()["sizeY"]
     print(f"Slide dimensions: {slide_width} x {slide_height} (width x height)")
 
+    slide_id = slide.stem
+
+    if not output_dir.exists():
+        print(f"Making directory {output_dir}")
+        output_dir.mkdir()
+
+    # Set up directories.
+    (output_dir / "json").mkdir(exist_ok=True)
+    (output_dir / "heatmap_jsons").mkdir(exist_ok=True)
+    (output_dir / "heatmap_txt").mkdir(exist_ok=True)
+    (output_dir / "patch-level-color").mkdir(exist_ok=True)
+    (output_dir / "patch-level-merged").mkdir(exist_ok=True)
+
+    # Write JSON files with heatmap info.
+    jsonl_output = output_dir / "json" / f"heatmap_{slide_id}.json"
     write_heatmap_json_like(
         input=input,
-        output=output_jsonl,
+        output=jsonl_output,
         class_name=class_name,
         slide_width=slide_width,
         slide_height=slide_height,
         case_id=case_id,
         subject_id=subject_id,
     )
-    click.secho(f"Saved JSON lines output to {output_jsonl}", fg="green")
-    write_heatmap_txt(input=input, output=output_table, class_name=class_name)
-    click.secho(f"Saved table output to {output_table}", fg="green")
+    shutil.copy(jsonl_output, output_dir / "heatmap_jsons")
+    click.secho("Saved JSON heatmaps.", fg="green")
 
-    # Write color text file.
+    # Write tables with predictions.
+    table_output = output_dir / "heatmap_txt" / f"prediction-{slide_id}"
+    write_heatmap_txt(input=input, output=table_output, class_name=class_name)
+    shutil.copy(table_output, output_dir / "patch-level-merged")
+    click.secho("Saved tables with predictions.", fg="green")
+
+    # TODO: add patch-level-CLASS files.
+
+    # Write color tables.
+    color_output = output_dir / "heatmap_txt" / f"prediction-{slide_id}"
     write_color_txt(
-        input=input, output=output_color_table, ts=ts, num_processes=num_processes
+        input=input, output=color_output, ts=ts, num_processes=num_processes
     )
-    click.secho(f"Saved table output to {output_table}", fg="green")
+    shutil.copy(color_output, output_dir / "patch-level-color")
+    click.secho("Saved table with color info.", fg="green")
+
+    click.secho("Finished.", fg="green")
