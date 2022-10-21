@@ -289,7 +289,7 @@ def seg_and_patch(
                 del orig_max, Image
 
                 ts = large_image.getTileSource(full_path)
-                if "mm_x" not in ts.getMetadata().keys():
+                if ts.getMetadata()["mm_x"] is None:
                     print("!" * 40)
                     print("SKIPPING this slide because I cannot find the spacing!")
                     print(full_path)
