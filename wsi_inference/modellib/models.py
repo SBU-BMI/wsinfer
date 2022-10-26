@@ -20,6 +20,7 @@ import torchvision
 
 from .inceptionv4 import inceptionv4 as _inceptionv4
 from .inceptionv4_no_batchnorm import inceptionv4 as _inceptionv4_no_bn
+from .resnet_preact import resnet34_preact as _resnet34_preact
 from .transforms import PatchClassification
 
 PathType = Union[str, pathlib.Path]
@@ -197,7 +198,7 @@ def _load_state_into_model(model: torch.nn.Module, weights: Weights):
     return model
 
 
-def inceptionv4(weights: str = "TCGA-BRCA-v1") -> Weights:
+def inceptionv4(weights: str) -> Weights:
     """Create InceptionV4 model."""
     weights_obj = _get_model_weights("inceptionv4", weights=weights)
     if weights == "TCGA-TILs-v1":
@@ -210,7 +211,7 @@ def inceptionv4(weights: str = "TCGA-BRCA-v1") -> Weights:
     return weights_obj
 
 
-def resnet34(weights: str = "TCGA-BRCA-v1") -> Weights:
+def resnet34(weights: str) -> Weights:
     """Create ResNet34 model."""
     weights_obj = _get_model_weights("resnet34", weights=weights)
     model = torchvision.models.resnet34()
@@ -220,7 +221,17 @@ def resnet34(weights: str = "TCGA-BRCA-v1") -> Weights:
     return weights_obj
 
 
-def vgg16(weights="TCGA-TILs-v1") -> Weights:
+def resnet34_preact(weights: str) -> Weights:
+    """Create ResNet34-Preact model."""
+    weights_obj = _get_model_weights("resnet34", weights=weights)
+    model = _resnet34_preact()
+    model.linear = torch.nn.Linear(model.linear.in_features, weights_obj.num_classes)
+    model = _load_state_into_model(model=model, weights=weights_obj)
+    weights_obj.model = model
+    return weights_obj
+
+
+def vgg16(weights: str) -> Weights:
     """Create VGG16 model."""
     weights_obj = _get_model_weights("vgg16", weights=weights)
     model = torchvision.models.vgg16()
@@ -232,7 +243,7 @@ def vgg16(weights="TCGA-TILs-v1") -> Weights:
     return weights_obj
 
 
-def vgg16_modified(weights="TCGA-BRCA-v1") -> Weights:
+def vgg16_modified(weights: str) -> Weights:
     """Create modified VGG16 model.
 
     The classifier of this model is
@@ -254,6 +265,7 @@ def vgg16_modified(weights="TCGA-BRCA-v1") -> Weights:
 MODELS = dict(
     inceptionv4=inceptionv4,
     resnet34=resnet34,
+    resnet34_preact=resnet34_preact,
     vgg16=vgg16,
     vgg16_modified=vgg16_modified,
 )
