@@ -128,7 +128,7 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
         try:
             self.tilesource.cache._Cache__maxsize = 0
         except AttributeError:
-            ...
+            pass
 
         self.patches = _read_patch_coords(self.patch_path)
         assert self.patches.ndim == 2, "expected 2D array of patch coordinates"
