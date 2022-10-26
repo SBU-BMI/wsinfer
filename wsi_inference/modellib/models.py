@@ -63,7 +63,6 @@ WEIGHTS: Dict[str, Dict[str, Weights]] = {
             num_classes=2,
             transform=PatchClassification(
                 resize_size=299,
-                # TODO: check that the mean and std dev are correct.
                 mean=(0.5, 0.5, 0.5),
                 std=(0.5, 0.5, 0.5),
             ),
@@ -74,7 +73,6 @@ WEIGHTS: Dict[str, Dict[str, Weights]] = {
         ),
         # This uses an implementation without batchnorm. Model was trained with TF Slim
         # and weights were converted to PyTorch (see 'scripts' directory).
-        # TODO: check the processing steps. Jakub has not checked these yet.
         "TCGA-TILs-v1": Weights(
             url="https://stonybrookmedicine.box.com/shared/static/sz1gpc6u3mftadh4g6x3csxnpmztj8po.pt",  # noqa
             file_name="inceptionv4-tils-v1-20200920-e3e72cd2.pt",
@@ -108,6 +106,51 @@ WEIGHTS: Dict[str, Dict[str, Weights]] = {
             spacing_um_px=0.25,
             class_names=["notumor", "tumor"],
             metadata={"patch-size": "350 pixels (87.5 microns)."},
+        ),
+        # Original model is on GitHub
+        # https://github.com/SBU-BMI/quip_lung_cancer_detection/blob/8eac86e837baa371a98ce2fe08348dcf0400a317/models_cnn/train_lung_john_6classes_netDepth-34_APS-350_randomSeed-2954321_numBenign-80000_0131_1818_bestF1_0.8273143068611924_5.t7
+        "TCGA-LUAD-v1": Weights(
+            url="https://stonybrookmedicine.box.com/shared/static/d6g9huv1olfu2mt9yaud9xqf9bdqx38i.pt",  # noqa
+            file_name="resnet34-luad-20210102-93038ae6.pt",
+            num_classes=6,
+            transform=PatchClassification(
+                resize_size=224,
+                # Mean and std from
+                # https://github.com/SBU-BMI/quip_lung_cancer_detection/blob/8eac86e837baa371a98ce2fe08348dcf0400a317/prediction_6classes/tumor_pred/pred.py#L29-L30
+                mean=(0.8301, 0.6600, 0.8054),
+                std=(0.0864, 0.1602, 0.0647),
+            ),
+            patch_size_pixels=350,
+            spacing_um_px=0.5,
+            class_names=[
+                "lepidic",
+                "benign",
+                "acinar",
+                "micropapillary",
+                "mucinous",
+                "solid",
+            ],
+            metadata={},
+        ),
+        # Original model is on GitHub
+        # https://github.com/SBU-BMI/quip_prad_cancer_detection/tree/d80052e0d098a1211432f9abff086974edd9c669/models_cnn
+        # Original file name is
+        # RESNET_34_prostate_beatrice_john___1117_1038_0.9533516227597434_87.t7
+        "TCGA-PRAD-v1": Weights(
+            url="https://stonybrookmedicine.box.com/shared/static/nxyr5atk2nlvgibck3l0q6rjin2g7n38.pt",  # noqa
+            file_name="resnet34-prad-20210101-ea6c004c.pt",
+            num_classes=3,
+            transform=PatchClassification(
+                resize_size=224,
+                # Mean and std from
+                # https://github.com/SBU-BMI/quip_prad_cancer_detection/blob/b71d8440eab090cb789281b33fbf89011e924fb9/prediction_3classes/tumor_pred/pred.py#L27-L28
+                mean=(0.6462, 0.5070, 0.8055),
+                std=(0.1381, 0.1674, 0.1358),
+            ),
+            patch_size_pixels=175,
+            spacing_um_px=0.5,
+            class_names=["grade3", "grade4+5", "benign"],
+            metadata={},
         ),
     },
     "vgg16_modified": {
