@@ -206,7 +206,7 @@ def run_inference(
     if patch_paths_notfound:
         warnings.warn(
             "Patch extraction seems to have failed for the following slides:"
-            + " ".join(str(p) for p in patch_paths_notfound),
+            + " ".join(str(p.stem) for p in patch_paths_notfound),
             category=PatchFilesNotFoundWarning,
         )
 
@@ -235,6 +235,10 @@ def run_inference(
         if slide_csv.exists():
             print("Output CSV exists... skipping.")
             print(slide_csv)
+            continue
+
+        if not patch_path.exists():
+            print(f"Skipping because patch file not found: {patch_path}")
             continue
 
         dset = WholeSlideImagePatches(
