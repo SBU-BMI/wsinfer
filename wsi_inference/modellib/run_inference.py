@@ -144,7 +144,6 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
             targetScale=target_scale,
             format=large_image.tilesource.TILE_FORMAT_PIL,
         )
-        # TODO: consider whether we would ever want the alpha channel.
         patch_im = patch_im.convert("RGB")
         if self.transform is not None:
             patch_im = self.transform(patch_im)
