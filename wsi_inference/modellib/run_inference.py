@@ -122,6 +122,14 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
         self.tilesource: large_image.tilesource.TileSource = large_image.getTileSource(
             self.wsi_path
         )
+        # Disable the tile cache. We wrap this in a try-except because we are accessing
+        # a private attribute. It is possible that this attribute will change names
+        # in the future, and if that happens, we do not want to raise errors.
+        try:
+            self.tilesource.cache._Cache__maxsize = 0
+        except AttributeError:
+            ...
+
         self.patches = _read_patch_coords(self.patch_path)
         assert self.patches.ndim == 2, "expected 2D array of patch coordinates"
         # x, y, width, height
