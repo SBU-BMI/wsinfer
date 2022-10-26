@@ -63,7 +63,6 @@ WEIGHTS: Dict[str, Dict[str, Weights]] = {
             num_classes=2,
             transform=PatchClassification(
                 resize_size=299,
-                # TODO: check that the mean and std dev are correct.
                 mean=(0.5, 0.5, 0.5),
                 std=(0.5, 0.5, 0.5),
             ),
@@ -74,7 +73,6 @@ WEIGHTS: Dict[str, Dict[str, Weights]] = {
         ),
         # This uses an implementation without batchnorm. Model was trained with TF Slim
         # and weights were converted to PyTorch (see 'scripts' directory).
-        # TODO: check the processing steps. Jakub has not checked these yet.
         "TCGA-TILs-v1": Weights(
             url="https://stonybrookmedicine.box.com/shared/static/sz1gpc6u3mftadh4g6x3csxnpmztj8po.pt",  # noqa
             file_name="inceptionv4-tils-v1-20200920-e3e72cd2.pt",
@@ -124,7 +122,6 @@ WEIGHTS: Dict[str, Dict[str, Weights]] = {
             ),
             patch_size_pixels=350,
             spacing_um_px=0.5,
-            # TODO: double check the class names.
             class_names=[
                 "lepidic",
                 "benign",
@@ -139,10 +136,6 @@ WEIGHTS: Dict[str, Dict[str, Weights]] = {
         # https://github.com/SBU-BMI/quip_prad_cancer_detection/tree/d80052e0d098a1211432f9abff086974edd9c669/models_cnn
         # Original file name is
         # RESNET_34_prostate_beatrice_john___1117_1038_0.9533516227597434_87.t7
-        #
-        # TODO: there seems to be some post-processing... We should double check and
-        # implement it. See
-        # https://github.com/SBU-BMI/quip_prad_cancer_detection/blob/53870a7db8e48673bee1d60db6f561d39483b859/heatmap_gen_separate_classes/3_thresholded_heatmap_txt.py#L20
         "TCGA-PRAD-v1": Weights(
             url="https://stonybrookmedicine.box.com/shared/static/nxyr5atk2nlvgibck3l0q6rjin2g7n38.pt",  # noqa
             file_name="resnet34-prad-20210101-ea6c004c.pt",
