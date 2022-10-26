@@ -1,3 +1,7 @@
+# Changes in the Dockerfiles should not invalidate build cache.
+/dockerfiles
+Dockerfile
+
 # Data
 scratch/
 *.csv

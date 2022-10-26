@@ -7,9 +7,12 @@ RUN apt-get update \
         --find-links https://girder.github.io/large_image_wheels \
     && apt-get autoremove --yes gcc \
     && rm -rf /var/lib/apt/lists/*
-WORKDIR /work
-ENTRYPOINT ["wsi_run"]
 # Use a writable directory for downloading model weights. Default is ~/.cache, which is
 # not guaranteed to be writable in a Docker container.
-ENV TORCH_HOME=/tmp/torch
+ENV TORCH_HOME=/var/lib/wsi_inference
+RUN mkdir -p "$TORCH_HOME" \
+    && chmod 777 "$TORCH_HOME" \
+    && chmod a+s "$TORCH_HOME"
+WORKDIR /work
+ENTRYPOINT ["wsi_run"]
 LABEL maintainer="Jakub Kaczmarzyk <jakub.kaczmarzyk@stonybrookmedicine.edu>"

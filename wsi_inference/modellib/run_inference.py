@@ -7,6 +7,7 @@ From the original paper (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7369575/):
 
 import pathlib
 import typing
+import warnings
 
 import h5py
 import large_image
@@ -45,7 +46,7 @@ class PatchDirectoryNotFound(FileNotFoundError):
     ...
 
 
-class PatchFilesNotFound(FileNotFoundError):
+class PatchFilesNotFoundWarning(UserWarning):
     ...
 
 
@@ -203,7 +204,11 @@ def run_inference(
     patch_paths = [patch_dir / p.with_suffix(".h5").name for p in wsi_paths]
     patch_paths_notfound = [p for p in patch_paths if not p.exists()]
     if patch_paths_notfound:
-        raise PatchFilesNotFound(patch_paths_notfound)
+        warnings.warn(
+            "Patch extraction seems to have failed for the following slides:"
+            + " ".join(str(p.stem) for p in patch_paths_notfound),
+            category=PatchFilesNotFoundWarning,
+        )
 
     if weights.model is None:
         raise RuntimeError("model cannot be None in the weights object")
@@ -230,6 +235,10 @@ def run_inference(
         if slide_csv.exists():
             print("Output CSV exists... skipping.")
             print(slide_csv)
+            continue
+
+        if not patch_path.exists():
+            print(f"Skipping because patch file not found: {patch_path}")
             continue
 
         dset = WholeSlideImagePatches(
@@ -271,7 +280,11 @@ def run_inference(
             )
         )
         slide_probs_arr = np.concatenate(slide_probs, axis=0)
-        slide_df.loc[:, weights.class_names] = slide_probs_arr
+        # Use 'prob-' prefix for all classes. This should make it clearer that the
+        # column has probabilities for the class. It also makes it easier for us to
+        # identify columns associated with probabilities.
+        prob_colnames = [f"prob_{c}" for c in weights.class_names]
+        slide_df.loc[:, prob_colnames] = slide_probs_arr
         slide_df.to_csv(slide_csv, index=False)
         print("-" * 40)
 

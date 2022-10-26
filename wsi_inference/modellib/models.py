@@ -19,6 +19,7 @@ from torch.hub import load_state_dict_from_url
 import torchvision
 
 from .inceptionv4 import inceptionv4 as _inceptionv4
+from .inceptionv4_no_batchnorm import inceptionv4 as _inceptionv4_no_bn
 from .transforms import PatchClassification
 
 PathType = Union[str, pathlib.Path]
@@ -71,6 +72,27 @@ WEIGHTS: Dict[str, Dict[str, Weights]] = {
             class_names=["notumor", "tumor"],
             metadata={"patch-size": "350 pixels (87.5 microns)"},
         ),
+        # This uses an implementation without batchnorm. Model was trained with TF Slim
+        # and weights were converted to PyTorch (see 'scripts' directory).
+        # TODO: check the processing steps. Jakub has not checked these yet.
+        "TCGA-TILs-v1": Weights(
+            url="https://stonybrookmedicine.box.com/shared/static/sz1gpc6u3mftadh4g6x3csxnpmztj8po.pt",  # noqa
+            file_name="inceptionv4-tils-v1-20200920-e3e72cd2.pt",
+            num_classes=2,
+            transform=PatchClassification(
+                resize_size=299, mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)
+            ),
+            patch_size_pixels=100,
+            spacing_um_px=0.5,
+            class_names=["notils", "tils"],
+            metadata={
+                "publication": "https://doi.org/10.3389/fonc.2021.806603",
+                "notes": (
+                    "Implementation does not use batchnorm. Original model was trained"
+                    " with TF Slim and converted to PyTorch format."
+                ),
+            },
+        ),
     },
     "resnet34": {
         "TCGA-BRCA-v1": Weights(
@@ -85,8 +107,8 @@ WEIGHTS: Dict[str, Dict[str, Weights]] = {
             patch_size_pixels=350,
             spacing_um_px=0.25,
             class_names=["notumor", "tumor"],
-            metadata={"patch-size": "350 pixels (87.5 microns)"},
-        )
+            metadata={"patch-size": "350 pixels (87.5 microns)."},
+        ),
     },
     "vgg16_modified": {
         "TCGA-BRCA-v1": Weights(
@@ -135,7 +157,11 @@ def _load_state_into_model(model: torch.nn.Module, weights: Weights):
 def inceptionv4(weights: str = "TCGA-BRCA-v1") -> Weights:
     """Create InceptionV4 model."""
     weights_obj = _get_model_weights("inceptionv4", weights=weights)
-    model = _inceptionv4(num_classes=weights_obj.num_classes, pretrained=False)
+    if weights == "TCGA-TILs-v1":
+        # TCGA-TILs-v1 model uses inceptionv4 without batchnorm.
+        model = _inceptionv4_no_bn(weights_obj.num_classes, pretrained=False)
+    else:
+        model = _inceptionv4(num_classes=weights_obj.num_classes, pretrained=False)
     model = _load_state_into_model(model=model, weights=weights_obj)
     weights_obj.model = model
     return weights_obj
@@ -146,6 +172,18 @@ def resnet34(weights: str = "TCGA-BRCA-v1") -> Weights:
     weights_obj = _get_model_weights("resnet34", weights=weights)
     model = torchvision.models.resnet34()
     model.fc = torch.nn.Linear(model.fc.in_features, weights_obj.num_classes)
+    model = _load_state_into_model(model=model, weights=weights_obj)
+    weights_obj.model = model
+    return weights_obj
+
+
+def vgg16(weights="TCGA-TILs-v1") -> Weights:
+    """Create VGG16 model."""
+    weights_obj = _get_model_weights("vgg16", weights=weights)
+    model = torchvision.models.vgg16()
+    in_features = model.classifier[6].in_features
+    model.classifier[6] = torch.nn.Linear(in_features, weights_obj.num_classes)
+    in_features = model.classifier[0].in_features
     model = _load_state_into_model(model=model, weights=weights_obj)
     weights_obj.model = model
     return weights_obj
@@ -173,6 +211,7 @@ def vgg16_modified(weights="TCGA-BRCA-v1") -> Weights:
 MODELS = dict(
     inceptionv4=inceptionv4,
     resnet34=resnet34,
+    vgg16=vgg16,
     vgg16_modified=vgg16_modified,
 )
 
