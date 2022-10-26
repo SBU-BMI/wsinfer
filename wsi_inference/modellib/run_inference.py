@@ -280,7 +280,11 @@ def run_inference(
             )
         )
         slide_probs_arr = np.concatenate(slide_probs, axis=0)
-        slide_df.loc[:, weights.class_names] = slide_probs_arr
+        # Use 'prob-' prefix for all classes. This should make it clearer that the
+        # column has probabilities for the class. It also makes it easier for us to
+        # identify columns associated with probabilities.
+        prob_colnames = [f"prob_{c}" for c in weights.class_names]
+        slide_df.loc[:, prob_colnames] = slide_probs_arr
         slide_df.to_csv(slide_csv, index=False)
         print("-" * 40)
 
