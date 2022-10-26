@@ -20,9 +20,12 @@ def _box_to_polygon(
     return [(maxx, miny), (maxx, maxy), (minx, maxy), (minx, miny), (maxx, miny)]
 
 
-def _row_to_geojson(row: pd.Series, class_name: str) -> typing.Dict:
+def _row_to_geojson(row: pd.Series, prob_cols: typing.List[str]) -> typing.Dict:
+    """Convert information about one tile to a single GeoJSON feature."""
     minx, miny, width, height = row["minx"], row["miny"], row["width"], row["height"]
     coords = _box_to_polygon(minx=minx, miny=miny, width=width, height=height)
+    prob_dict = row[prob_cols].to_dict()
+    measurements = [{"name": k, "value": v} for k, v in prob_dict.items()]
     return {
         "type": "Feature",
         "id": "PathTileObject",
@@ -32,23 +35,33 @@ def _row_to_geojson(row: pd.Series, class_name: str) -> typing.Dict:
         },
         "properties": {
             "isLocked": True,
-            "measurements": [{"name": "Probability", "value": row[class_name]}],
-            "classification": {"name": "Tumor"},
+            # measurements is a list of {"name": str, "value": float} dicts.
+            # https://qupath.github.io/javadoc/docs/qupath/lib/measurements/MeasurementList.html
+            "measurements": measurements,
+            # classification is a dict of "name": str and optionally "color": int.
+            # https://qupath.github.io/javadoc/docs/qupath/lib/objects/classes/PathClass.html
+            # We do not include classification because we do not enforce a single class
+            # per tile.
+            # "classification": {"name": class_name},
         },
     }
 
 
-def _dataframe_to_geojson(df: pd.DataFrame, class_name: str) -> typing.Dict:
-    features = df.apply(_row_to_geojson, axis=1, class_name=class_name)
+def _dataframe_to_geojson(df: pd.DataFrame, prob_cols: typing.List[str]) -> typing.Dict:
+    """Convert a dataframe of tiles to GeoJSON format."""
+    features = df.apply(_row_to_geojson, axis=1, prob_cols=prob_cols)
     return {
         "type": "FeatureCollection",
         "features": features.tolist(),
     }
 
 
-def convert(input, output, class_name: str) -> None:
+def convert(input, output) -> None:
     df = pd.read_csv(input)
-    geojson = _dataframe_to_geojson(df, class_name=class_name)
+    prob_cols = [col for col in df.columns.tolist() if col.startswith("prob_")]
+    if not prob_cols:
+        raise click.ClickException("Did not find any columns with prob_ prefix.")
+    geojson = _dataframe_to_geojson(df, prob_cols)
     with open(output, "w") as f:
         json.dump(geojson, f)
 
@@ -66,9 +79,8 @@ def _version() -> str:
     "output",
     type=click.Path(dir_okay=False, exists=False, writable=True, path_type=Path),
 )
-@click.option("--class-name", help="Name of the class to use for probability values.")
 @click.version_option(version=_version())
-def cli(*, input: Path, output: Path, class_name: str):
+def cli(*, input: Path, output: Path):
     """Convert CSV of patch predictions to a GeoJSON file.
 
     GeoJSON files can be used with pathology viewers like QuPath.
@@ -78,5 +90,5 @@ def cli(*, input: Path, output: Path, class_name: str):
     OUTPUT      Path to output GeoJSON file (with .json extension)
     """
     click.echo(f"Reading CSV: {input}")
-    convert(input=input, output=output, class_name=class_name)
+    convert(input=input, output=output)
     click.secho(f"Saved output to {output}", fg="green")
