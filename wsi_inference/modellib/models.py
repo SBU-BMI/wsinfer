@@ -154,6 +154,22 @@ WEIGHTS: Dict[str, Dict[str, Weights]] = {
             metadata={},
         ),
     },
+    "resnet34_preact": {
+        "TCGA-PAAD-v1": Weights(
+            url="https://stonybrookmedicine.box.com/shared/static/sol1h9aqrh8lynzc6kidw1lsoeks20hh.pt",  # noqa
+            file_name="preactresnet34-paad-20210101-7892b41f.pt",
+            num_classes=1,
+            transform=PatchClassification(
+                resize_size=224,
+                mean=(0.7238, 0.5716, 0.6779),
+                std=(0.1120, 0.1459, 0.1089),
+            ),
+            patch_size_pixels=350,
+            spacing_um_px=None,  # TODO: what is the correct value?
+            class_names=["tumor"],
+            metadata={},
+        ),
+    },
     "vgg16_modified": {
         "TCGA-BRCA-v1": Weights(
             url="https://stonybrookmedicine.box.com/shared/static/197s56yvcrdpan7eu5tq8d4gxvq3xded.pt",  # noqa

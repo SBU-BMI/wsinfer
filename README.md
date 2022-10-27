@@ -246,3 +246,8 @@ orig_model = torch.load(model_path, map_location="cpu")
 state_dict = orig_model["model"].module.state_dict()
 torch.save(state_dict, "vgg16-modified-new.pt")
 ```
+
+
+## Preactivation ResNet34
+
+The model was downloaded from SBU's PAAD detection [repository](https://github.com/SBU-BMI/quip_paad_cancer_detection/blob/master/models_cnn/paad_baseline_preact-res34_train_TCGA_ensemble_epoch_7_auc_0.8595125864960883). The "net" value of the state dict contained the model weights.
