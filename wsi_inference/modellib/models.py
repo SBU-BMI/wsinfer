@@ -165,7 +165,10 @@ WEIGHTS: Dict[str, Dict[str, Weights]] = {
                 std=(0.1120, 0.1459, 0.1089),
             ),
             patch_size_pixels=350,
-            spacing_um_px=None,  # TODO: what is the correct value?
+            # Patches are 525.1106 microns.
+            # Patch of 2078 pixels @ 0.2527 mpp is 350 pixels at our target spacing.
+            # (2078 * 0.2527) / 350
+            spacing_um_px=1.500316,
             class_names=["tumor"],
             metadata={},
         ),
