@@ -242,7 +242,7 @@ def resnet34(weights: str) -> Weights:
 
 def resnet34_preact(weights: str) -> Weights:
     """Create ResNet34-Preact model."""
-    weights_obj = _get_model_weights("resnet34", weights=weights)
+    weights_obj = _get_model_weights("resnet34_preact", weights=weights)
     model = _resnet34_preact()
     model.linear = torch.nn.Linear(model.linear.in_features, weights_obj.num_classes)
     model = _load_state_into_model(model=model, weights=weights_obj)
