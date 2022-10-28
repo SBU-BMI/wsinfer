@@ -111,7 +111,6 @@ class PreActResNet(nn.Module):
         out = F.avg_pool2d(out, out.size(2))
         out = out.view(out.size(0), -1)
         out = self.linear(out)
-        out = out.squeeze()
         return out
 
 
