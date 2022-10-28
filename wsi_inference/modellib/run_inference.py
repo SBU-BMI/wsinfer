@@ -270,9 +270,11 @@ def run_inference(
             assert batch_imgs.shape[0] == batch_coords.shape[0], "length mismatch"
             with torch.no_grad():
                 logits: torch.Tensor = model(batch_imgs.to(device)).detach().cpu()
-            # probs has shape (batch_size, num_classes)
-            probs = torch.nn.functional.softmax(logits, dim=1)
-
+            # probs has shape (batch_size, num_classes) or (batch_size,)
+            if len(logits.shape) > 1 and logits.shape[1] > 1:
+                probs = torch.nn.functional.softmax(logits, dim=1)
+            else:
+                probs = torch.sigmoid(logits.squeeze(1))
             slide_coords.append(batch_coords.numpy())
             slide_probs.append(probs.numpy())
 
