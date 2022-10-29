@@ -8,9 +8,24 @@ Original H&E                        |  Heatmap of Tumor Probability
 
 # Installation
 
+## Pip
+
+Pip install this package from GitHub. First install `torch` and `torchvision`
+(please see [the PyTorch documentation](https://pytorch.org/get-started/locally/)).
+We do not install these dependencies automatically because their installation can vary based
+on a user's system. Then use the command below to install this package.
+
+```
+python -m pip install \
+    --find-links https://girder.github.io/large_image_wheels \
+    git+https://github.com/kaczmarj/patch-classification-pipeline.git
+```
+
 ## Containers
 
 Use the Docker / Singularity / Apptainer image, which includes all of the dependencies and scripts.
+See [DockerHub](https://hub.docker.com/r/kaczmarj/patch-classification-pipeline/tags) for
+the available tags.
 
 - Apptainer / Singularity
 
@@ -26,17 +41,17 @@ Use the Docker / Singularity / Apptainer image, which includes all of the depend
     docker pull kaczmarj/patch-classification-pipeline
     ```
 
-## Without a container (using pip)
+### Containers for different classification tasks
 
-Alternatively, install from GitHub. You will also have to install `torch` and
-`torchvision` (please see [the PyTorch documentation](https://pytorch.org/get-started/locally/)).
-We do not install these dependencies automatically because their installation can vary based
-on a user's system.
+We distribute containers that include weights for different tasks, and these containers
+have a simplified command-line interface of `command SLIDE_DIR OUTPUT_DIR`.
+See [DockerHub](https://hub.docker.com/r/kaczmarj/patch-classification-pipeline/tags) for
+the available tags. The Dockerfiles are in [`dockerfiles/`](/dockerfiles/) Here is an example:
 
 ```
-python -m pip install \
-    --find-links https://girder.github.io/large_image_wheels \
-    git+https://github.com/kaczmarj/patch-classification-pipeline.git
+apptainer pull docker://kaczmarj/patch-classification-pipeline:v0.2.0-paad-resnet34
+CUDA_VISIBLE_DEVICES=0 apptainer run --nv --bind $(pwd) patch-classification-pipeline_v0.2.0-paad-resnet34.sif \
+    --wsi_dir slides/ --results_dir results/
 ```
 
 ## Developers
@@ -77,7 +92,6 @@ Run the pipeline (without a container). This will apply the pipeline to all of t
 images in `sample-images/` (only 1 in this example) and will write results to
 `results/`. We set `CUDA_VISIBLE_DEVICES=0` to use the first GPU listed in
 `nvidia-smi`. If you do not have a GPU, model inference can take about 20 minutes.
-(The patch spacing is == 88 um / 350 pixels.)
 
 ```
 CUDA_VISIBLE_DEVICES=0 wsi_run \
@@ -90,7 +104,7 @@ CUDA_VISIBLE_DEVICES=0 wsi_run \
 
 ## Run in an Apptainer container (formerly Singularity)
 
-I use the commands `apptainer` here, but if you don't have `apptainer`, you can simply
+I use the commands `apptainer` here, but if you don't have `apptainer`, you can
 replace that with `singularity`. The command line interfaces are the same (as of August 26, 2022).
 
 ```
@@ -174,7 +188,7 @@ are a type of geometric data structure. Popular whole slide image viewers like Q
 are able to load labels in GeoJSON format.
 
 ```
-wsi_convert_csv_to_geojson --class-name tumor results/model-outputs/CMU-1.csv CMU-1.json
+wsi_convert_csv_to_geojson results/ geojson-results
 ```
 
 ## Convert to Stony Brook QuIP format
@@ -199,8 +213,6 @@ for filename in model-outputs/*; do
         --class-name tumor model-outputs/${filename}.csv
 done
 ```
-
-
 
 # Convert original models to newer PyTorch format
 
