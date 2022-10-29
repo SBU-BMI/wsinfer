@@ -20,6 +20,7 @@ import torchvision
 
 from .inceptionv4 import inceptionv4 as _inceptionv4
 from .inceptionv4_no_batchnorm import inceptionv4 as _inceptionv4_no_bn
+from .resnet_preact import resnet34_preact as _resnet34_preact
 from .transforms import PatchClassification
 
 PathType = Union[str, pathlib.Path]
@@ -153,6 +154,25 @@ WEIGHTS: Dict[str, Dict[str, Weights]] = {
             metadata={},
         ),
     },
+    "resnet34_preact": {
+        "TCGA-PAAD-v1": Weights(
+            url="https://stonybrookmedicine.box.com/shared/static/sol1h9aqrh8lynzc6kidw1lsoeks20hh.pt",  # noqa
+            file_name="preactresnet34-paad-20210101-7892b41f.pt",
+            num_classes=1,
+            transform=PatchClassification(
+                resize_size=224,
+                mean=(0.7238, 0.5716, 0.6779),
+                std=(0.1120, 0.1459, 0.1089),
+            ),
+            patch_size_pixels=350,
+            # Patches are 525.1106 microns.
+            # Patch of 2078 pixels @ 0.2527 mpp is 350 pixels at our target spacing.
+            # (2078 * 0.2527) / 350
+            spacing_um_px=1.500316,
+            class_names=["tumor"],
+            metadata={},
+        ),
+    },
     "vgg16_modified": {
         "TCGA-BRCA-v1": Weights(
             url="https://stonybrookmedicine.box.com/shared/static/197s56yvcrdpan7eu5tq8d4gxvq3xded.pt",  # noqa
@@ -197,7 +217,7 @@ def _load_state_into_model(model: torch.nn.Module, weights: Weights):
     return model
 
 
-def inceptionv4(weights: str = "TCGA-BRCA-v1") -> Weights:
+def inceptionv4(weights: str) -> Weights:
     """Create InceptionV4 model."""
     weights_obj = _get_model_weights("inceptionv4", weights=weights)
     if weights == "TCGA-TILs-v1":
@@ -210,7 +230,7 @@ def inceptionv4(weights: str = "TCGA-BRCA-v1") -> Weights:
     return weights_obj
 
 
-def resnet34(weights: str = "TCGA-BRCA-v1") -> Weights:
+def resnet34(weights: str) -> Weights:
     """Create ResNet34 model."""
     weights_obj = _get_model_weights("resnet34", weights=weights)
     model = torchvision.models.resnet34()
@@ -220,7 +240,17 @@ def resnet34(weights: str = "TCGA-BRCA-v1") -> Weights:
     return weights_obj
 
 
-def vgg16(weights="TCGA-TILs-v1") -> Weights:
+def resnet34_preact(weights: str) -> Weights:
+    """Create ResNet34-Preact model."""
+    weights_obj = _get_model_weights("resnet34_preact", weights=weights)
+    model = _resnet34_preact()
+    model.linear = torch.nn.Linear(model.linear.in_features, weights_obj.num_classes)
+    model = _load_state_into_model(model=model, weights=weights_obj)
+    weights_obj.model = model
+    return weights_obj
+
+
+def vgg16(weights: str) -> Weights:
     """Create VGG16 model."""
     weights_obj = _get_model_weights("vgg16", weights=weights)
     model = torchvision.models.vgg16()
@@ -232,7 +262,7 @@ def vgg16(weights="TCGA-TILs-v1") -> Weights:
     return weights_obj
 
 
-def vgg16_modified(weights="TCGA-BRCA-v1") -> Weights:
+def vgg16_modified(weights: str) -> Weights:
     """Create modified VGG16 model.
 
     The classifier of this model is
@@ -254,6 +284,7 @@ def vgg16_modified(weights="TCGA-BRCA-v1") -> Weights:
 MODELS = dict(
     inceptionv4=inceptionv4,
     resnet34=resnet34,
+    resnet34_preact=resnet34_preact,
     vgg16=vgg16,
     vgg16_modified=vgg16_modified,
 )
