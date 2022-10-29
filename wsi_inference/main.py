@@ -85,7 +85,7 @@ def _print_system_info() -> None:
         click.secho("*******************************************", fg="yellow")
 
 
-@click.command()
+@click.command(context_settings=dict(auto_envvar_prefix="WSIRUN"))
 @click.pass_context
 @click.option(
     "--wsi_dir",
