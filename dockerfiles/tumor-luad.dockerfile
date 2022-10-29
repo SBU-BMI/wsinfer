@@ -9,6 +9,6 @@ ENV WSIRUN_MODEL="resnet34"
 ENV WSIRUN_WEIGHTS="TCGA-LUAD-v1"
 
 # Download the weights.
-RUN python -c "from wsi_inference.modellib import models; models.$WSIRUN_MODEL(\"$WSIRUN_WEIGHTS\")"
-# Downloaded models are mode 0600. Make them readable by all users.
-RUN chmod -R +r $TORCH_HOME/hub/checkpoints/
+RUN python -c "from wsi_inference.modellib import models; models.$WSIRUN_MODEL(\"$WSIRUN_WEIGHTS\")" \
+    # Downloaded models are mode 0600. Make them readable by all users.
+    && chmod -R +r $TORCH_HOME/hub/checkpoints/
