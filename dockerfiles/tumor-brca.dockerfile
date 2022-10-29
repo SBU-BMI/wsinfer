@@ -5,4 +5,7 @@
 FROM kaczmarj/patch-classification-pipeline:v0.1.0
 # Download the TCGA-BRCA-v1 weights for resnet34.
 RUN python -c 'from wsi_inference.modellib import models; models.resnet34("TCGA-BRCA-v1")'
+# The CLI will use these env vars for model and weights.
+ENV WSIRUN_MODEL="resnet34_preact"
+ENV WSIRUN_WEIGHTS="TCGA-PAAD-v1"
 LABEL maintainer="Jakub Kaczmarzyk <jakub.kaczmarzyk@stonybrookmedicine.edu>"
