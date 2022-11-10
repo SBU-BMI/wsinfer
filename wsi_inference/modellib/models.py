@@ -36,7 +36,42 @@ class WeightsNotFoundError(Exception):
 
 @dataclasses.dataclass
 class Weights:
-    """Container for data associated with a trained model."""
+    """Container for data associated with a trained model.
+
+    Parameters
+    ----------
+    url : str
+        URL to the model weights.
+    file_name : str
+        Name for file downloaded from url.
+    num_classes : int
+        Number of classes that the model outputs.
+    transform : callable
+        Transformation of input image before feeding to model. This is where images are
+        resized and/or normalized.
+    patch_size_pixels : int
+        The size of a patch (before resizing) in pixels.
+    spacing_um_px : float
+        The spacing of a pixel in micrometers per pixel. The size of a patch in
+        micrometers is `patch_size_pixels * spacing_um_px`.
+    class_names : list of str
+        Names associated with output classes. Length must be equal to `num_classes`.
+    metadata : dict
+        Dictionary of metadata.
+    model : torch.nn.Module, optional
+        PyTorch model associated with these weights. This is optional because the
+        metata in this dataclass is used to first fetch the model. Then the model can
+        be assigned to the `model` attribute. Default is `None`.
+    center_square_output_pixels : int, optional
+        If this is set, the model is applied to a patch of size `patch_size_pixels`
+        but the output is only kept for the square in the center of size
+        `center_square_output_pixels`. For example, a model can be applied to a patch
+        of 100x100 pixels, but the output of the model means that the central 50x50
+        pixel is positive for something, then the coordinates of the central patch
+        are saved with the output. In addition, if this is set, then the whole slide
+        image should be patched in such a way that the patches are `patch_size_pixels`
+        wide and the stride should be `center_square_output_pixels`.
+    """
 
     url: str
     file_name: str
@@ -47,12 +82,23 @@ class Weights:
     class_names: List[str]
     metadata: Dict[str, Any]
     model: Optional[torch.nn.Module] = None
+    center_square_output_pixels: Optional[int] = None
 
     def __post_init__(self):
         if len(set(self.class_names)) != len(self.class_names):
             raise ValueError("class_names cannot contain duplicates")
         if len(self.class_names) != self.num_classes:
             raise ValueError("length of class_names must be equal to num_classes")
+        if self.center_square_output_pixels is not None:
+            if self.center_square_output_pixels <= 0:
+                raise ValueError("center_square_output_pixels must be positive")
+            if self.center_square_output_pixels > self.patch_size_pixels:
+                raise ValueError(
+                    "center_square_output_pixels cannot be larger than"
+                    " patch_size_pixels"
+                )
+            if self.center_square_output_pixels % 2 != 0:
+                raise ValueError("center_square_output_pixels must be even")
 
 
 # Store all available weights for all models.
@@ -81,7 +127,9 @@ WEIGHTS: Dict[str, Dict[str, Weights]] = {
             transform=PatchClassification(
                 resize_size=299, mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)
             ),
-            patch_size_pixels=100,
+            # 150x150 um2 for inference. The result is for 50x50 um2 center.
+            patch_size_pixels=300,
+            center_square_output_pixels=100,
             spacing_um_px=0.5,
             class_names=["notils", "tils"],
             metadata={
