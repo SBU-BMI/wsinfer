@@ -162,6 +162,7 @@ def seg_and_patch(
     stitch_times = 0.0
 
     orig_patch_size = patch_size
+    orig_step_size = step_size
 
     for i in range(total):
         df.to_csv(os.path.join(save_dir, "process_list_autogen.csv"), index=False)
@@ -298,9 +299,16 @@ def seg_and_patch(
                 patch_mm = patch_spacing / 1000  # convert micrometer to millimeter.
                 patch_size = orig_patch_size * patch_mm / ts.getMetadata()["mm_x"]
                 patch_size = round(patch_size)
+
+                # Get the proper step size if it is defined.
+                if orig_step_size is not None:
+                    step_size = orig_step_size * patch_mm / ts.getMetadata()["mm_x"]
+                    step_size = round(step_size)
+
                 del ts
             # Use non-overlapping patches by default.
-            step_size = step_size or patch_size
+            if orig_step_size is None:
+                step_size = patch_size
             # ----------------------------------------------------------------------
 
             current_patch_params.update(

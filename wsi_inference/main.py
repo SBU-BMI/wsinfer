@@ -203,6 +203,7 @@ def cli(
             save_dir=str(results_dir),
             patch_size=weights_obj.patch_size_pixels,
             patch_spacing=weights_obj.spacing_um_px,
+            step_size=weights_obj.center_square_output_pixels,
             seg=True,
             patch=True,
             preset="tcga.csv",
