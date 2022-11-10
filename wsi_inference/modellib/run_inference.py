@@ -279,6 +279,32 @@ def run_inference(
             slide_probs.append(probs.numpy())
 
         slide_coords_arr = np.concatenate(slide_coords, axis=0)
+
+        # If the model outputs correspond to a smaller, central square in each patch,
+        # modify the coordinates to reflect this.
+        # All minx are moved to the right, and all miny are moved down.
+        if weights.center_square_output_pixels is not None:
+            # Get the size of the center in base pixel units.
+            ratio = weights.center_square_output_pixels / weights.patch_size_pixels
+            center_square_base_pixels_width = slide_coords_arr[:, 2] * ratio
+            center_square_base_pixels_height = slide_coords_arr[:, 3] * ratio
+            # Move all minx to the right and all miny down.
+            slide_coords_arr[:, 0] += (
+                ((slide_coords_arr[:, 2] - center_square_base_pixels_width) / 2)
+                .round()
+                .astype(int)
+            )
+            slide_coords_arr[:, 1] += (
+                ((slide_coords_arr[:, 3] - center_square_base_pixels_height) / 2)
+                .round()
+                .astype(int)
+            )
+            # Overwrite width and height with the center patch width and height.
+            slide_coords_arr[:, 2] = center_square_base_pixels_width.round().astype(int)
+            slide_coords_arr[:, 3] = center_square_base_pixels_height.round().astype(
+                int
+            )
+
         slide_df = pd.DataFrame(
             dict(
                 slide=wsi_path,
