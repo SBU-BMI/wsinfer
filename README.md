@@ -6,6 +6,18 @@ Original H&E                        |  Heatmap of Tumor Probability
 
 🔥 🚀 Blazingly fast pipeline to run patch-based classification models on whole slide images.
 
+# Available models
+
+| Classification task                     | Output classes                                           | Model           | Weights name | Reference                                                    |
+|-----------------------------------------|----------------------------------------------------------|-----------------|--------------|--------------------------------------------------------------|
+| Breast adenocarcinoma detection         | no-tumor, tumor                                          | inceptionv4     | TCGA-BRCA-v1 | [ref](https://doi.org/10.1016%2Fj.ajpath.2020.03.012)        |
+| Breast adenocarcinoma detection         | no-tumor, tumor                                          | resnet34        | TCGA-BRCA-v1 | [ref](https://doi.org/10.1016%2Fj.ajpath.2020.03.012)        |
+| Breast adenocarcinoma detection         | no-tumor, tumor                                          | vgg16_modified  | TCGA-BRCA-v1 | [ref](https://doi.org/10.1016%2Fj.ajpath.2020.03.012)        |
+| Lung adenocarcinoma detection           | lepidic, benign, acinar, micropapillary, mucinous, solid | resnet34        | TCGA-LUAD-v1 | [ref](https://github.com/SBU-BMI/quip_lung_cancer_detection) |
+| Pancreatic adenocarcinoma detection     | tumor-positive                                           | resnet34_preact | TCGA-PAAD-v1 | [ref](https://doi.org/10.1007/978-3-030-32239-7_60)          |
+| Prostate adenocarcinoma detection       | grade3, grade4+5, benign                                 | resnet34        | TCGA-PRAD-v1 | [ref](https://github.com/SBU-BMI/quip_prad_cancer_detection) |
+| Tumor-infiltrating lymphocyte detection | til-positive                                             | inceptionv4     | TCGA-TILs-v1 | [ref](https://doi.org/10.3389/fonc.2021.806603)              |
+
 # Installation
 
 ## Pip
