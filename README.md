@@ -16,7 +16,7 @@ Original H&E                        |  Heatmap of Tumor Probability
 | Lung adenocarcinoma detection           | lepidic, benign, acinar, micropapillary, mucinous, solid | resnet34        | TCGA-LUAD-v1 | [ref](https://github.com/SBU-BMI/quip_lung_cancer_detection) |
 | Pancreatic adenocarcinoma detection     | tumor-positive                                           | resnet34_preact | TCGA-PAAD-v1 | [ref](https://doi.org/10.1007/978-3-030-32239-7_60)          |
 | Prostate adenocarcinoma detection       | grade3, grade4+5, benign                                 | resnet34        | TCGA-PRAD-v1 | [ref](https://github.com/SBU-BMI/quip_prad_cancer_detection) |
-| Tumor-infiltrating lymphocyte detection | til-positive                                             | inceptionv4     | TCGA-TILs-v1 | [ref](https://doi.org/10.3389/fonc.2021.806603)              |
+| Tumor-infiltrating lymphocyte detection | til-negative, til-positive                                             | inceptionv4     | TCGA-TILs-v1 | [ref](https://doi.org/10.3389/fonc.2021.806603)              |
 
 # Installation
 
