@@ -127,9 +127,7 @@ WEIGHTS: Dict[str, Dict[str, Weights]] = {
             transform=PatchClassification(
                 resize_size=299, mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)
             ),
-            # 150x150 um2 for inference. The result is for 50x50 um2 center.
-            patch_size_pixels=300,
-            center_square_output_pixels=100,
+            patch_size_pixels=100,
             spacing_um_px=0.5,
             class_names=["notils", "tils"],
             metadata={
