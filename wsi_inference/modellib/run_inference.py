@@ -122,6 +122,14 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
         self.tilesource: large_image.tilesource.TileSource = large_image.getTileSource(
             self.wsi_path
         )
+        # Disable the tile cache. We wrap this in a try-except because we are accessing
+        # a private attribute. It is possible that this attribute will change names
+        # in the future, and if that happens, we do not want to raise errors.
+        try:
+            self.tilesource.cache._Cache__maxsize = 0
+        except AttributeError:
+            pass
+
         self.patches = _read_patch_coords(self.patch_path)
         assert self.patches.ndim == 2, "expected 2D array of patch coordinates"
         # x, y, width, height
@@ -262,9 +270,11 @@ def run_inference(
             assert batch_imgs.shape[0] == batch_coords.shape[0], "length mismatch"
             with torch.no_grad():
                 logits: torch.Tensor = model(batch_imgs.to(device)).detach().cpu()
-            # probs has shape (batch_size, num_classes)
-            probs = torch.nn.functional.softmax(logits, dim=1)
-
+            # probs has shape (batch_size, num_classes) or (batch_size,)
+            if len(logits.shape) > 1 and logits.shape[1] > 1:
+                probs = torch.nn.functional.softmax(logits, dim=1)
+            else:
+                probs = torch.sigmoid(logits.squeeze(1))
             slide_coords.append(batch_coords.numpy())
             slide_probs.append(probs.numpy())
 
