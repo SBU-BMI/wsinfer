@@ -16,11 +16,11 @@ Original H&E                        |  Heatmap of Tumor Probability
   * [Developers](#developers)
 - [Examples](#examples)
   * [Setup directories and data](#setup-directories-and-data)
-  * [On "bare metal" (not inside a container)](#on--bare-metal---not-inside-a-container-)
-  * [Run in an Apptainer container (formerly Singularity)](#run-in-an-apptainer-container--formerly-singularity-)
+  * [On "bare metal" (not inside a container)](#on-bare-metal-not-inside-a-container)
+  * [Run in an Apptainer container (formerly Singularity)](#run-in-an-apptainer-container-formerly-singularity)
   * [Run in a Docker container](#run-in-a-docker-container)
   * [Output](#output)
-  * [Convert to GeoJSON (for QuPath and other viewers)](#convert-to-geojson--for-qupath-and-other-viewers-)
+  * [Convert to GeoJSON (for QuPath and other viewers)](#convert-to-geojson-for-qupath-and-other-viewers)
   * [Convert to Stony Brook QuIP format](#convert-to-stony-brook-quip-format)
 
 # Available models
