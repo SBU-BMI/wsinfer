@@ -6,6 +6,23 @@ Original H&E                        |  Heatmap of Tumor Probability
 
 🔥 🚀 Blazingly fast pipeline to run patch-based classification models on whole slide images.
 
+# Table of contents
+
+- [Available models](#available-models)
+- [Installation](#installation)
+  * [Pip](#pip)
+  * [Containers](#containers)
+    + [Containers for different classification tasks](#containers-for-different-classification-tasks)
+  * [Developers](#developers)
+- [Examples](#examples)
+  * [Setup directories and data](#setup-directories-and-data)
+  * [On "bare metal" (not inside a container)](#on--bare-metal---not-inside-a-container-)
+  * [Run in an Apptainer container (formerly Singularity)](#run-in-an-apptainer-container--formerly-singularity-)
+  * [Run in a Docker container](#run-in-a-docker-container)
+  * [Output](#output)
+  * [Convert to GeoJSON (for QuPath and other viewers)](#convert-to-geojson--for-qupath-and-other-viewers-)
+  * [Convert to Stony Brook QuIP format](#convert-to-stony-brook-quip-format)
+
 # Available models
 
 | Classification task                     | Output classes                                           | Model           | Weights name | Reference                                                    |
@@ -76,7 +93,7 @@ cd patch-classification-pipeline
 python -m pip install --editable .[dev] --find-links https://girder.github.io/large_image_wheels
 ```
 
-# Example
+# Examples
 
 Here we demonstrate running this pipeline on a sample image. Before going through this,
 please install the package (see [Installation](#installation)).
