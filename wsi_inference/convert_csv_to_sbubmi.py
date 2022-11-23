@@ -12,6 +12,8 @@ Output directory tree:
 from datetime import datetime
 import json
 from pathlib import Path
+import random
+import subprocess
 import time
 import typing
 
@@ -20,7 +22,6 @@ import large_image
 import multiprocessing
 import numpy as np
 import pandas as pd
-import shutil
 import tqdm
 
 
@@ -42,116 +43,150 @@ def _get_timestamp() -> str:
     return dt.strftime("%Y-%m-%d_%H:%M:%S %Z")
 
 
-def _row_to_heatmap_json_row(
-    row: pd.Series,
-    *,
-    class_name: str,
-    slide_width: int,
-    slide_height: int,
-    execution_id: str,
-    study_id: str,
-    case_id: str,
-    subject_id: str,
-) -> typing.Dict:
-    minx, miny, width, height = row["minx"], row["miny"], row["width"], row["height"]
-    patch_area_base_pixels = width * height
-    # Scale the values to be a ratio of the whole slide dimensions. All of the values
-    # in the dictionary (except 'footprint') use these normalized coordinates.
-    minx = float(minx / slide_width)
-    miny = float(miny / slide_height)
-    width = float(width / slide_width)
-    height = float(height / slide_height)
-    maxx = minx + width
-    maxy = miny + height
-    centerx = (minx + maxx) / 2
-    centery = (miny + maxy) / 2
-    coords = _box_to_polygon(minx=minx, miny=miny, width=width, height=height)
+def _get_git_info():
+    def get_stdout(args):
+        proc = subprocess.run(args, capture_output=True)
+        return proc.stdout.decode().strip()
 
-    # Get the probabilites from the model.
-    if class_name not in row.index:
-        raise KeyError(f"class name not found in results: {class_name}")
-    class_probability: float = row[class_name]
+    git_remote = get_stdout("git config --get remote.origin.url".split())
+    git_branch = get_stdout("git rev-parse --abbrev-ref HEAD".split())
+    git_commit = get_stdout("git rev-parse HEAD".split())
     return {
-        "type": "Feature",
-        "parent_id": "self",
-        "object_type": "heatmap_multiple",
-        "x": centerx,
-        "y": centery,
-        "normalized": "true",
-        "footprint": patch_area_base_pixels,
-        "geometry": {
-            "coordinates": [coords],
-            "type": "Polygon",
-        },
-        "provenance": {
-            "analysis": {
-                "source": "computer",
-                "execution_id": execution_id,
-                "cancer_type": "quip",
-                "study_id": study_id,
-                "computation": "heatmap",
-            },
-            "image": {
-                "case_id": case_id,
-                "subject_id": subject_id,
-            },
-        },
-        "bbox": [minx, miny, maxx, maxy],
-        "properties": {
-            "multiheat_param": {
-                "human_weight": -1,
-                "metric_array": [class_probability],
-                "heatname_array": ["tumor"],  # TODO: change the name.
-                "weight_array": ["1"],
-            },
-            "metric_value": class_probability,
-            "metric_type": "tile_dice",
-            "human_mark": -1,
-        },
-        "date": {"$date": int(time.time())},
+        "git_remote": git_remote,
+        "git_branch": git_branch,
+        "git_commit": git_commit,
     }
 
 
-def write_heatmap_json_lines(
+def write_heatmap_and_meta_json_lines(
     input: PathType,
-    output: PathType,
+    output_heatmap: PathType,
+    output_meta: PathType,
     slide_width: PathType,
     slide_height: PathType,
     execution_id: str,
     study_id: str,
     case_id: str,
     subject_id: str,
+    class_name: str,
 ) -> None:
+    """Write JSON-lines files for one slide."""
+
+    # Run this before defining the function so the entire JSON file has the same
+    # execution time value.
+    execution_time = _get_timestamp()
+    date = int(time.time())
+    # TODO: Does not include model info: model_path, model_hash, model_url, model_ver.
+    version_dict = _get_git_info()
+
+    def row_to_json(row: pd.Series):
+        minx, miny, width, height = (
+            row["minx"],
+            row["miny"],
+            row["width"],
+            row["height"],
+        )
+        patch_area_base_pixels = width * height
+        # Scale the values to be a ratio of the whole slide dimensions. All of the
+        # values in the dictionary (except 'footprint') use these normalized
+        # coordinates.
+        minx = float(minx / slide_width)
+        miny = float(miny / slide_height)
+        width = float(width / slide_width)
+        height = float(height / slide_height)
+        maxx = minx + width
+        maxy = miny + height
+        centerx = (minx + maxx) / 2
+        centery = (miny + maxy) / 2
+        coords = _box_to_polygon(minx=minx, miny=miny, width=width, height=height)
+
+        # Get the probabilites from the model.
+        if class_name not in row.index:
+            raise KeyError(f"class name not found in results: {class_name}")
+        class_probability: float = row[class_name]
+        class_name_no_prob = class_name[5:]  # Remove "prob_" prefix.
+        return {
+            "type": "Feature",
+            "parent_id": "self",
+            "object_type": "heatmap_multiple",
+            "x": centerx,
+            "y": centery,
+            "normalized": "true",
+            "footprint": patch_area_base_pixels,
+            "geometry": {
+                "coordinates": [coords],
+                "type": "Polygon",
+            },
+            "provenance": {
+                "analysis": {
+                    "source": "computer",
+                    "execution_id": execution_id,
+                    "cancer_type": "quip",
+                    "study_id": study_id,
+                    "computation": "heatmap",
+                    "execution_time": execution_time,
+                },
+                "image": {
+                    "case_id": case_id,
+                    "subject_id": subject_id,
+                },
+                "version": version_dict,
+            },
+            "bbox": [minx, miny, maxx, maxy],
+            "properties": {
+                "multiheat_param": {
+                    "human_weight": -1,
+                    "metric_array": [class_probability],
+                    "heatname_array": [class_name_no_prob],
+                    "weight_array": ["1"],
+                },
+                "metric_value": class_probability,
+                "metric_type": "tile_dice",
+                "human_mark": -1,
+            },
+            "date": {"$date": date},
+        }
+
+    # Write heatmap JSON lines file.
     df = pd.read_csv(input)
-    features = df.apply(
-        _row_to_heatmap_json_row,
-        axis=1,
-        slide_width=slide_width,
-        slide_height=slide_height,
-        execution_id=execution_id,
-        study_id=study_id,
-        case_id=case_id,
-        subject_id=subject_id,
-    )
+    features = df.apply(row_to_json, axis=1)
     features = features.tolist()
     features = (json.dumps(row) for row in features)
-    with open(output, "w") as f:
+    with open(output_heatmap, "w") as f:
         f.writelines(line + "\n" for line in features)
 
+    # Write meta file.
+    meta_dict = {
+        "color": "yellow",  # This is copied from the lung cancer detection code.
+        "title": execution_id,
+        "image": {
+            "case_id": case_id,
+            "subject_id": subject_id,
+        },
+        "provenance": {
+            "analysis_execution_id": execution_id,
+            "analysis_execution_date": execution_time,
+            "study_id": study_id,
+            "type": "computer",
+            "version": version_dict,
+        },
+        "submit_date": {"$date": date},
+        "randval": random.uniform(0, 1),
+    }
+    with open(output_meta, "w") as f:
+        json.dump(meta_dict, f)
 
-def write_heatmap_txt(input: PathType, output: PathType, class_name: str):
-    def _apply_fn(row: pd.Series) -> str:
-        minx, miny, w, h = (row["minx"], row["miny"], row["width"], row["height"])
-        class_probability: float = row[class_name]
-        centerx = round(minx + (w / 2))
-        centery = round(miny + (h / 2))
-        return f"{centerx} {centery} {class_probability}"
 
+def write_heatmap_txt(input: PathType, output: PathType):
     df = pd.read_csv(input)
-    # Each line is "centerx centery probability" and coordinates are in base pixels.
-    lines: typing.List[str] = df.apply(_apply_fn, axis=1).tolist()
-    with open(output, "w") as f:
-        f.writelines(line + "\n" for line in lines)
+    df.loc[:, "x_loc"] = (df.minx + (df.width / 2)).round().astype(int)
+    df.loc[:, "y_loc"] = (df.miny + (df.height / 2)).round().astype(int)
+    cols = [col for col in df.columns if col.startswith("prob_")]
+    cols = [col[5:] for col in cols]  # remove 'prob_' prefix.
+    cols = ["x_loc", "y_loc", *cols]
+    df = df.loc[:, cols]
+    df.to_csv(output, index=False, sep=" ")
+    # TODO: should we write one file per label as well?
 
 
 def write_color_txt(
@@ -327,42 +362,36 @@ def cli(
             continue
 
         for class_name in class_names:
-            output_path = (
+            output_heatmap = (
                 output / "heatmap_json" / class_name / f"heatmap_{slide_id}.json"
             )
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-            click.echo(f"Writing JSON file: {output_path}")
-            write_heatmap_json_lines(
+            output_meta = output_heatmap.parent / f"meta_{slide_id}.json"
+            output_heatmap.parent.mkdir(parents=True, exist_ok=True)
+
+            click.echo(f"Writing JSON lines file: {output_heatmap}")
+            write_heatmap_and_meta_json_lines(
                 input=input_csv,
-                output=output_path,
+                output_heatmap=output_heatmap,
+                output_meta=output_meta,
                 slide_width=ts.sizeX,
                 slide_height=ts.sizeY,
                 execution_id=execution_id,
                 study_id=study_id,
                 case_id=slide_id,  # TODO: should case_id be different?
                 subject_id=slide_id,
+                class_name=class_name,
             )
 
-            # TODO: write meta json files.
-            # TODO: write text files.
+            output_txt_prediction = (
+                output / "heatmap_txt" / class_name / f"prediction-{slide_id}"
+            )
+            write_heatmap_txt(input=input_csv, output=output_txt_prediction)
 
-    return
-
-    # Write tables with predictions.
-    table_output = output_dir / "heatmap_txt" / f"prediction-{slide_id}"
-    write_heatmap_txt(input=input, output=table_output, class_name=class_name)
-    shutil.copy(table_output, output_dir / "patch-level-merged")
-    click.secho("Saved tables with predictions.", fg="green")
-
-    # TODO: add patch-level-CLASS files.
-
-    # Write color tables.
-    if make_color_text:
-        color_output = output_dir / "heatmap_txt" / f"prediction-{slide_id}"
-        write_color_txt(
-            input=input, output=color_output, ts=ts, num_processes=num_processes
-        )
-        shutil.copy(color_output, output_dir / "patch-level-color")
-        click.secho("Saved table with color info.", fg="green")
+        # Do this once per WSI.
+        if make_color_text:
+            output_color = output / "heatmap_txt" / f"color-{slide_id}"
+            write_color_txt(
+                input=input_csv, output=output_color, ts=ts, num_processes=num_processes
+            )
 
     click.secho("Finished.", fg="green")
