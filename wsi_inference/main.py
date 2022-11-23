@@ -1,9 +1,12 @@
 """Detect cancerous regions in a whole slide image."""
 
 import getpass
+import hashlib
+import json
 import os
 import pathlib
 import platform
+import subprocess
 import sys
 import typing
 
@@ -83,6 +86,92 @@ def _print_system_info() -> None:
         if torch.version.cuda is None:
             click.secho("  CUDA DEVICES NOT AVAILABLE", fg="yellow")
         click.secho("*******************************************", fg="yellow")
+
+
+def _sha256sum(path: PathType) -> str:
+    """Calculate SHA256 of a file."""
+    sha = hashlib.sha256()
+    with open(path, "rb") as f:
+        while True:
+            data = f.read(1024 * 64)  # 64 kb
+            if not data:
+                break
+            sha.update(data)
+    return sha.hexdigest()
+
+
+def _get_info_for_save(weights: models.Weights):
+    """Get dictionary with information about the run. To save as JSON in output dir."""
+
+    import torch
+    from . import __version__
+
+    here = pathlib.Path(__file__).parent.resolve()
+
+    def get_git_info():
+        here = pathlib.Path(__file__).parent.resolve()
+
+        def get_stdout(args) -> str:
+            proc = subprocess.run(args, capture_output=True, cwd=here)
+            return proc.stdout.decode().strip()
+
+        git_remote = get_stdout("git config --get remote.origin.url".split())
+        git_branch = get_stdout("git rev-parse --abbrev-ref HEAD".split())
+        git_commit = get_stdout("git rev-parse HEAD".split())
+
+        # https://stackoverflow.com/a/3879077/5666087
+        cmd = subprocess.run("git diff-index --quiet HEAD --".split(), cwd=here)
+        uncommitted_changes = cmd.returncode != 0
+        return {
+            "git_remote": git_remote,
+            "git_branch": git_branch,
+            "git_commit": git_commit,
+            "uncommitted_changes": uncommitted_changes,
+        }
+
+    weights_path = pathlib.Path(torch.hub.get_dir()) / "checkpoints" / weights.file_name
+    shasum = _sha256sum(weights_path) if weights_path.exists() else None
+
+    # Test if we are in a git repo. If we are, then get git info.
+    cmd = subprocess.run(
+        "git branch".split(),
+        cwd=here,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    if cmd.returncode == 0:
+        git_info = get_git_info()
+    else:
+        git_info = None
+    del cmd, here  # For sanity.
+
+    return {
+        "model": {
+            "architecture": "resnet34",
+            "weights_url": weights.url,
+            "weights_path": str(weights_path) if weights_path.exists() else None,
+            "weights_sha256": shasum,
+            "class_names": weights.class_names,
+            "num_classes": weights.num_classes,
+            "metadata": weights.metadata or None,
+        },
+        "input_data": {
+            "patch_size_pixels": weights.patch_size_pixels,
+            "spacing_um_px": weights.spacing_um_px,
+        },
+        "runtime": {
+            "version": __version__,
+            "working_dir": os.getcwd(),
+            "args": " ".join(sys.argv),
+            "python_executable": sys.executable,
+            "python_version": platform.python_version(),
+            "in_container": _inside_container(),
+            "pytorch_version": torch.__version__,
+            "cuda_version": torch.version.cuda,
+            "git": git_info,
+        },
+        "timestamp": _get_timestamp(),
+    }
 
 
 @click.command(context_settings=dict(auto_envvar_prefix="WSIRUN"))
@@ -216,5 +305,11 @@ def cli(
         batch_size=batch_size,
         num_workers=num_workers,
     )
+
+    run_metadata_outpath = results_dir / "run_metadata.json"
+    click.echo(f"Saving metadata about run to {run_metadata_outpath}")
+    run_metadata = _get_info_for_save(weights_obj)
+    with open(run_metadata_outpath, "w") as f:
+        json.dump(run_metadata, f, indent=2)
 
     click.secho("Finished.", fg="green")
