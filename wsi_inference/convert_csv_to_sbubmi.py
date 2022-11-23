@@ -1,18 +1,30 @@
 """Convert CSV of model outputs to Stony Brook BMI formats.
 
-Output directory tree:
+Output directory tree for single class outputs:
 ├── heatmap_jsons
 │   ├── heatmap-SLIDEID.json
 │   └── meta-SLIDEID.json
 └── heatmap_txt
     ├── color-SLIDEID
     └── prediction-SLIDEID
+
+Output directory tree for multi-class outputs:
+├── heatmap_jsons
+│   └── CLASS_LABEL
+│       ├── heatmap-SLIDEID.json
+│       └── meta-SLIDEID.json
+└── heatmap_txt
+    └── CLASS_LABEL
+        ├── color-SLIDEID
+        └── prediction-SLIDEID
 """
 
 import json
 import multiprocessing
 from pathlib import Path
+import pprint
 import random
+import shutil
 import time
 import typing
 
@@ -157,16 +169,16 @@ def write_heatmap_and_meta_json_lines(
         json.dump(meta_dict, f)
 
 
-def write_heatmap_txt(input: PathType, output: PathType):
+def write_heatmap_txt(input: PathType, output: PathType, class_names: typing.List[str]):
     df = pd.read_csv(input)
+    # TODO: should we round and cast to int here?
     df.loc[:, "x_loc"] = (df.minx + (df.width / 2)).round().astype(int)
     df.loc[:, "y_loc"] = (df.miny + (df.height / 2)).round().astype(int)
-    cols = [col for col in df.columns if col.startswith("prob_")]
-    cols = [col[5:] for col in cols]  # remove 'prob_' prefix.
+    cols = [f"prob_{c}" for c in class_names]
     cols = ["x_loc", "y_loc", *cols]
-    df = df.loc[:, cols]
+    df = df.loc[:, cols]  # Rename 'prob_NAME' columns to 'NAME'.
+    df = df.rename(columns={c: c[5:] for c in cols})
     df.to_csv(output, index=False, sep=" ")
-    # TODO: should we write one file per label as well?
 
 
 def write_color_txt(
@@ -327,12 +339,23 @@ def cli(
     with open(results_dir / "run_metadata.json") as f:
         run_metadata: typing.Dict = json.load(f)
 
+    print("-" * 40)
+    print("Run metadata")
+    pprint.pprint(run_metadata, indent=2)
+    print("-" * 40, "\n")
+
     # Get the output classes of the model. We will create separate directories for each
     # label name. But by default, we do not include labels that start with "no", like
     # "notils" and "notumor".
-    class_names = run_metadata["model"]["class_names"]
+    class_names: typing.List[str] = run_metadata["model"]["class_names"]
     ignore_names = {"notils", "notumor"}
     class_names = [n for n in class_names if n not in ignore_names]
+
+    print("-" * 40)
+    print("Output class names:")
+    for c in class_names:
+        print(f"  - {c}")
+    print("-" * 40)
 
     for input_csv in tqdm.tqdm(csvs):
         slide_id = input_csv.stem
@@ -377,15 +400,36 @@ def cli(
             output_txt_prediction = (
                 output / "heatmap_txt" / class_name / f"prediction-{slide_id}"
             )
-            write_heatmap_txt(input=input_csv, output=output_txt_prediction)
-
-        # Do this once per WSI.
-        if make_color_text:
-            output_color = output / "heatmap_txt" / f"color-{slide_id}"
-            write_color_txt(
-                input=input_csv, output=output_color, ts=ts, num_processes=num_processes
+            write_heatmap_txt(
+                input=input_csv, output=output_txt_prediction, class_names=[class_name]
             )
-            # TODO: if we are using class-specific dirs, should we copy this into each
-            # dir?
+
+        # Do this once per WSI. If the model has multi-class outputs, copy the color
+        # file into each class-specific directory.
+        if make_color_text:
+            if len(class_names) == 1:
+                output_color = output / "heatmap_txt" / f"color-{slide_id}"
+                write_color_txt(
+                    input=input_csv,
+                    output=output_color,
+                    ts=ts,
+                    num_processes=num_processes,
+                )
+            else:
+                output_color = (
+                    output / "heatmap_txt" / class_names[0] / f"color-{slide_id}"
+                )
+                write_color_txt(
+                    input=input_csv,
+                    output=output_color,
+                    ts=ts,
+                    num_processes=num_processes,
+                )
+                # Copy this color file to all class-specific dirs.
+                for class_name in class_names[1:]:
+                    shutil.copy(
+                        output_color,
+                        output_color.parent.parent / class_name / output_color.name,
+                    )
 
     click.secho("Finished.", fg="green")
