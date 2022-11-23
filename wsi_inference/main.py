@@ -106,9 +106,11 @@ def _get_info_for_save(weights: models.Weights):
     import torch
     from . import __version__
 
+    here = pathlib.Path(__file__).parent.resolve()
+
     def get_git_info():
         def get_stdout(args) -> str:
-            proc = subprocess.run(args, capture_output=True)
+            proc = subprocess.run(args, capture_output=True, cwd=here)
             return proc.stdout.decode().strip()
 
         git_remote = get_stdout("git config --get remote.origin.url".split())
@@ -124,7 +126,6 @@ def _get_info_for_save(weights: models.Weights):
     shasum = _sha256sum(weights_path) if weights_path.exists() else None
 
     # Test if we are in a git repo. If we are, then get git info.
-    here = pathlib.Path(__file__).parent.resolve()
     cmd = subprocess.run(
         "git branch".split(),
         cwd=here,
