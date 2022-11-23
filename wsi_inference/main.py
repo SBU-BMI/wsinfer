@@ -109,6 +109,8 @@ def _get_info_for_save(weights: models.Weights):
     here = pathlib.Path(__file__).parent.resolve()
 
     def get_git_info():
+        here = pathlib.Path(__file__).parent.resolve()
+
         def get_stdout(args) -> str:
             proc = subprocess.run(args, capture_output=True, cwd=here)
             return proc.stdout.decode().strip()
@@ -116,10 +118,15 @@ def _get_info_for_save(weights: models.Weights):
         git_remote = get_stdout("git config --get remote.origin.url".split())
         git_branch = get_stdout("git rev-parse --abbrev-ref HEAD".split())
         git_commit = get_stdout("git rev-parse HEAD".split())
+
+        # https://stackoverflow.com/a/3879077/5666087
+        cmd = subprocess.run("git diff-index --quiet HEAD --".split(), cwd=here)
+        uncommitted_changes = cmd.returncode != 0
         return {
             "git_remote": git_remote,
             "git_branch": git_branch,
             "git_commit": git_commit,
+            "uncommitted_changes": uncommitted_changes,
         }
 
     weights_path = pathlib.Path(torch.hub.get_dir()) / "checkpoints" / weights.file_name
