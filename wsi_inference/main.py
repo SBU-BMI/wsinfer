@@ -269,13 +269,6 @@ def cli(
     # spacing and patch size.
     weights_obj = models.create_model(model, weights=weights)
 
-    run_metadata_outpath = results_dir / "run_metadata.json"
-    click.echo(f"Saving metadata about run to {run_metadata_outpath}")
-    run_metadata = _get_info_for_save(weights_obj)
-    with open(run_metadata_outpath, "w") as f:
-        json.dump(run_metadata, f, indent=2)
-    del run_metadata_outpath, run_metadata  # For sanity.
-
     click.secho("\nFinding patch coordinates...\n", fg="green")
     if dense_grid:
         click.echo("Not using a tissue mask.")
@@ -304,5 +297,11 @@ def cli(
         batch_size=batch_size,
         num_workers=num_workers,
     )
+
+    run_metadata_outpath = results_dir / "run_metadata.json"
+    click.echo(f"Saving metadata about run to {run_metadata_outpath}")
+    run_metadata = _get_info_for_save(weights_obj)
+    with open(run_metadata_outpath, "w") as f:
+        json.dump(run_metadata, f, indent=2)
 
     click.secho("Finished.", fg="green")
