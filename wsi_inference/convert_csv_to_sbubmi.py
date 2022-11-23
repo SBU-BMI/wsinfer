@@ -9,17 +9,15 @@ Output directory tree:
     └── prediction-SLIDEID
 """
 
-from datetime import datetime
 import json
+import multiprocessing
 from pathlib import Path
 import random
-import subprocess
 import time
 import typing
 
 import click
 import large_image
-import multiprocessing
 import numpy as np
 import pandas as pd
 import tqdm
@@ -37,27 +35,6 @@ def _box_to_polygon(
     return [(maxx, miny), (maxx, maxy), (minx, maxy), (minx, miny), (maxx, miny)]
 
 
-def _get_timestamp() -> str:
-    dt = datetime.now().astimezone()
-    # 2022-08-29 13:46:28 EDT
-    return dt.strftime("%Y-%m-%d_%H:%M:%S %Z")
-
-
-def _get_git_info():
-    def get_stdout(args):
-        proc = subprocess.run(args, capture_output=True)
-        return proc.stdout.decode().strip()
-
-    git_remote = get_stdout("git config --get remote.origin.url".split())
-    git_branch = get_stdout("git rev-parse --abbrev-ref HEAD".split())
-    git_commit = get_stdout("git rev-parse HEAD".split())
-    return {
-        "git_remote": git_remote,
-        "git_branch": git_branch,
-        "git_commit": git_commit,
-    }
-
-
 def write_heatmap_and_meta_json_lines(
     input: PathType,
     output_heatmap: PathType,
@@ -69,15 +46,19 @@ def write_heatmap_and_meta_json_lines(
     case_id: str,
     subject_id: str,
     class_name: str,
+    run_metadata: typing.Dict,
 ) -> None:
     """Write JSON-lines files for one slide."""
 
     # Run this before defining the function so the entire JSON file has the same
     # execution time value.
-    execution_time = _get_timestamp()
     date = int(time.time())
-    # TODO: Does not include model info: model_path, model_hash, model_url, model_ver.
-    version_dict = _get_git_info()
+
+    version_dict: typing.Dict = run_metadata["runtime"]["git"] or {}
+    version_dict["model_path"] = run_metadata["model"]["weights_path"]
+    version_dict["model_hash"] = run_metadata["model"]["weights_sha256"]
+    version_dict["model_url"] = run_metadata["model"]["weights_url"]
+    version_dict["model_ver"] = None
 
     def row_to_json(row: pd.Series):
         minx, miny, width, height = (
@@ -101,10 +82,9 @@ def write_heatmap_and_meta_json_lines(
         coords = _box_to_polygon(minx=minx, miny=miny, width=width, height=height)
 
         # Get the probabilites from the model.
-        if class_name not in row.index:
+        if f"prob_{class_name}" not in row.index:
             raise KeyError(f"class name not found in results: {class_name}")
-        class_probability: float = row[class_name]
-        class_name_no_prob = class_name[5:]  # Remove "prob_" prefix.
+        class_probability: float = row[f"prob_{class_name}"]
         return {
             "type": "Feature",
             "parent_id": "self",
@@ -124,7 +104,7 @@ def write_heatmap_and_meta_json_lines(
                     "cancer_type": "quip",
                     "study_id": study_id,
                     "computation": "heatmap",
-                    "execution_time": execution_time,
+                    "execution_time": run_metadata["timestamp"],
                 },
                 "image": {
                     "case_id": case_id,
@@ -137,7 +117,7 @@ def write_heatmap_and_meta_json_lines(
                 "multiheat_param": {
                     "human_weight": -1,
                     "metric_array": [class_probability],
-                    "heatname_array": [class_name_no_prob],
+                    "heatname_array": [class_name],
                     "weight_array": ["1"],
                 },
                 "metric_value": class_probability,
@@ -165,7 +145,7 @@ def write_heatmap_and_meta_json_lines(
         },
         "provenance": {
             "analysis_execution_id": execution_id,
-            "analysis_execution_date": execution_time,
+            "analysis_execution_date": run_metadata["timestamp"],
             "study_id": study_id,
             "type": "computer",
             "version": version_dict,
@@ -331,6 +311,10 @@ def cli(
             " not. Please provide the path to the directory that contains"
             " model-outputs, masks, and patches."
         )
+    if not (results_dir / "run_metadata.json").exists():
+        raise click.ClickException(
+            f"Cannot find {results_dir / 'run_metadata.json'}. Was model inference run?"
+        )
     if not wsi_dir.exists():
         raise click.ClickException("Whole slide image directory does not exist.")
 
@@ -340,11 +324,13 @@ def cli(
 
     output.mkdir(exist_ok=False)
 
+    with open(results_dir / "run_metadata.json") as f:
+        run_metadata: typing.Dict = json.load(f)
+
     # Get the output classes of the model. We will create separate directories for each
     # label name. But by default, we do not include labels that start with "no", like
     # "notils" and "notumor".
-    class_names: typing.Sequence[str] = pd.read_csv(csvs[0]).columns
-    class_names = [n for n in class_names if n.startswith("prob_")]
+    class_names = run_metadata["model"]["class_names"]
     ignore_names = {"notils", "notumor"}
     class_names = [n for n in class_names if n not in ignore_names]
 
@@ -362,9 +348,14 @@ def cli(
             continue
 
         for class_name in class_names:
-            output_heatmap = (
-                output / "heatmap_json" / class_name / f"heatmap_{slide_id}.json"
-            )
+            if len(class_names) == 1:
+                # Do not use class-specific dirs if there is only one class.
+                output_heatmap = output / "heatmap_json" / f"heatmap_{slide_id}.json"
+                output_meta = output_heatmap.parent / f"meta_{slide_id}.json"
+            else:
+                output_heatmap = (
+                    output / "heatmap_json" / class_name / f"heatmap_{slide_id}.json"
+                )
             output_meta = output_heatmap.parent / f"meta_{slide_id}.json"
             output_heatmap.parent.mkdir(parents=True, exist_ok=True)
 
@@ -380,6 +371,7 @@ def cli(
                 case_id=slide_id,  # TODO: should case_id be different?
                 subject_id=slide_id,
                 class_name=class_name,
+                run_metadata=run_metadata,
             )
 
             output_txt_prediction = (
@@ -393,5 +385,7 @@ def cli(
             write_color_txt(
                 input=input_csv, output=output_color, ts=ts, num_processes=num_processes
             )
+            # TODO: if we are using class-specific dirs, should we copy this into each
+            # dir?
 
     click.secho("Finished.", fg="green")
