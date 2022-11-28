@@ -23,7 +23,11 @@ PathType = typing.Union[str, pathlib.Path]
 def _inside_container() -> str:
     if pathlib.Path("/.dockerenv").exists():
         return "yes, docker"
-    elif pathlib.Path("/singularity.d").exists():
+    elif (
+        pathlib.Path("/singularity").exists()
+        or pathlib.Path("/singularity.d").exists()
+        or pathlib.Path("/.singularity.d").exists()
+    ):
         # TODO: apptainer might change the name of this directory.
         return "yes, apptainer/singularity"
     return "no"
@@ -201,7 +205,7 @@ def _get_info_for_save(weights: models.Weights):
 @click.option(
     "--weights",
     type=str,
-    default="TCGA-BRCA-v1",
+    required=True,
     show_default=True,
     help="Weights to use for the model.",
 )
