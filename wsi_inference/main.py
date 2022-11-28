@@ -201,7 +201,7 @@ def _get_info_for_save(weights: models.Weights):
 @click.option(
     "--weights",
     type=str,
-    default="TCGA-BRCA-v1",
+    required=True,
     show_default=True,
     help="Weights to use for the model.",
 )
