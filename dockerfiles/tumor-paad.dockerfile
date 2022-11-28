@@ -2,7 +2,7 @@
 #
 # Note about versioning: We should not use the 'latest' tag because it is a moving
 # target. We should prefer using a versioned release of the wsi_inference pipeline.
-FROM kaczmarj/patch-classification-pipeline:v0.2.0
+FROM kaczmarj/patch-classification-pipeline:v0.2.1
 
 # The CLI will use these env vars for model and weights.
 ENV WSIRUN_MODEL="resnet34_preact"
