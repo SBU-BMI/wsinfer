@@ -23,7 +23,11 @@ PathType = typing.Union[str, pathlib.Path]
 def _inside_container() -> str:
     if pathlib.Path("/.dockerenv").exists():
         return "yes, docker"
-    elif pathlib.Path("/singularity.d").exists():
+    elif (
+        pathlib.Path("/singularity").exists()
+        or pathlib.Path("/singularity.d").exists()
+        or pathlib.Path("/.singularity.d").exists()
+    ):
         # TODO: apptainer might change the name of this directory.
         return "yes, apptainer/singularity"
     return "no"
