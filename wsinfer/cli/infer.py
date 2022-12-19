@@ -12,10 +12,10 @@ import typing
 
 import click
 
-from .modellib.run_inference import run_inference
-from .modellib import models
-from .patchlib.create_dense_patch_grid import create_grid_and_save_multi_slides
-from .patchlib.create_patches_fp import create_patches
+from ..modellib.run_inference import run_inference
+from ..modellib import models
+from ..patchlib.create_dense_patch_grid import create_grid_and_save_multi_slides
+from ..patchlib.create_patches_fp import create_patches
 
 PathType = typing.Union[str, pathlib.Path]
 
