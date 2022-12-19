@@ -123,7 +123,7 @@ images in `sample-images/` (only 1 in this example) and will write results to
 `nvidia-smi`. If you do not have a GPU, model inference can take about 20 minutes.
 
 ```
-CUDA_VISIBLE_DEVICES=0 wsi_run \
+CUDA_VISIBLE_DEVICES=0 wsinfer \
     --wsi_dir sample-images/ \
     --results_dir results/ \
     --model resnet34 \
