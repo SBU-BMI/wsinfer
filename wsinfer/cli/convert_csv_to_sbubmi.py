@@ -247,7 +247,7 @@ def write_color_txt(
 
 def _version() -> str:
     """Return version (avoid possibility of a circular import)."""
-    from . import __version__
+    from .. import __version__
 
     return __version__
 
