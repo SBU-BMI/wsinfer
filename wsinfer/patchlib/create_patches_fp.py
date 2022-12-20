@@ -36,12 +36,13 @@ from .wsi_core.wsi_utils import StitchCoords
 from .wsi_core.batch_process_utils import initialize_df
 
 # other imports
+import click
 import os
 import pathlib
 import numpy as np
 import time
-import argparse
 import pandas as pd
+from typing import Optional
 
 _script_path = pathlib.Path(__file__).resolve().parent
 
@@ -352,7 +353,7 @@ def create_patches(
     patch_size: int,
     patch_spacing: float,
     save_dir: str,
-    step_size: int = None,
+    step_size: Optional[int] = None,
     patch: bool = True,
     seg: bool = True,
     stitch: bool = True,
@@ -441,44 +442,52 @@ def create_patches(
     )
 
 
-def cli():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--source",
-        type=str,
-        required=True,
-        help="path to folder containing raw wsi image files",
-    )
-    parser.add_argument("--step_size", type=int, default=None, help="step_size")
-    parser.add_argument("--patch_size", type=int, required=True, help="patch_size")
-    parser.add_argument("--patch", default=False, action="store_true")
-    parser.add_argument("--seg", default=False, action="store_true")
-    parser.add_argument("--stitch", default=False, action="store_true")
-    parser.add_argument("--no_auto_skip", default=True, action="store_false")
-    parser.add_argument(
-        "--save_dir", type=str, required=True, help="directory to save processed data"
-    )
-    parser.add_argument(
-        "--preset",
-        default=None,
-        type=str,
-        help="predefined profile of default segmentation and filter parameters (.csv)",
-    )
-    parser.add_argument(
-        "--process_list",
-        type=str,
-        default=None,
-        help="name of list of images to process with parameters (.csv)",
-    )
-    parser.add_argument(
-        "--patch_spacing",
-        type=float,
-        required=True,
-        help="Patch spacing in micrometers per pixel.",
-    )
-    parser.add_argument("--version", action="version", version=f"%(prog)s {_version()}")
-
-    args = parser.parse_args()
+@click.command()
+@click.option(
+    "--source",
+    required=True,
+    type=click.Path(exists=True),
+    help="patch to directory containing whole slide image files",
+)
+@click.option("--step-size", default=None, type=int, help="Step size for patching.")
+@click.option("--patch-size", required=True, type=int, help="Patch size in pixels.")
+@click.option("--patch", is_flag=True)
+@click.option("--seg", is_flag=True)
+@click.option("--stitch", is_flag=True)
+@click.option("--no-auto-skip", is_flag=True)
+@click.option(
+    "--save-dir",
+    required=True,
+    type=click.Path(),
+    help="Directory to save processed data",
+)
+@click.option(
+    "--preset",
+    help="Predefined profile of default segmentation and filter parameters (.csv)",
+)
+@click.option(
+    "--process-list", help="Name of list of images to process with parameters (.csv)"
+)
+@click.option(
+    "--patch-spacing",
+    required=True,
+    type=float,
+    help="Patch spacing in micrometers per pixel.",
+)
+def cli(
+    source: str,
+    step_size: Optional[int],
+    patch_size: int,
+    patch: bool,
+    seg: bool,
+    stitch: bool,
+    no_auto_skip: bool,
+    save_dir: str,
+    preset: Optional[str],
+    process_list: Optional[str],
+    patch_spacing: float,
+):
+    """Create a set of patches from a whole slide image."""
 
     print("create_patches_fp.py  Copyright (C) 2022  Mahmood Lab")
     print("This program comes with ABSOLUTELY NO WARRANTY.")
@@ -486,15 +495,15 @@ def cli():
     print("under certain conditions.")
 
     create_patches(
-        source=args.source,
-        step_size=args.step_size,
-        patch_size=args.patch_size,
-        patch_spacing=args.patch_spacing,
-        save_dir=args.save_dir,
-        patch=args.patch,
-        seg=args.seg,
-        stitch=args.stitch,
-        no_auto_skip=args.no_auto_skip,
-        preset=args.preset,
-        process_list=args.process_list,
+        source=source,
+        step_size=step_size,
+        patch_size=patch_size,
+        patch_spacing=patch_spacing,
+        save_dir=save_dir,
+        patch=patch,
+        seg=seg,
+        stitch=stitch,
+        no_auto_skip=no_auto_skip,
+        preset=preset,
+        process_list=process_list,
     )
