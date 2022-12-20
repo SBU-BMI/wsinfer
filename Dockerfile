@@ -14,5 +14,5 @@ RUN mkdir -p "$TORCH_HOME" \
     && chmod 777 "$TORCH_HOME" \
     && chmod a+s "$TORCH_HOME"
 WORKDIR /work
-ENTRYPOINT ["wsi_run"]
+ENTRYPOINT ["wsinfer"]
 LABEL maintainer="Jakub Kaczmarzyk <jakub.kaczmarzyk@stonybrookmedicine.edu>"
