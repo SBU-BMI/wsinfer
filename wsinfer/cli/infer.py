@@ -178,7 +178,7 @@ def _get_info_for_save(weights: models.Weights):
     }
 
 
-@click.command(context_settings=dict(auto_envvar_prefix="WSIRUN"))
+@click.command(context_settings=dict(auto_envvar_prefix="WSINFER"))
 @click.pass_context
 @click.option(
     "--wsi_dir",
