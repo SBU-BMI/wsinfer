@@ -123,7 +123,7 @@ images in `sample-images/` (only 1 in this example) and will write results to
 `nvidia-smi`. If you do not have a GPU, model inference can take about 20 minutes.
 
 ```
-CUDA_VISIBLE_DEVICES=0 wsinfer \
+CUDA_VISIBLE_DEVICES=0 wsinfer run \
     --wsi_dir sample-images/ \
     --results_dir results/ \
     --model resnet34 \
@@ -147,7 +147,7 @@ CUDA_VISIBLE_DEVICES=0 apptainer run \
     --nv \
     --bind $(pwd) \
     --pwd $(pwd) \
-    patch-classification-pipeline_latest.sif \
+    patch-classification-pipeline_latest.sif run \
         --wsi_dir sample-images/ \
         --results_dir results/ \
         --model resnet34 \
@@ -185,7 +185,7 @@ docker run --rm -it \
     --env CUDA_VISIBLE_DEVICES=0 \
     --user $(id -u):$(id -g) \
     --mount type=bind,source=$(pwd),target=/work/ \
-    kaczmarj/patch-classification-pipeline \
+    kaczmarj/patch-classification-pipeline run \
         --wsi_dir sample-images/ \
         --results_dir results/ \
         --model resnet34 \
