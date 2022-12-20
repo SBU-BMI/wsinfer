@@ -45,7 +45,7 @@ def _print_system_info() -> None:
     """Print information about the system."""
     import torch
     import torchvision
-    from . import __version__
+    from .. import __version__
 
     click.secho(f"\nRunning wsi_inference version {__version__}", fg="green")
     print("\nIf you run into issues, please submit a new issue at")
@@ -108,7 +108,7 @@ def _get_info_for_save(weights: models.Weights):
     """Get dictionary with information about the run. To save as JSON in output dir."""
 
     import torch
-    from . import __version__
+    from .. import __version__
 
     here = pathlib.Path(__file__).parent.resolve()
 
@@ -230,7 +230,6 @@ def _get_info_for_save(weights: models.Weights):
     help="Use a dense grid of patch coordinates. Patches will be present even if no"
     " tissue is present",
 )
-@click.version_option()
 def cli(
     ctx: click.Context,
     *,
