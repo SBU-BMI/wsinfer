@@ -487,7 +487,7 @@ def cli(
     process_list: Optional[str],
     patch_spacing: float,
 ):
-    """Create a set of patches from a whole slide image."""
+    """Patchify a directory of whole slide images."""
 
     print("create_patches_fp.py  Copyright (C) 2022  Mahmood Lab")
     print("This program comes with ABSOLUTELY NO WARRANTY.")

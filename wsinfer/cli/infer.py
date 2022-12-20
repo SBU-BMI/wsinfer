@@ -240,7 +240,7 @@ def cli(
     num_workers: int = 0,
     dense_grid: bool = False,
 ):
-    """Run model inference on a directory of whole slide images (WSI).
+    """Run model inference on a directory of whole slide images.
 
     This command will create a tissue mask of each WSI. Then patch coordinates will be
     computed. The chosen model will be applied to each patch, and the results will be
