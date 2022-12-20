@@ -47,7 +47,7 @@ def _print_system_info() -> None:
     import torchvision
     from .. import __version__
 
-    click.secho(f"\nRunning wsi_inference version {__version__}", fg="green")
+    click.secho(f"\nRunning wsinfer version {__version__}", fg="green")
     print("\nIf you run into issues, please submit a new issue at")
     print("https://github.com/kaczmarj/patch-classification-pipeline/issues/new")
     print("\nSystem information")

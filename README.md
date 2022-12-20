@@ -219,7 +219,7 @@ are a type of geometric data structure. Popular whole slide image viewers like Q
 are able to load labels in GeoJSON format.
 
 ```bash
-wsi_convert_csv_to_geojson results/ geojson-results
+wsirun togeojson results/ geojson-results
 ```
 
 ## Convert to Stony Brook QuIP format
@@ -231,7 +231,7 @@ create the `color-*` files that contain color information for each patch in the 
 This option is disabled by default because it adds significant processing time.
 
 ```bash
-wsi_convert_csv_to_sbubmi \
+wsirun tosbu \
     --wsi-dir slides/ \
     --execution-id UNIQUE_ID_HERE \
     --study-id TCGA-BRCA \

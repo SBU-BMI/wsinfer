@@ -179,7 +179,7 @@ def run_inference(
         whole slide images. Otherwise, an error will be raised during model inference.
     results_dir : str or pathlib.Path
         Directory containing results of patching.
-    weights : wsi_inference.modellib.models.Weights
+    weights : wsinfer.modellib.models.Weights
         Instance of Weights including the model object and information about how to
         apply the model to new data.
     batch_size : int
