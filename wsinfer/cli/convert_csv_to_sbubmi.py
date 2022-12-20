@@ -245,13 +245,6 @@ def write_color_txt(
     df.to_csv(output, header=False, index=False, sep=" ")
 
 
-def _version() -> str:
-    """Return version (avoid possibility of a circular import)."""
-    from . import __version__
-
-    return __version__
-
-
 @click.command()
 @click.argument(
     "results_dir",
@@ -285,7 +278,6 @@ def _version() -> str:
     default=4,
     help="Number of processes to use when `--make-color-text` is enabled.",
 )
-@click.version_option(version=_version())
 def cli(
     *,
     results_dir: Path,

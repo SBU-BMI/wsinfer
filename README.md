@@ -123,7 +123,7 @@ images in `sample-images/` (only 1 in this example) and will write results to
 `nvidia-smi`. If you do not have a GPU, model inference can take about 20 minutes.
 
 ```
-CUDA_VISIBLE_DEVICES=0 wsi_run \
+CUDA_VISIBLE_DEVICES=0 wsinfer run \
     --wsi_dir sample-images/ \
     --results_dir results/ \
     --model resnet34 \
@@ -147,7 +147,7 @@ CUDA_VISIBLE_DEVICES=0 apptainer run \
     --nv \
     --bind $(pwd) \
     --pwd $(pwd) \
-    patch-classification-pipeline_latest.sif \
+    patch-classification-pipeline_latest.sif run \
         --wsi_dir sample-images/ \
         --results_dir results/ \
         --model resnet34 \
@@ -185,7 +185,7 @@ docker run --rm -it \
     --env CUDA_VISIBLE_DEVICES=0 \
     --user $(id -u):$(id -g) \
     --mount type=bind,source=$(pwd),target=/work/ \
-    kaczmarj/patch-classification-pipeline \
+    kaczmarj/patch-classification-pipeline run \
         --wsi_dir sample-images/ \
         --results_dir results/ \
         --model resnet34 \
@@ -219,7 +219,7 @@ are a type of geometric data structure. Popular whole slide image viewers like Q
 are able to load labels in GeoJSON format.
 
 ```bash
-wsi_convert_csv_to_geojson results/ geojson-results
+wsirun togeojson results/ geojson-results
 ```
 
 ## Convert to Stony Brook QuIP format
@@ -231,7 +231,7 @@ create the `color-*` files that contain color information for each patch in the 
 This option is disabled by default because it adds significant processing time.
 
 ```bash
-wsi_convert_csv_to_sbubmi \
+wsirun tosbu \
     --wsi-dir slides/ \
     --execution-id UNIQUE_ID_HERE \
     --study-id TCGA-BRCA \

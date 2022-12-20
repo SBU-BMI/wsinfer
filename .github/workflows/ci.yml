@@ -26,4 +26,5 @@ jobs:
       - name: Run tests
         # TODO: add more tests...
         run: |
-          wsi_run --help
+          wsinfer --help
+          wsinfer run --help

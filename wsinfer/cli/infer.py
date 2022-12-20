@@ -12,10 +12,10 @@ import typing
 
 import click
 
-from .modellib.run_inference import run_inference
-from .modellib import models
-from .patchlib.create_dense_patch_grid import create_grid_and_save_multi_slides
-from .patchlib.create_patches_fp import create_patches
+from ..modellib.run_inference import run_inference
+from ..modellib import models
+from ..patchlib.create_dense_patch_grid import create_grid_and_save_multi_slides
+from ..patchlib.create_patches_fp import create_patches
 
 PathType = typing.Union[str, pathlib.Path]
 
@@ -45,9 +45,9 @@ def _print_system_info() -> None:
     """Print information about the system."""
     import torch
     import torchvision
-    from . import __version__
+    from .. import __version__
 
-    click.secho(f"\nRunning wsi_inference version {__version__}", fg="green")
+    click.secho(f"\nRunning wsinfer version {__version__}", fg="green")
     print("\nIf you run into issues, please submit a new issue at")
     print("https://github.com/kaczmarj/patch-classification-pipeline/issues/new")
     print("\nSystem information")
@@ -108,7 +108,7 @@ def _get_info_for_save(weights: models.Weights):
     """Get dictionary with information about the run. To save as JSON in output dir."""
 
     import torch
-    from . import __version__
+    from .. import __version__
 
     here = pathlib.Path(__file__).parent.resolve()
 
@@ -178,7 +178,7 @@ def _get_info_for_save(weights: models.Weights):
     }
 
 
-@click.command(context_settings=dict(auto_envvar_prefix="WSIRUN"))
+@click.command(context_settings=dict(auto_envvar_prefix="WSINFER"))
 @click.pass_context
 @click.option(
     "--wsi_dir",
@@ -206,7 +206,6 @@ def _get_info_for_save(weights: models.Weights):
     "--weights",
     type=str,
     required=True,
-    show_default=True,
     help="Weights to use for the model.",
 )
 @click.option(
@@ -230,7 +229,6 @@ def _get_info_for_save(weights: models.Weights):
     help="Use a dense grid of patch coordinates. Patches will be present even if no"
     " tissue is present",
 )
-@click.version_option()
 def cli(
     ctx: click.Context,
     *,
@@ -250,7 +248,7 @@ def cli(
 
     Example:
 
-    CUDA_VISIBLE_DEVICES=0 wsi_run --wsi_dir slides/ --results_dir results
+    CUDA_VISIBLE_DEVICES=0 wsinfer run --wsi_dir slides/ --results_dir results
     --model resnet34 --weights TCGA-BRCA-v1 --batch_size 32 --num_workers 4
     """
 

@@ -67,13 +67,6 @@ def convert(input, output) -> None:
         json.dump(geojson, f)
 
 
-def _version() -> str:
-    """Closure to return version (avoid possibility of a circular import)."""
-    from . import __version__
-
-    return __version__
-
-
 @click.command()
 @click.argument(
     "results_dir",
@@ -85,7 +78,6 @@ def _version() -> str:
     "output",
     type=click.Path(exists=False, path_type=Path, resolve_path=True),
 )
-@click.version_option(version=_version())
 def cli(*, results_dir: Path, output: Path):
     """Convert CSVs of patch predictions to GeoJSON files.
 
