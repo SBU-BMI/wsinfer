@@ -206,7 +206,6 @@ def _get_info_for_save(weights: models.Weights):
     "--weights",
     type=str,
     required=True,
-    show_default=True,
     help="Weights to use for the model.",
 )
 @click.option(
@@ -249,7 +248,7 @@ def cli(
 
     Example:
 
-    CUDA_VISIBLE_DEVICES=0 wsi_run --wsi_dir slides/ --results_dir results
+    CUDA_VISIBLE_DEVICES=0 wsinfer run --wsi_dir slides/ --results_dir results
     --model resnet34 --weights TCGA-BRCA-v1 --batch_size 32 --num_workers 4
     """
 
