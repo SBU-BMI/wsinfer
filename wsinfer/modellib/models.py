@@ -11,6 +11,7 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Tuple
 from typing import Union
 
 from PIL import Image
@@ -250,18 +251,6 @@ def resnet34_preact(weights: str) -> Weights:
     return weights_obj
 
 
-def vgg16(weights: str) -> Weights:
-    """Create VGG16 model."""
-    weights_obj = _get_model_weights("vgg16", weights=weights)
-    model = torchvision.models.vgg16()
-    in_features = model.classifier[6].in_features
-    model.classifier[6] = torch.nn.Linear(in_features, weights_obj.num_classes)
-    in_features = model.classifier[0].in_features
-    model = _load_state_into_model(model=model, weights=weights_obj)
-    weights_obj.model = model
-    return weights_obj
-
-
 def vgg16_modified(weights: str) -> Weights:
     """Create modified VGG16 model.
 
@@ -281,25 +270,59 @@ def vgg16_modified(weights: str) -> Weights:
     return weights_obj
 
 
-MODELS = dict(
+MODEL_NAME_TO_FUNC = dict(
     inceptionv4=inceptionv4,
     resnet34=resnet34,
     resnet34_preact=resnet34_preact,
-    vgg16=vgg16,
     vgg16_modified=vgg16_modified,
 )
+if not set(WEIGHTS.keys()).issubset(MODEL_NAME_TO_FUNC.keys()):
+    raise RuntimeError("Not all model functions are defined.")
 
 
 def list_models() -> List[str]:
-    return list(MODELS.keys())
+    return list(WEIGHTS.keys())
 
 
-def create_model(model_name: str, weights: str = "TCGA-BRCA-v1") -> Weights:
+def list_available_weights_for_model(model_name: str) -> List[str]:
+    try:
+        return list(WEIGHTS[model_name].keys())
+    except KeyError:
+        return []
+
+
+def list_available_models_for_weights(weights: str) -> List[str]:
+    res = []
+    for model_name, weights_dict in WEIGHTS.items():
+        for weights_name in weights_dict.keys():
+            if weights_name == weights:
+                res.append(model_name)
+    return res
+
+
+def list_all_models_and_weights() -> List[Tuple[str, str]]:
+    """Return list of tuples of `(model_name, weights_name)` with available pairs."""
+    res = []
+    for m in WEIGHTS.keys():
+        res.extend([(m, w) for w in WEIGHTS[m].keys()])
+    return res
+
+
+def create_model(model_name: str, weights: str) -> Weights:
     """Create a model."""
-    if model_name not in MODELS.keys():
+    if model_name not in list_models():
         raise ModelNotFoundError(
-            f"{model_name} not found. Available models are {MODELS.keys()}"
+            f"'{model_name}' not found. Available models are {list_models()}"
         )
-    model_fn = MODELS[model_name]
+    if weights not in list_available_weights_for_model(model_name):
+        raise WeightsNotFoundError(
+            f"The weights available for '{model_name}' are"
+            f" {list_available_weights_for_model(model_name)}.\n"
+            f"The weights '{weights}' are available for the following models:"
+            f" {list_available_models_for_weights(weights)}."
+        )
+
+    # TODO: figure out how to pair model_fn with the Weights instances.
+    model_fn = MODEL_NAME_TO_FUNC[model_name]
     weights_obj = model_fn(weights=weights)
     return weights_obj

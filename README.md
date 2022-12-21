@@ -115,6 +115,18 @@ wget -nc https://openslide.cs.cmu.edu/download/openslide-testdata/Aperio/CMU-1.s
 cd ..
 ```
 
+## List available models and weights
+
+We use "model" as in architecture (like "resnet50"), and "weights" are the pretrained
+parameters that are loaded into the model for a particular task (like "TCGA-BRCA-v1"
+for breast cancer tumor detection). Use the following command to list all available
+models and weights.
+
+```
+wsinfer list
+```
+
+
 ## On "bare metal" (not inside a container)
 
 Run the pipeline (without a container). This will apply the pipeline to all of the

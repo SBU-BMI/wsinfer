@@ -288,7 +288,9 @@ def cli(
     make_color_text: bool = False,
     num_processes: int = 4,
 ):
-    """Convert CSV of patch predictions to .txt and .json formats for use with Stony
+    """Convert model outputs to Stony Brook format.
+
+    Convert CSVs of patch predictions to .txt and .json formats for use with Stony
     Brook Biomedical Informatics viewers.
 
     RESULTS_DIR     Path to results directory (containing model-outputs dir).
