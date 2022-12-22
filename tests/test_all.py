@@ -86,3 +86,16 @@ def test_cli_run(tiff_image: Path, tmp_path: Path):
     assert (df.loc[:, "width"] == 350).all()
     assert np.allclose(df.loc[:, "prob_notumor"], 0.9525967836380005)
     assert np.allclose(df.loc[:, "prob_tumor"], 0.04740329459309578)
+
+
+@pytest.mark.xfail
+def test_convert_to_geojson():
+    # TODO: create a synthetic output and then convert it. Check that it is valid
+    # geojson.
+    assert False
+
+
+@pytest.mark.xfail
+def test_convert_to_sbu():
+    # TODO: create a synthetic output and then convert it. Check that it is valid.
+    assert False
