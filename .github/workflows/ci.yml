@@ -25,7 +25,4 @@ jobs:
           python -m pip install --editable .[dev] --find-links https://girder.github.io/large_image_wheels
       - name: Run tests
         run: |
-          wsinfer --help
-          wsinfer list --help
-          wsinfer run --help
           python -m pytest --verbose tests/
