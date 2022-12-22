@@ -1,4 +1,5 @@
 from pathlib import Path
+import sys
 
 from click.testing import CliRunner
 import numpy as np
@@ -14,20 +15,27 @@ def tiff_image(tmp_path: Path) -> Path:
     path = Path(tmp_path / "images" / "purple.tif")
     path.parent.mkdir(exist_ok=True)
 
-    try:
-        resolutionunit = tifffile.RESUNIT.CENTIMETER
-    except AttributeError:
-        resolutionunit = 3  # for python 3.7 compat
+    if sys.version_info > (3, 7):
+        tifffile.imwrite(
+            path,
+            data=x,
+            compression="zlib",
+            tile=(256, 256),
+            # 0.25 micrometers per pixel.
+            resolution=(40000, 40000),
+            resolutionunit=tifffile.RESUNIT.CENTIMETER,
+        )
+    else:
+        # Earlier versions of tifffile do not have resolutionunit kwarg.
+        tifffile.imwrite(
+            path,
+            data=x,
+            compression="zlib",
+            tile=(256, 256),
+            # 0.25 micrometers per pixel.
+            resolution=(40000, 40000, "CENTIMETER"),
+        )
 
-    tifffile.imwrite(
-        path,
-        data=x,
-        compression="zlib",
-        tile=(256, 256),
-        # 0.25 micrometers per pixel.
-        resolution=(40000, 40000),
-        resolutionunit=resolutionunit,
-    )
     return path
 
 
