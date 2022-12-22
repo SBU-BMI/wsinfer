@@ -13,6 +13,12 @@ def tiff_image(tmp_path: Path) -> Path:
     x[...] = [160, 32, 240]  # rgb for purple
     path = Path(tmp_path / "images" / "purple.tif")
     path.parent.mkdir(exist_ok=True)
+
+    try:
+        resolutionunit = tifffile.RESUNIT.CENTIMETER
+    except AttributeError:
+        resolutionunit = 3  # for python 3.7 compat
+
     tifffile.imwrite(
         path,
         data=x,
@@ -20,7 +26,7 @@ def tiff_image(tmp_path: Path) -> Path:
         tile=(256, 256),
         # 0.25 micrometers per pixel.
         resolution=(40000, 40000),
-        resolutionunit=tifffile.RESUNIT.CENTIMETER,
+        resolutionunit=resolutionunit,
     )
     return path
 
