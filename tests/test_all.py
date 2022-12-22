@@ -15,7 +15,7 @@ def tiff_image(tmp_path: Path) -> Path:
     path = Path(tmp_path / "images" / "purple.tif")
     path.parent.mkdir(exist_ok=True)
 
-    if sys.version_info > (3, 7):
+    if sys.version_info >= (3, 8):
         tifffile.imwrite(
             path,
             data=x,
