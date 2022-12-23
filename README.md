@@ -6,6 +6,8 @@ Original H&E                        |  Heatmap of Tumor Probability
 
 🔥 🚀 Blazingly fast pipeline to run patch-based classification models on whole slide images.
 
+![Continuous Integration](https://github.com/kaczmarj/patch-classification-pipeline/actions/workflows/ci.yml/badge.svg)
+
 # Table of contents
 
 - [Available models](#available-models)
