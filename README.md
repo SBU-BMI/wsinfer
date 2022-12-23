@@ -88,7 +88,7 @@ the available tags. The Dockerfiles are in [`dockerfiles/`](/dockerfiles/) Here 
 ```
 apptainer pull docker://kaczmarj/patch-classification-pipeline:v0.2.0-paad-resnet34
 CUDA_VISIBLE_DEVICES=0 apptainer run --nv --bind $(pwd) patch-classification-pipeline_v0.2.0-paad-resnet34.sif \
-    --wsi_dir slides/ --results_dir results/
+    --wsi-dir slides/ --results-dir results/
 ```
 
 ## Developers
@@ -144,11 +144,11 @@ images in `sample-images/` (only 1 in this example) and will write results to
 
 ```
 CUDA_VISIBLE_DEVICES=0 wsinfer run \
-    --wsi_dir sample-images/ \
-    --results_dir results/ \
+    --wsi-dir sample-images/ \
+    --results-dir results/ \
     --model resnet34 \
     --weights TCGA-BRCA-v1 \
-    --num_workers 8
+    --num-workers 8
 ```
 
 ## Run in an Apptainer container (formerly Singularity)
@@ -168,11 +168,11 @@ CUDA_VISIBLE_DEVICES=0 apptainer run \
     --bind $(pwd) \
     --pwd $(pwd) \
     patch-classification-pipeline_latest.sif run \
-        --wsi_dir sample-images/ \
-        --results_dir results/ \
+        --wsi-dir sample-images/ \
+        --results-dir results/ \
         --model resnet34 \
         --weights TCGA-BRCA-v1 \
-        --num_workers 8
+        --num-workers 8
 ```
 
 ## Run in a Docker container
@@ -206,11 +206,11 @@ docker run --rm -it \
     --user $(id -u):$(id -g) \
     --mount type=bind,source=$(pwd),target=/work/ \
     kaczmarj/patch-classification-pipeline run \
-        --wsi_dir sample-images/ \
-        --results_dir results/ \
+        --wsi-dir sample-images/ \
+        --results-dir results/ \
         --model resnet34 \
         --weights TCGA-BRCA-v1 \
-        --num_workers 2
+        --num-workers 2
 ```
 
 ## Output
