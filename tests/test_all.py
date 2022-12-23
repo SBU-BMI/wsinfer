@@ -59,13 +59,13 @@ def test_cli_run_and_convert(tiff_image: Path, tmp_path: Path):
         cli,
         [
             "run",
-            "--wsi_dir",
+            "--wsi-dir",
             tiff_image.parent,
             "--model",
             "resnet34",
             "--weights",
             "TCGA-BRCA-v1",
-            "--results_dir",
+            "--results-dir",
             results_dir,
         ],
     )

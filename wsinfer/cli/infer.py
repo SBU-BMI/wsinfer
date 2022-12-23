@@ -181,7 +181,7 @@ def _get_info_for_save(weights: models.Weights):
 @click.command(context_settings=dict(auto_envvar_prefix="WSINFER"))
 @click.pass_context
 @click.option(
-    "--wsi_dir",
+    "--wsi-dir",
     type=click.Path(
         exists=True, file_okay=False, path_type=pathlib.Path, resolve_path=True
     ),
@@ -190,7 +190,7 @@ def _get_info_for_save(weights: models.Weights):
     " whole slide images.",
 )
 @click.option(
-    "--results_dir",
+    "--results-dir",
     type=click.Path(file_okay=False, path_type=pathlib.Path, resolve_path=True),
     required=True,
     help="Directory to store results. If directory exists, will skip"
@@ -209,14 +209,14 @@ def _get_info_for_save(weights: models.Weights):
     help="Weights to use for the model.",
 )
 @click.option(
-    "--batch_size",
+    "--batch-size",
     type=click.IntRange(min=1),
     default=32,
     show_default=True,
     help="Batch size during model inference.",
 )
 @click.option(
-    "--num_workers",
+    "--num-workers",
     default=0,
     show_default=True,
     help="Number of workers to use for data loading during model inference (default=0"
