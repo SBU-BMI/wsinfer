@@ -47,6 +47,12 @@ We do not install these dependencies automatically because their installation ca
 on a user's system. Then use the command below to install this package.
 
 ```
+python -m pip install --find-links https://girder.github.io/large_image_wheels wsinfer
+```
+
+To use the _bleed edge_, use
+
+```
 python -m pip install \
     --find-links https://girder.github.io/large_image_wheels \
     git+https://github.com/kaczmarj/patch-classification-pipeline.git
