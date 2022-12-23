@@ -103,11 +103,11 @@ def test_cli_run_and_convert(tiff_image: Path, tmp_path: Path):
 
     # Check the probability values.
     assert all(
-        dd["properties"]["measurements"][0]["value"] == 0.9525967836380004
+        np.allclose(dd["properties"]["measurements"][0]["value"], 0.9525967836380004)
         for dd in d["features"]
     )
     assert all(
-        dd["properties"]["measurements"][1]["value"] == 0.0474032945930957
+        np.allclose(dd["properties"]["measurements"][1]["value"], 0.0474032945930957)
         for dd in d["features"]
     )
 
