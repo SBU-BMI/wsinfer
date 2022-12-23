@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 import sys
 
@@ -49,7 +50,7 @@ def test_cli_list():
     assert result.exit_code == 0
 
 
-def test_cli_run(tiff_image: Path, tmp_path: Path):
+def test_cli_run_and_convert(tiff_image: Path, tmp_path: Path):
     from wsinfer.cli.cli import cli
 
     runner = CliRunner()
@@ -87,12 +88,51 @@ def test_cli_run(tiff_image: Path, tmp_path: Path):
     assert np.allclose(df.loc[:, "prob_notumor"], 0.9525967836380005)
     assert np.allclose(df.loc[:, "prob_tumor"], 0.04740329459309578)
 
+    # Test conversion scripts.
+    geojson_dir = results_dir / "geojson"
+    result = runner.invoke(cli, ["togeojson", str(results_dir), str(geojson_dir)])
+    assert result.exit_code == 0
+    with open(geojson_dir / "purple.json") as f:
+        d = json.load(f)
+    assert len(d["features"]) == 144
 
-@pytest.mark.xfail
-def test_convert_to_geojson():
-    # TODO: create a synthetic output and then convert it. Check that it is valid
-    # geojson.
-    assert False
+    for geojson_row in d["features"]:
+        assert geojson_row["type"] == "Feature"
+        assert geojson_row["id"] == "PathTileObject"
+        assert geojson_row["geometry"]["type"] == "Polygon"
+
+    # Check the probability values.
+    assert all(
+        dd["properties"]["measurements"][0]["value"] == 0.9525967836380004
+        for dd in d["features"]
+    )
+    assert all(
+        dd["properties"]["measurements"][1]["value"] == 0.0474032945930957
+        for dd in d["features"]
+    )
+
+    # Check the names.
+    assert all(
+        dd["properties"]["measurements"][0]["name"] == "prob_notumor"
+        for dd in d["features"]
+    )
+    assert all(
+        dd["properties"]["measurements"][1]["name"] == "prob_tumor"
+        for dd in d["features"]
+    )
+
+    # Check the coordinate values.
+    for df_row, geojson_row in zip(df.itertuples(), d["features"]):
+        maxx = df_row.minx + df_row.width
+        maxy = df_row.miny + df_row.height
+        df_coords = [
+            [maxx, df_row.miny],
+            [maxx, maxy],
+            [df_row.minx, maxy],
+            [df_row.minx, df_row.miny],
+            [maxx, df_row.miny],
+        ]
+        assert [df_coords] == geojson_row["geometry"]["coordinates"]
 
 
 @pytest.mark.xfail
