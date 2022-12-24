@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import subprocess
 import sys
 
 from click.testing import CliRunner
@@ -7,6 +8,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import tifffile
+import yaml
 
 
 @pytest.fixture
@@ -40,7 +42,8 @@ def tiff_image(tmp_path: Path) -> Path:
     return path
 
 
-def test_cli_list():
+def test_cli_list(tmp_path: Path):
+
     from wsinfer.cli.cli import cli
 
     runner = CliRunner()
@@ -48,6 +51,78 @@ def test_cli_list():
     assert "resnet34" in result.output
     assert "TCGA-BRCA-v1" in result.output
     assert result.exit_code == 0
+
+    # Test of WSINFER_PATH registration... check that the models appear in list.
+    # Test of single WSINFER_PATH.
+    config_root_single = tmp_path / "configs-single"
+    config_root_single.mkdir()
+    configs = [
+        dict(
+            name="foo",
+            architecture="resnet34",
+            url="foo",
+            url_file_name="foo",
+            num_classes=1,
+            transform=dict(resize_size=299, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+            patch_size_pixels=350,
+            spacing_um_px=0.25,
+            class_names=["tumor"],
+        ),
+        dict(
+            name="foo2",
+            architecture="resnet34",
+            url="foo",
+            url_file_name="foo",
+            num_classes=1,
+            transform=dict(resize_size=299, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+            patch_size_pixels=350,
+            spacing_um_px=0.25,
+            class_names=["tumor"],
+        ),
+    ]
+    for i, config in enumerate(configs):
+        with open(config_root_single / f"{i}.yaml", "w") as f:
+            yaml.safe_dump(config, f)
+
+    ret = subprocess.run(
+        [sys.executable, "-m", "wsinfer", "list"],
+        capture_output=True,
+        env=dict(WSINFER_PATH=str(config_root_single)),
+    )
+    assert ret.returncode == 0
+    output = ret.stdout.decode()
+    assert configs[0]["name"] in output
+    assert configs[0]["architecture"] in output
+    assert configs[1]["name"] in output
+    assert configs[1]["architecture"] in output
+    # Negative control.
+    ret = subprocess.run([sys.executable, "-m", "wsinfer", "list"], capture_output=True)
+    assert configs[0]["name"] not in ret.stdout.decode()
+    del config_root_single, output, ret, config
+
+    # Test of WSINFER_PATH registration... check that the models appear in list.
+    # Test of multiple WSINFER_PATH.
+    config_root = tmp_path / "configs"
+    config_root.mkdir()
+    config_paths = [config_root / "0", config_root / "1"]
+    for i, config in enumerate(configs):
+        config_paths[i].mkdir()
+        with open(config_paths[i] / f"{i}.yaml", "w") as f:
+            yaml.safe_dump(config, f)
+
+    ret = subprocess.run(
+        [sys.executable, "-m", "wsinfer", "list"],
+        capture_output=True,
+        env=dict(WSINFER_PATH=":".join(str(c) for c in config_paths)),
+    )
+    assert ret.returncode == 0
+    output = ret.stdout.decode()
+    assert configs[0]["name"] in output
+    assert configs[0]["architecture"] in output
+    assert configs[1]["name"] in output
+    assert configs[1]["architecture"] in output
+    ret = subprocess.run([sys.executable, "-m", "wsinfer", "list"], capture_output=True)
+    assert configs[0]["name"] not in ret.stdout.decode()
 
 
 def test_cli_run_args(tmp_path: Path):
@@ -550,7 +625,6 @@ def test_cli_run_from_config(tiff_image: Path, tmp_path: Path):
     ],
 )
 def test_invalid_modeldefs(modeldef, tmp_path: Path):
-    import yaml
     from wsinfer.modellib.models import Weights
 
     path = tmp_path / "foobar.yaml"
@@ -563,7 +637,6 @@ def test_invalid_modeldefs(modeldef, tmp_path: Path):
 
 def test_model_registration(tmp_path: Path):
     from wsinfer.modellib import models
-    import yaml
 
     # Test that registering duplicate weights will error.
     d = dict(
