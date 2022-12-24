@@ -520,7 +520,7 @@ def test_cli_run_from_config(tiff_image: Path, tmp_path: Path):
             num_classes=1,
             transform=dict(resize_size=299, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
             patch_size_pixels=350,
-            spacing_um_px=[0.25],
+            spacing_um_px=0.25,
             class_names="t",
         ),
         # invalid class_names -- len not equal to num_classes
@@ -532,7 +532,7 @@ def test_cli_run_from_config(tiff_image: Path, tmp_path: Path):
             num_classes=1,
             transform=dict(resize_size=299, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
             patch_size_pixels=350,
-            spacing_um_px=[0.25],
+            spacing_um_px=0.25,
             class_names=["tumor", "nontumor"],
         ),
         # invalid class_names -- not list of str
@@ -544,7 +544,7 @@ def test_cli_run_from_config(tiff_image: Path, tmp_path: Path):
             num_classes=1,
             transform=dict(resize_size=299, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
             patch_size_pixels=350,
-            spacing_um_px=[0.25],
+            spacing_um_px=0.25,
             class_names=[1],
         ),
     ],
@@ -559,3 +559,52 @@ def test_invalid_modeldefs(modeldef, tmp_path: Path):
 
     with pytest.raises(Exception):
         Weights.from_yaml(path)
+
+
+def test_model_registration(tmp_path: Path):
+    from wsinfer.modellib import models
+    import yaml
+
+    # Test that registering duplicate weights will error.
+    d = dict(
+        name="foo",
+        architecture="resnet34",
+        url="foo",
+        url_file_name="foo",
+        num_classes=1,
+        transform=dict(resize_size=299, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+        patch_size_pixels=350,
+        spacing_um_px=0.25,
+        class_names=["foo"],
+    )
+    path = tmp_path / "foobar.yaml"
+    with open(path, "w") as f:
+        yaml.safe_dump(d, f)
+    path = tmp_path / "foobardup.yaml"
+    with open(path, "w") as f:
+        yaml.safe_dump(d, f)
+
+    with pytest.raises(models.DuplicateModelWeights):
+        models.register_model_weights(tmp_path)
+
+    # Test that registering models will put them in the _known_model_weights object.
+    path = tmp_path / "configs" / "foobar.yaml"
+    path.parent.mkdir()
+    d = dict(
+        name="foo2",
+        architecture="resnet34",
+        url="foo",
+        url_file_name="foo",
+        num_classes=1,
+        transform=dict(resize_size=299, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+        patch_size_pixels=350,
+        spacing_um_px=0.25,
+        class_names=["foo"],
+    )
+    with open(path, "w") as f:
+        yaml.safe_dump(d, f)
+    models.register_model_weights(path.parent)
+    assert (d["architecture"], d["name"]) in models._known_model_weights.keys()
+    assert all(
+        isinstance(m, models.Weights) for m in models._known_model_weights.values()
+    )
