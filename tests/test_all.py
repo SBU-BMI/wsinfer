@@ -2,7 +2,6 @@ import json
 from pathlib import Path
 import sys
 
-import click
 from click.testing import CliRunner
 import numpy as np
 import pandas as pd
@@ -224,3 +223,339 @@ def test_cli_run_from_config(tiff_image: Path, tmp_path: Path):
     assert (df.loc[:, "width"] == 350).all()
     assert np.allclose(df.loc[:, "prob_notumor"], 0.9525967836380005)
     assert np.allclose(df.loc[:, "prob_tumor"], 0.04740329459309578)
+
+
+@pytest.mark.parametrize(
+    "modeldef",
+    [
+        [],
+        {},
+        dict(name="foo", architecture="resnet34"),
+        # Missing url
+        dict(
+            name="foo",
+            architecture="resnet34",
+            # url="foo",
+            # url_file_name="foo",
+            num_classes=1,
+            transform=dict(resize_size=299, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+            patch_size_pixels=350,
+            spacing_um_px=0.25,
+            class_names=["tumor"],
+        ),
+        # missing url_file_name when url is given
+        dict(
+            name="foo",
+            architecture="resnet34",
+            url="foo",
+            # url_file_name="foo",
+            num_classes=1,
+            transform=dict(resize_size=299, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+            patch_size_pixels=350,
+            spacing_um_px=0.25,
+            class_names=["tumor"],
+        ),
+        # url and file used together
+        dict(
+            name="foo",
+            architecture="resnet34",
+            file=__file__,
+            url="foo",
+            url_file_name="foo",
+            num_classes=1,
+            transform=dict(resize_size=299, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+            patch_size_pixels=350,
+            spacing_um_px=0.25,
+            class_names=["tumor"],
+        ),
+        # nonexistent file
+        dict(
+            name="foo",
+            architecture="resnet34",
+            file="path/to/fake/file",
+            # url="foo",
+            # url_file_name="foo",
+            num_classes=1,
+            transform=dict(resize_size=299, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+            patch_size_pixels=350,
+            spacing_um_px=0.25,
+            class_names=["tumor"],
+        ),
+        # num_classes missing
+        dict(
+            name="foo",
+            architecture="resnet34",
+            url="foo",
+            url_file_name="foo",
+            # num_classes=1,
+            transform=dict(resize_size=299, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+            patch_size_pixels=350,
+            spacing_um_px=0.25,
+            class_names=["tumor"],
+        ),
+        # num classes not equal to len of class names
+        dict(
+            name="foo",
+            architecture="resnet34",
+            url="foo",
+            url_file_name="foo",
+            num_classes=2,
+            transform=dict(resize_size=299, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+            patch_size_pixels=350,
+            spacing_um_px=0.25,
+            class_names=["tumor"],
+        ),
+        # transform missing
+        dict(
+            name="foo",
+            architecture="resnet34",
+            url="foo",
+            url_file_name="foo",
+            num_classes=1,
+            # transform=dict(resize_size=299, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+            patch_size_pixels=350,
+            spacing_um_px=0.25,
+            class_names=["tumor"],
+        ),
+        # transform.resize_size missing
+        dict(
+            name="foo",
+            architecture="resnet34",
+            url="foo",
+            url_file_name="foo",
+            num_classes=1,
+            transform=dict(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+            patch_size_pixels=350,
+            spacing_um_px=0.25,
+            class_names=["tumor"],
+        ),
+        # transform.mean missing
+        dict(
+            name="foo",
+            architecture="resnet34",
+            url="foo",
+            url_file_name="foo",
+            num_classes=1,
+            transform=dict(resize_size=299, std=[0.5, 0.5, 0.5]),
+            patch_size_pixels=350,
+            spacing_um_px=0.25,
+            class_names=["tumor"],
+        ),
+        # transform.std missing
+        dict(
+            name="foo",
+            architecture="resnet34",
+            url="foo",
+            url_file_name="foo",
+            num_classes=1,
+            transform=dict(resize_size=299, mean=[0.5, 0.5, 0.5]),
+            patch_size_pixels=350,
+            spacing_um_px=0.25,
+            class_names=["tumor"],
+        ),
+        # transform.resize_size non int
+        dict(
+            name="foo",
+            architecture="resnet34",
+            url="foo",
+            url_file_name="foo",
+            num_classes=1,
+            transform=dict(resize_size=0.5, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+            patch_size_pixels=350,
+            spacing_um_px=0.25,
+            class_names=["tumor"],
+        ),
+        # transform.resize_size non int
+        dict(
+            name="foo",
+            architecture="resnet34",
+            url="foo",
+            url_file_name="foo",
+            num_classes=1,
+            transform=dict(
+                resize_size=[100, 100], mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]
+            ),
+            patch_size_pixels=350,
+            spacing_um_px=0.25,
+            class_names=["tumor"],
+        ),
+        # transform.mean not a list of three floats
+        dict(
+            name="foo",
+            architecture="resnet34",
+            url="foo",
+            url_file_name="foo",
+            num_classes=1,
+            transform=dict(resize_size=299, mean=[0.5], std=[0.5, 0.5, 0.5]),
+            patch_size_pixels=350,
+            spacing_um_px=0.25,
+            class_names=["tumor"],
+        ),
+        # transform.mean not a list of three floats
+        dict(
+            name="foo",
+            architecture="resnet34",
+            url="foo",
+            url_file_name="foo",
+            num_classes=1,
+            transform=dict(resize_size=299, mean=[1, 1, 1], std=[0.5, 0.5, 0.5]),
+            patch_size_pixels=350,
+            spacing_um_px=0.25,
+            class_names=["tumor"],
+        ),
+        # transform.mean not a list of three floats
+        dict(
+            name="foo",
+            architecture="resnet34",
+            url="foo",
+            url_file_name="foo",
+            num_classes=1,
+            transform=dict(resize_size=299, mean=0.5, std=[0.5, 0.5, 0.5]),
+            patch_size_pixels=350,
+            spacing_um_px=0.25,
+            class_names=["tumor"],
+        ),
+        # transform.std not a list of three floats
+        dict(
+            name="foo",
+            architecture="resnet34",
+            url="foo",
+            url_file_name="foo",
+            num_classes=1,
+            transform=dict(resize_size=299, std=[0.5], mean=[0.5, 0.5, 0.5]),
+            patch_size_pixels=350,
+            spacing_um_px=0.25,
+            class_names=["tumor"],
+        ),
+        # transform.std not a list of three floats
+        dict(
+            name="foo",
+            architecture="resnet34",
+            url="foo",
+            url_file_name="foo",
+            num_classes=1,
+            transform=dict(resize_size=299, std=[1, 1, 1], mean=[0.5, 0.5, 0.5]),
+            patch_size_pixels=350,
+            spacing_um_px=0.25,
+            class_names=["tumor"],
+        ),
+        # transform.std not a list of three floats
+        dict(
+            name="foo",
+            architecture="resnet34",
+            url="foo",
+            url_file_name="foo",
+            num_classes=1,
+            transform=dict(resize_size=299, std=0.5, mean=[0.5, 0.5, 0.5]),
+            patch_size_pixels=350,
+            spacing_um_px=0.25,
+            class_names=["tumor"],
+        ),
+        # invalid patch_size_pixels -- list
+        dict(
+            name="foo",
+            architecture="resnet34",
+            url="foo",
+            url_file_name="foo",
+            num_classes=1,
+            transform=dict(resize_size=299, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+            patch_size_pixels=[350],
+            spacing_um_px=0.25,
+            class_names=["tumor"],
+        ),
+        # invalid patch_size_pixels -- float
+        dict(
+            name="foo",
+            architecture="resnet34",
+            url="foo",
+            url_file_name="foo",
+            num_classes=1,
+            transform=dict(resize_size=299, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+            patch_size_pixels=350.0,
+            spacing_um_px=0.25,
+            class_names=["tumor"],
+        ),
+        # invalid patch_size_pixels -- negative
+        dict(
+            name="foo",
+            architecture="resnet34",
+            url="foo",
+            url_file_name="foo",
+            num_classes=1,
+            transform=dict(resize_size=299, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+            patch_size_pixels=-100,
+            spacing_um_px=0.25,
+            class_names=["tumor"],
+        ),
+        # invalid spacing_um_px -- zero
+        dict(
+            name="foo",
+            architecture="resnet34",
+            url="foo",
+            url_file_name="foo",
+            num_classes=1,
+            transform=dict(resize_size=299, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+            patch_size_pixels=350,
+            spacing_um_px=0,
+            class_names=["tumor"],
+        ),
+        # invalid spacing_um_px -- list
+        dict(
+            name="foo",
+            architecture="resnet34",
+            url="foo",
+            url_file_name="foo",
+            num_classes=1,
+            transform=dict(resize_size=299, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+            patch_size_pixels=350,
+            spacing_um_px=[0.25],
+            class_names=["tumor"],
+        ),
+        # invalid class_names -- str
+        dict(
+            name="foo",
+            architecture="resnet34",
+            url="foo",
+            url_file_name="foo",
+            num_classes=1,
+            transform=dict(resize_size=299, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+            patch_size_pixels=350,
+            spacing_um_px=[0.25],
+            class_names="t",
+        ),
+        # invalid class_names -- len not equal to num_classes
+        dict(
+            name="foo",
+            architecture="resnet34",
+            url="foo",
+            url_file_name="foo",
+            num_classes=1,
+            transform=dict(resize_size=299, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+            patch_size_pixels=350,
+            spacing_um_px=[0.25],
+            class_names=["tumor", "nontumor"],
+        ),
+        # invalid class_names -- not list of str
+        dict(
+            name="foo",
+            architecture="resnet34",
+            url="foo",
+            url_file_name="foo",
+            num_classes=1,
+            transform=dict(resize_size=299, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+            patch_size_pixels=350,
+            spacing_um_px=[0.25],
+            class_names=[1],
+        ),
+    ],
+)
+def test_invalid_modeldefs(modeldef, tmp_path: Path):
+    import yaml
+    from wsinfer.modellib.models import Weights
+
+    path = tmp_path / "foobar.yaml"
+    with open(path, "w") as f:
+        yaml.safe_dump(modeldef, f)
+
+    with pytest.raises(Exception):
+        Weights.from_yaml(path)
