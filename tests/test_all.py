@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+from typing import List
 
 from click.testing import CliRunner
 import numpy as np
@@ -165,8 +166,99 @@ def test_cli_run_args(tmp_path: Path):
     assert "model and weights are mutually exclusive with config." in result.output
 
 
-def test_cli_run_and_convert(tiff_image: Path, tmp_path: Path):
-    """This is a form of a regression test."""
+@pytest.mark.parametrize(
+    [
+        "model",
+        "weights",
+        "class_names",
+        "expected_probs",
+        "expected_patch_size",
+        "expected_num_patches",
+    ],
+    [
+        # Resnet34 TCGA-BRCA-v1
+        (
+            "resnet34",
+            "TCGA-BRCA-v1",
+            ["notumor", "tumor"],
+            [0.9525967836380005, 0.04740329459309578],
+            350,
+            144,
+        ),
+        # Resnet34 TCGA-LUAD-v1
+        (
+            "resnet34",
+            "TCGA-LUAD-v1",
+            ["lepidic", "benign", "acinar", "micropapillary", "mucinous", "solid"],
+            [
+                0.012793001718819141,
+                0.9792948961257935,
+                0.0050891609862446785,
+                0.0003837027761619538,
+                0.0006556913140229881,
+                0.0017834495520219207,
+            ],
+            700,
+            36,
+        ),
+        # Resnet34 TCGA-PRAD-v1
+        (
+            "resnet34",
+            "TCGA-PRAD-v1",
+            ["grade3", "grade4+5", "benign"],
+            [0.0010944147361442447, 3.371985076228157e-05, 0.9988718628883362],
+            350,
+            144,
+        ),
+        # Inceptionv4 TCGA-BRCA-v1
+        (
+            "inceptionv4",
+            "TCGA-BRCA-v1",
+            ["notumor", "tumor"],
+            [0.9564113020896912, 0.043588679283857346],
+            350,
+            144,
+        ),
+        # Inceptionv4nobn TCGA-TILs-v1
+        (
+            "inceptionv4nobn",
+            "TCGA-TILs-v1",
+            ["notils", "tils"],
+            [1.0, 3.427359524660334e-12],
+            200,
+            441,
+        ),
+        # Vgg16mod TCGA-BRCA-v1
+        (
+            "vgg16mod",
+            "TCGA-BRCA-v1",
+            ["notumor", "tumor"],
+            [0.9108286499977112, 0.089171402156353],
+            350,
+            144,
+        ),
+        # Preactresnet34 TCGA-PAAD-v1
+        (
+            "preactresnet34",
+            "TCGA-PAAD-v1",
+            ["tumor"],
+            [0.01446483],
+            2100,
+            4,
+        ),
+    ],
+)
+def test_cli_run_regression(
+    model: str,
+    weights: str,
+    class_names: List[float],
+    expected_probs: List[float],
+    expected_patch_size: int,
+    expected_num_patches: int,
+    tiff_image: Path,
+    tmp_path: Path,
+):
+    """A regression test of the command 'wsinfer run', using all registered models."""
     from wsinfer.cli.cli import cli
 
     runner = CliRunner()
@@ -178,9 +270,9 @@ def test_cli_run_and_convert(tiff_image: Path, tmp_path: Path):
             "--wsi-dir",
             tiff_image.parent,
             "--model",
-            "resnet34",
+            model,
             "--weights",
-            "TCGA-BRCA-v1",
+            weights,
             "--results-dir",
             results_dir,
         ],
@@ -188,21 +280,24 @@ def test_cli_run_and_convert(tiff_image: Path, tmp_path: Path):
     assert result.exit_code == 0
     assert (results_dir / "model-outputs").exists()
     df = pd.read_csv(results_dir / "model-outputs" / "purple.csv")
+    class_prob_cols = [f"prob_{c}" for c in class_names]
     assert df.columns.tolist() == [
         "slide",
         "minx",
         "miny",
         "width",
         "height",
-        "prob_notumor",
-        "prob_tumor",
+        *class_prob_cols,
     ]
+    # TODO: test the metadata.json file as well.
+    assert df.shape[0] == expected_num_patches
     assert (df.loc[:, "slide"] == str(tiff_image)).all()
-    assert (df.loc[:, "width"] == 350).all()
-    assert (df.loc[:, "height"] == 350).all()
-    assert (df.loc[:, "width"] == 350).all()
-    assert np.allclose(df.loc[:, "prob_notumor"], 0.9525967836380005)
-    assert np.allclose(df.loc[:, "prob_tumor"], 0.04740329459309578)
+    assert (df.loc[:, "width"] == expected_patch_size).all()
+    assert (df.loc[:, "height"] == expected_patch_size).all()
+    # Test probs.
+    for col, col_prob in zip(class_names, expected_probs):
+        col = f"prob_{col}"
+        assert np.allclose(df.loc[:, col], col_prob)
 
     # Test conversion scripts.
     geojson_dir = results_dir / "geojson"
@@ -210,7 +305,7 @@ def test_cli_run_and_convert(tiff_image: Path, tmp_path: Path):
     assert result.exit_code == 0
     with open(geojson_dir / "purple.json") as f:
         d = json.load(f)
-    assert len(d["features"]) == 144
+    assert len(d["features"]) == expected_num_patches
 
     for geojson_row in d["features"]:
         assert geojson_row["type"] == "Feature"
@@ -218,24 +313,16 @@ def test_cli_run_and_convert(tiff_image: Path, tmp_path: Path):
         assert geojson_row["geometry"]["type"] == "Polygon"
 
     # Check the probability values.
-    assert all(
-        np.allclose(dd["properties"]["measurements"][0]["value"], 0.9525967836380004)
-        for dd in d["features"]
-    )
-    assert all(
-        np.allclose(dd["properties"]["measurements"][1]["value"], 0.0474032945930957)
-        for dd in d["features"]
-    )
-
-    # Check the names.
-    assert all(
-        dd["properties"]["measurements"][0]["name"] == "prob_notumor"
-        for dd in d["features"]
-    )
-    assert all(
-        dd["properties"]["measurements"][1]["name"] == "prob_tumor"
-        for dd in d["features"]
-    )
+    for i, prob in enumerate(expected_probs):
+        # names have the prefix "prob_".
+        assert all(
+            dd["properties"]["measurements"][i]["name"] == class_prob_cols[i]
+            for dd in d["features"]
+        )
+        assert all(
+            np.allclose(dd["properties"]["measurements"][i]["value"], prob)
+            for dd in d["features"]
+        )
 
     # Check the coordinate values.
     for df_row, geojson_row in zip(df.itertuples(), d["features"]):
