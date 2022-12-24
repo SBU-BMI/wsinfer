@@ -269,4 +269,6 @@ del wsinfer_path
 
 def list_all_models_and_weights() -> List[Tuple[str, str]]:
     """Return list of tuples of `(model_name, weights_name)` with available pairs."""
-    return list(_known_model_weights.keys())
+    vals = list(_known_model_weights.keys())
+    vals.sort()
+    return vals
