@@ -1,0 +1,23 @@
+# Configuration of a prostate adenocarcinoma tumor detection model.
+# The models are referenced by the pair of [architecture, weights], so this pair must
+# be unique.
+architecture: resnet34  # Must be a string.
+name: TCGA-PRAD-v1  # Must be a string.
+# Where to get the model weights. Either a URL or path to a file.
+# If using a URL, set the url_file_name (the name of the file when it is downloaded).
+url: https://stonybrookmedicine.box.com/shared/static/nxyr5atk2nlvgibck3l0q6rjin2g7n38.pt
+url_file_name: resnet34-prad-20210101-ea6c004c.pt
+# If using a relative path, the path is relative to the location of the yaml file.
+# file: /path/to/weights.pt
+num_classes: 3
+transform:
+  # These are keyword arguments to the PatchClassification class.
+  resize_size: 224  # Must be a single integer.
+  mean: [0.6462, 0.5070, 0.8055]
+  std: [0.1381, 0.1674, 0.1358]
+patch_size_pixels: 175
+spacing_um_px: 0.5
+class_names:
+  - grade3
+  - grade4+5
+  - benign

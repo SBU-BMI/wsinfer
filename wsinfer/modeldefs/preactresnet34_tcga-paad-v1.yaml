@@ -1,0 +1,24 @@
+# Configuration of a pancreatic adenocarcinoma tumor detection model.
+# The models are referenced by the pair of [architecture, weights], so this pair must
+# be unique.
+architecture: preactresnet34  # Must be a string.
+name: TCGA-PAAD-v1  # Must be a string.
+# Where to get the model weights. Either a URL or path to a file.
+# If using a URL, set the url_file_name (the name of the file when it is downloaded).
+url: https://stonybrookmedicine.box.com/shared/static/sol1h9aqrh8lynzc6kidw1lsoeks20hh.pt
+url_file_name: preactresnet34-paad-20210101-7892b41f.pt
+# If using a relative path, the path is relative to the location of the yaml file.
+# file: /path/to/weights.pt
+num_classes: 1
+transform:
+  # These are keyword arguments to the PatchClassification class.
+  resize_size: 224  # Must be a single integer.
+  mean: [0.7238, 0.5716, 0.6779]
+  std: [0.1120, 0.1459, 0.1089]
+patch_size_pixels: 350
+# Patches are 525.1106 microns.
+# Patch of 2078 pixels @ 0.2527 mpp is 350 pixels at our target spacing.
+# (2078 * 0.2527) / 350
+spacing_um_px: 1.500316
+class_names:
+  - tumor

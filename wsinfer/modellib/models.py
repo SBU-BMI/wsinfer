@@ -1,11 +1,7 @@
-"""Models for whole slide image patch-based classification.
-
-See https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7369575/table/tbl3/ for modifications
-that were made to the original architectures.
-"""
-
 import dataclasses
-import pathlib
+import hashlib
+import os
+from pathlib import Path
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -15,39 +11,68 @@ from typing import Tuple
 from typing import Union
 
 from PIL import Image
+import timm
 import torch
 from torch.hub import load_state_dict_from_url
-import torchvision
+import yaml
 
 from .inceptionv4 import inceptionv4 as _inceptionv4
 from .inceptionv4_no_batchnorm import inceptionv4 as _inceptionv4_no_bn
 from .resnet_preact import resnet34_preact as _resnet34_preact
+from .vgg16mod import vgg16mod as _vgg16mod
 from .transforms import PatchClassification
 
-PathType = Union[str, pathlib.Path]
+
+class WsinferException(Exception):
+    "Base class for wsinfer exceptions."
 
 
-class ModelNotFoundError(Exception):
-    ...
+class UnknownArchitectureError(WsinferException):
+    """Architecture is unknown and cannot be found."""
 
 
-class WeightsNotFoundError(Exception):
-    ...
+class ModelWeightsNotFound(WsinferException):
+    """Model weights are not found, likely because they are not in the registry."""
+
+
+class DuplicateModelWeights(WsinferException):
+    """A duplicate key was passed to the model weights registry."""
+
+
+class ModelRegistrationError(WsinferException):
+    """Error during model registration."""
+
+
+PathType = Union[str, Path]
+
+
+def _sha256sum(path: PathType) -> str:
+    """Calculate SHA256 of a file."""
+    sha = hashlib.sha256()
+    with open(path, "rb") as f:
+        while True:
+            data = f.read(1024 * 64)  # 64 kb
+            if not data:
+                break
+            sha.update(data)
+    return sha.hexdigest()
 
 
 @dataclasses.dataclass
 class Weights:
     """Container for data associated with a trained model."""
 
-    url: str
-    file_name: str
+    name: str
+    architecture: str
     num_classes: int
     transform: Callable[[Union[Image.Image, torch.Tensor]], torch.Tensor]
     patch_size_pixels: int
     spacing_um_px: float
     class_names: List[str]
-    metadata: Dict[str, Any]
-    model: Optional[torch.nn.Module] = None
+    url: Optional[str] = None
+    url_file_name: Optional[str] = None
+    file: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
 
     def __post_init__(self):
         if len(set(self.class_names)) != len(self.class_names):
@@ -55,274 +80,207 @@ class Weights:
         if len(self.class_names) != self.num_classes:
             raise ValueError("length of class_names must be equal to num_classes")
 
+    @classmethod
+    def from_yaml(cls, path):
+        with open(path) as f:
+            d = yaml.safe_load(f)
 
-# Store all available weights for all models.
-WEIGHTS: Dict[str, Dict[str, Weights]] = {
-    "inceptionv4": {
-        "TCGA-BRCA-v1": Weights(
-            url="https://stonybrookmedicine.box.com/shared/static/tfwimlf3ygyga1x4fnn03u9y5uio8gqk.pt",  # noqa
-            file_name="inceptionv4-brca-20190613-aef40942.pt",
-            num_classes=2,
-            transform=PatchClassification(
-                resize_size=299,
-                mean=(0.5, 0.5, 0.5),
-                std=(0.5, 0.5, 0.5),
-            ),
-            patch_size_pixels=350,
-            spacing_um_px=0.25,
-            class_names=["notumor", "tumor"],
-            metadata={"patch-size": "350 pixels (87.5 microns)"},
-        ),
-        # This uses an implementation without batchnorm. Model was trained with TF Slim
-        # and weights were converted to PyTorch (see 'scripts' directory).
-        "TCGA-TILs-v1": Weights(
-            url="https://stonybrookmedicine.box.com/shared/static/sz1gpc6u3mftadh4g6x3csxnpmztj8po.pt",  # noqa
-            file_name="inceptionv4-tils-v1-20200920-e3e72cd2.pt",
-            num_classes=2,
-            transform=PatchClassification(
-                resize_size=299, mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)
-            ),
-            patch_size_pixels=100,
-            spacing_um_px=0.5,
-            class_names=["notils", "tils"],
-            metadata={
-                "publication": "https://doi.org/10.3389/fonc.2021.806603",
-                "notes": (
-                    "Implementation does not use batchnorm. Original model was trained"
-                    " with TF Slim and converted to PyTorch format."
-                ),
-            },
-        ),
-    },
-    "resnet34": {
-        "TCGA-BRCA-v1": Weights(
-            url="https://stonybrookmedicine.box.com/shared/static/dv5bxk6d15uhmcegs9lz6q70yrmwx96p.pt",  # noqa
-            file_name="resnet34-brca-20190613-01eaf604.pt",
-            num_classes=2,
-            transform=PatchClassification(
-                resize_size=224,
-                mean=(0.7238, 0.5716, 0.6779),
-                std=(0.1120, 0.1459, 0.1089),
-            ),
-            patch_size_pixels=350,
-            spacing_um_px=0.25,
-            class_names=["notumor", "tumor"],
-            metadata={"patch-size": "350 pixels (87.5 microns)."},
-        ),
-        # Original model is on GitHub
-        # https://github.com/SBU-BMI/quip_lung_cancer_detection/blob/8eac86e837baa371a98ce2fe08348dcf0400a317/models_cnn/train_lung_john_6classes_netDepth-34_APS-350_randomSeed-2954321_numBenign-80000_0131_1818_bestF1_0.8273143068611924_5.t7
-        "TCGA-LUAD-v1": Weights(
-            url="https://stonybrookmedicine.box.com/shared/static/d6g9huv1olfu2mt9yaud9xqf9bdqx38i.pt",  # noqa
-            file_name="resnet34-luad-20210102-93038ae6.pt",
-            num_classes=6,
-            transform=PatchClassification(
-                resize_size=224,
-                # Mean and std from
-                # https://github.com/SBU-BMI/quip_lung_cancer_detection/blob/8eac86e837baa371a98ce2fe08348dcf0400a317/prediction_6classes/tumor_pred/pred.py#L29-L30
-                mean=(0.8301, 0.6600, 0.8054),
-                std=(0.0864, 0.1602, 0.0647),
-            ),
-            patch_size_pixels=350,
-            spacing_um_px=0.5,
-            class_names=[
-                "lepidic",
-                "benign",
-                "acinar",
-                "micropapillary",
-                "mucinous",
-                "solid",
-            ],
-            metadata={},
-        ),
-        # Original model is on GitHub
-        # https://github.com/SBU-BMI/quip_prad_cancer_detection/tree/d80052e0d098a1211432f9abff086974edd9c669/models_cnn
-        # Original file name is
-        # RESNET_34_prostate_beatrice_john___1117_1038_0.9533516227597434_87.t7
-        "TCGA-PRAD-v1": Weights(
-            url="https://stonybrookmedicine.box.com/shared/static/nxyr5atk2nlvgibck3l0q6rjin2g7n38.pt",  # noqa
-            file_name="resnet34-prad-20210101-ea6c004c.pt",
-            num_classes=3,
-            transform=PatchClassification(
-                resize_size=224,
-                # Mean and std from
-                # https://github.com/SBU-BMI/quip_prad_cancer_detection/blob/b71d8440eab090cb789281b33fbf89011e924fb9/prediction_3classes/tumor_pred/pred.py#L27-L28
-                mean=(0.6462, 0.5070, 0.8055),
-                std=(0.1381, 0.1674, 0.1358),
-            ),
-            patch_size_pixels=175,
-            spacing_um_px=0.5,
-            class_names=["grade3", "grade4+5", "benign"],
-            metadata={},
-        ),
-    },
-    "resnet34_preact": {
-        "TCGA-PAAD-v1": Weights(
-            url="https://stonybrookmedicine.box.com/shared/static/sol1h9aqrh8lynzc6kidw1lsoeks20hh.pt",  # noqa
-            file_name="preactresnet34-paad-20210101-7892b41f.pt",
-            num_classes=1,
-            transform=PatchClassification(
-                resize_size=224,
-                mean=(0.7238, 0.5716, 0.6779),
-                std=(0.1120, 0.1459, 0.1089),
-            ),
-            patch_size_pixels=350,
-            # Patches are 525.1106 microns.
-            # Patch of 2078 pixels @ 0.2527 mpp is 350 pixels at our target spacing.
-            # (2078 * 0.2527) / 350
-            spacing_um_px=1.500316,
-            class_names=["tumor"],
-            metadata={},
-        ),
-    },
-    "vgg16_modified": {
-        "TCGA-BRCA-v1": Weights(
-            url="https://stonybrookmedicine.box.com/shared/static/197s56yvcrdpan7eu5tq8d4gxvq3xded.pt",  # noqa
-            file_name="vgg16-modified-brca-20190613-62bc1b41.pt",
-            num_classes=2,
-            transform=PatchClassification(
-                resize_size=224,
-                mean=(0.7238, 0.5716, 0.6779),
-                std=(0.1120, 0.1459, 0.1089),
-            ),
-            patch_size_pixels=350,
-            spacing_um_px=0.25,
-            class_names=["notumor", "tumor"],
-            metadata={"patch-size": "350 pixels (87.5 microns)"},
+        if not isinstance(d, dict):
+            raise ValueError("expected YAML config to be a dictionary")
+
+        # Validate contents.
+        # Validate keys.
+        required_keys = [
+            "name",
+            "architecture",
+            "num_classes",
+            "transform",
+            "patch_size_pixels",
+            "spacing_um_px",
+            "class_names",
+        ]
+        optional_keys = ["url", "url_file_name", "file", "metadata"]
+        all_keys = required_keys + optional_keys
+        for req_key in required_keys:
+            if req_key not in d.keys():
+                raise KeyError(f"required key not found: '{req_key}'")
+        unknown_keys = [k for k in d.keys() if k not in all_keys]
+        if unknown_keys:
+            raise KeyError(f"unknown keys: {unknown_keys}")
+        for req_key in ["resize_size", "mean", "std"]:
+            if req_key not in d["transform"].keys():
+                raise KeyError(
+                    f"required key not found in 'transform' section: '{req_key}'"
+                )
+
+        # Either 'url' or 'file' is required. If 'url' is used, then 'url_file_name' is
+        # required.
+        if "url" not in d.keys() and "file" not in d.keys():
+            raise KeyError("'url' or 'file' must be provided")
+        if "url" in d.keys() and "file" in d.keys():
+            raise KeyError("only on of 'url' and 'file' can be used")
+        if "url" in d.keys() and "url_file_name" not in d.keys():
+            raise KeyError("when using 'url', 'url_file_name' must also be provided")
+
+        # Validate types.
+        if not isinstance("architecture", str):
+            raise ValueError("'architecture' must be a string")
+        if not isinstance("name", str):
+            raise ValueError("'name' must be a string")
+        if "url" in d.keys() and not isinstance(d["url"], str):
+            raise ValueError("'url' must be a string")
+        if "url_file_name" in d.keys() and not isinstance(d["url"], str):
+            raise ValueError("'url_file_name' must be a string")
+        if not isinstance(d["num_classes"], int):
+            raise ValueError("'num_classes' must be an integer")
+        if not isinstance(d["transform"]["resize_size"], int):
+            raise ValueError("'transform.resize_size' must be an integer")
+        if not isinstance(d["transform"]["mean"], list):
+            raise ValueError("'transform.mean' must be a list")
+        if not all(isinstance(num, float) for num in d["transform"]["mean"]):
+            raise ValueError("'transform.mean' must be a list of floats")
+        if not isinstance(d["transform"]["std"], list):
+            raise ValueError("'transform.std' must be a list")
+        if not all(isinstance(num, float) for num in d["transform"]["std"]):
+            raise ValueError("'transform.std' must be a list of floats")
+        if not isinstance(d["patch_size_pixels"], int) or d["patch_size_pixels"] <= 0:
+            raise ValueError("patch_size_pixels must be a positive integer")
+        if not isinstance(d["spacing_um_px"], float) or d["spacing_um_px"] <= 0:
+            raise ValueError("spacing_um_px must be a positive float")
+        if not isinstance(d["class_names"], list):
+            raise ValueError("'class_names' must be a list")
+        if not all(isinstance(c, str) for c in d["class_names"]):
+            raise ValueError("'class_names' must be a list of strings")
+
+        # Validate values.
+        if len(d["transform"]["mean"]) != 3:
+            raise ValueError("transform.mean must be a list of three numbers")
+        if len(d["transform"]["std"]) != 3:
+            raise ValueError("transform.std must be a list of three numbers")
+        if len(d["class_names"]) != len(set(d["class_names"])):
+            raise ValueError("duplicate values found in 'class_names'")
+        if len(d["class_names"]) != d["num_classes"]:
+            raise ValueError("mismatch between length of class_names and num_classes.")
+        if "file" in d.keys():
+            file = Path(path).parent / d["file"]
+            file = file.resolve()
+            if not file.exists():
+                raise FileNotFoundError(f"'file' not found: {file}")
+
+        transform = PatchClassification(
+            resize_size=d["transform"]["resize_size"],
+            mean=d["transform"]["mean"],
+            std=d["transform"]["std"],
         )
-    },
+        return Weights(
+            name=d["name"],
+            architecture=d["architecture"],
+            url=d.get("url"),
+            url_file_name=d.get("url_file_name"),
+            file=d.get("file"),
+            num_classes=d["num_classes"],
+            transform=transform,
+            patch_size_pixels=d["patch_size_pixels"],
+            spacing_um_px=d["spacing_um_px"],
+            class_names=d["class_names"],
+        )
+
+    def load_model(self):
+        model = _create_model(name=self.architecture, num_classes=self.num_classes)
+
+        # Load state dict.
+        if self.url and self.url_file_name:
+            state_dict = load_state_dict_from_url(
+                url=self.url, check_hash=True, file_name=self.url_file_name
+            )
+        elif self.file:
+            state_dict = torch.load(self.file, map_location="cpu")
+        else:
+            raise RuntimeError("cannot find weights")
+
+        model.load_state_dict(state_dict, strict=True)
+        return model
+
+    def get_sha256_of_weights(self) -> str:
+        if self.url and self.url_file_name:
+            p = Path(torch.hub.get_dir()) / "checkpoints" / self.url_file_name
+        elif self.file:
+            p = Path(self.file)
+        else:
+            raise RuntimeError("cannot find path to weights")
+        sha = _sha256sum(p)
+        return sha
+
+
+# Container for all models we can use that are not in timm.
+_model_registry: Dict[str, Callable[[int], torch.nn.Module]] = {
+    "inceptionv4": _inceptionv4,
+    "inceptionv4nobn": _inceptionv4_no_bn,
+    "preactresnet34": _resnet34_preact,
+    "vgg16mod": _vgg16mod,
 }
 
 
-def _get_model_weights(model_name: str, weights: str) -> Weights:
-    all_weights_for_model = WEIGHTS.get(model_name)
-    if all_weights_for_model is None:
-        raise ModelNotFoundError(f"no weights registered for {model_name}")
-    weights_obj = all_weights_for_model.get(weights)
-    if weights_obj is None:
-        raise WeightsNotFoundError(f"'{weights}' weights not found for {model_name}")
-    return weights_obj
-
-
-def _load_state_into_model(model: torch.nn.Module, weights: Weights):
-    print("Information about the pretrained weights")
-    print("----------------------------------------")
-    for k, v in dataclasses.asdict(weights).items():
-        if k == "model":  # skip because it's None at this point.
-            continue
-        print(f"{k} = {v}")
-    print("----------------------------------------\n")
-    state_dict = load_state_dict_from_url(
-        url=weights.url, check_hash=True, file_name=weights.file_name
-    )
-    model.load_state_dict(state_dict, strict=True)
-    return model
-
-
-def inceptionv4(weights: str) -> Weights:
-    """Create InceptionV4 model."""
-    weights_obj = _get_model_weights("inceptionv4", weights=weights)
-    if weights == "TCGA-TILs-v1":
-        # TCGA-TILs-v1 model uses inceptionv4 without batchnorm.
-        model = _inceptionv4_no_bn(weights_obj.num_classes, pretrained=False)
+def _create_model(name: str, num_classes: int) -> torch.nn.Module:
+    """Return a torch model architecture."""
+    if name in _model_registry.keys():
+        return _model_registry[name](num_classes)
     else:
-        model = _inceptionv4(num_classes=weights_obj.num_classes, pretrained=False)
-    model = _load_state_into_model(model=model, weights=weights_obj)
-    weights_obj.model = model
-    return weights_obj
+        if name not in timm.list_models():
+            raise UnknownArchitectureError(f"unknown architecture: '{name}'")
+        return timm.create_model(name, num_classes=num_classes)
 
 
-def resnet34(weights: str) -> Weights:
-    """Create ResNet34 model."""
-    weights_obj = _get_model_weights("resnet34", weights=weights)
-    model = torchvision.models.resnet34()
-    model.fc = torch.nn.Linear(model.fc.in_features, weights_obj.num_classes)
-    model = _load_state_into_model(model=model, weights=weights_obj)
-    weights_obj.model = model
-    return weights_obj
+# Keys are tuple of (architecture, weights_name).
+_known_model_weights: Dict[Tuple[str, str], Weights] = {}
 
 
-def resnet34_preact(weights: str) -> Weights:
-    """Create ResNet34-Preact model."""
-    weights_obj = _get_model_weights("resnet34_preact", weights=weights)
-    model = _resnet34_preact()
-    model.linear = torch.nn.Linear(model.linear.in_features, weights_obj.num_classes)
-    model = _load_state_into_model(model=model, weights=weights_obj)
-    weights_obj.model = model
-    return weights_obj
+def register_model_weights(root: Path):
+    modeldefs = list(root.glob("*.yml")) + list(root.glob("*.yaml"))
+    for modeldef in modeldefs:
+        try:
+            w = Weights.from_yaml(modeldef)
+        except Exception as e:
+            raise ModelRegistrationError(
+                f"Error registering model from config file ('{modeldef}')\n"
+                f"Original error is: {e}"
+            )
+        if w.architecture not in timm.list_models() + list(_model_registry.keys()):
+            raise UnknownArchitectureError(f"{w.architecture} implementation not found")
+        key = (w.architecture, w.name)
+        if key in _known_model_weights:
+            raise DuplicateModelWeights(
+                f"duplicate models weights: {(w.architecture, w.name)}"
+            )
+        _known_model_weights[key] = w
 
 
-def vgg16_modified(weights: str) -> Weights:
-    """Create modified VGG16 model.
-
-    The classifier of this model is
-        Linear (25,088, 4096)
-        ReLU -> Dropout
-        Linear (1024, num_classes)
-    """
-    weights_obj = _get_model_weights("vgg16_modified", weights=weights)
-    model = torchvision.models.vgg16()
-    model.classifier = model.classifier[:4]
-    in_features = model.classifier[0].in_features
-    model.classifier[0] = torch.nn.Linear(in_features, 1024)
-    model.classifier[3] = torch.nn.Linear(1024, weights_obj.num_classes)
-    model = _load_state_into_model(model=model, weights=weights_obj)
-    weights_obj.model = model
-    return weights_obj
-
-
-MODEL_NAME_TO_FUNC = dict(
-    inceptionv4=inceptionv4,
-    resnet34=resnet34,
-    resnet34_preact=resnet34_preact,
-    vgg16_modified=vgg16_modified,
-)
-if not set(WEIGHTS.keys()).issubset(MODEL_NAME_TO_FUNC.keys()):
-    raise RuntimeError("Not all model functions are defined.")
-
-
-def list_models() -> List[str]:
-    return list(WEIGHTS.keys())
-
-
-def list_available_weights_for_model(model_name: str) -> List[str]:
+def get_model_weights(architecture: str, name: str) -> Weights:
+    """Get weights object for an architecture and weights name."""
+    key = (architecture, name)
     try:
-        return list(WEIGHTS[model_name].keys())
+        return _known_model_weights[key]
     except KeyError:
-        return []
+        raise ModelWeightsNotFound(
+            f"model weights are not found for architecture '{architecture}' and "
+            f"weights name '{name}'. Available models are"
+            f"{list_all_models_and_weights()}."
+        )
 
 
-def list_available_models_for_weights(weights: str) -> List[str]:
-    res = []
-    for model_name, weights_dict in WEIGHTS.items():
-        for weights_name in weights_dict.keys():
-            if weights_name == weights:
-                res.append(model_name)
-    return res
+register_model_weights(Path(__file__).parent / ".." / "modeldefs")
+
+# Register any user-supplied configurations.
+wsinfer_path = os.environ.get("WSINFER_PATH")
+if wsinfer_path is not None:
+    for path in wsinfer_path.split(":"):
+        register_model_weights(Path(path))
+    del path
+del wsinfer_path
 
 
 def list_all_models_and_weights() -> List[Tuple[str, str]]:
     """Return list of tuples of `(model_name, weights_name)` with available pairs."""
-    res = []
-    for m in WEIGHTS.keys():
-        res.extend([(m, w) for w in WEIGHTS[m].keys()])
-    return res
-
-
-def create_model(model_name: str, weights: str) -> Weights:
-    """Create a model."""
-    if model_name not in list_models():
-        raise ModelNotFoundError(
-            f"'{model_name}' not found. Available models are {list_models()}"
-        )
-    if weights not in list_available_weights_for_model(model_name):
-        raise WeightsNotFoundError(
-            f"The weights available for '{model_name}' are"
-            f" {list_available_weights_for_model(model_name)}.\n"
-            f"The weights '{weights}' are available for the following models:"
-            f" {list_available_models_for_weights(weights)}."
-        )
-
-    # TODO: figure out how to pair model_fn with the Weights instances.
-    model_fn = MODEL_NAME_TO_FUNC[model_name]
-    weights_obj = model_fn(weights=weights)
-    return weights_obj
+    vals = list(_known_model_weights.keys())
+    vals.sort()
+    return vals

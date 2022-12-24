@@ -1,0 +1,22 @@
+# Configuration of a breast cancer tumor detection model.
+# The models are referenced by the pair of [architecture, weights], so this pair must
+# be unique.
+architecture: inceptionv4  # Must be a string.
+name: TCGA-BRCA-v1  # Must be a string.
+# Where to get the model weights. Either a URL or path to a file.
+# If using a URL, set the url_file_name (the name of the file when it is downloaded).
+url: https://stonybrookmedicine.box.com/shared/static/tfwimlf3ygyga1x4fnn03u9y5uio8gqk.pt
+url_file_name: inceptionv4-brca-20190613-aef40942.pt
+# If using a relative path, the path is relative to the location of the yaml file.
+# file: /path/to/weights.pt
+num_classes: 2
+transform:
+  # These are keyword arguments to the PatchClassification class.
+  resize_size: 299  # Must be a single integer.
+  mean: [0.5, 0.5, 0.5]  # Must be a list of three floats.
+  std: [0.5, 0.5, 0.5]  # Must be a list of three floats.
+patch_size_pixels: 350
+spacing_um_px: 0.25
+class_names:
+  - notumor
+  - tumor

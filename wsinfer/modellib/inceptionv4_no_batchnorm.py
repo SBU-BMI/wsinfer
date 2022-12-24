@@ -298,8 +298,5 @@ class InceptionV4(nn.Module):
         return x
 
 
-def inceptionv4(num_classes=1000, pretrained=False):
-    if pretrained:
-        raise NotImplementedError()
-    model = InceptionV4(num_classes=num_classes)
-    return model
+def inceptionv4(num_classes=1000):
+    return InceptionV4(num_classes=num_classes)

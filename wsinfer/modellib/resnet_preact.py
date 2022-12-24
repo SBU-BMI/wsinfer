@@ -75,5 +75,5 @@ class PreActResNet(nn.Module):
         return out
 
 
-def resnet34_preact():
-    return PreActResNet(PreActBlock, [3, 4, 6, 3])
+def resnet34_preact(num_classes: int):
+    return PreActResNet(PreActBlock, [3, 4, 6, 3], num_classes=num_classes)
