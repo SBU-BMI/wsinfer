@@ -39,6 +39,10 @@ class DuplicateModelWeights(WsinferException):
     """A duplicate key was passed to the model weights registry."""
 
 
+class ModelRegistrationError(WsinferException):
+    """Error during model registration."""
+
+
 PathType = Union[str, Path]
 
 
@@ -234,12 +238,20 @@ _known_model_weights: Dict[Tuple[str, str], Weights] = {}
 def register_model_weights(root: Path):
     modeldefs = list(root.glob("*.yml")) + list(root.glob("*.yaml"))
     for modeldef in modeldefs:
-        w = Weights.from_yaml(modeldef)
+        try:
+            w = Weights.from_yaml(modeldef)
+        except Exception as e:
+            raise ModelRegistrationError(
+                f"Error registering model from config file ('{modeldef}')\n"
+                f"Original error is: {e}"
+            )
         if w.architecture not in timm.list_models() + list(_model_registry.keys()):
             raise UnknownArchitectureError(f"{w.architecture} implementation not found")
         key = (w.architecture, w.name)
         if key in _known_model_weights:
-            raise DuplicateModelWeights("")
+            raise DuplicateModelWeights(
+                f"duplicate models weights: {(w.architecture, w.name)}"
+            )
         _known_model_weights[key] = w
 
 
