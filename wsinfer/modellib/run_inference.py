@@ -217,17 +217,11 @@ def run_inference(
             category=PatchFilesNotFoundWarning,
         )
 
-    if weights.model is None:
-        raise RuntimeError("model cannot be None in the weights object")
-
     model_output_dir = results_dir / "model-outputs"
     model_output_dir.mkdir(exist_ok=True)
 
-    model = weights.model
-    if model is None:
-        raise ValueError("Model was not instantiated... use `create_model`.")
-
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    model = weights.load_model()
     model.eval()
     model.to(device)
 
