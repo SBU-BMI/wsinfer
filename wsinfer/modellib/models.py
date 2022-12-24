@@ -19,6 +19,7 @@ import yaml
 from .inceptionv4 import inceptionv4 as _inceptionv4
 from .inceptionv4_no_batchnorm import inceptionv4 as _inceptionv4_no_bn
 from .resnet_preact import resnet34_preact as _resnet34_preact
+from .vgg16mod import vgg16mod as _vgg16mod
 from .transforms import PatchClassification
 
 
@@ -212,6 +213,7 @@ _model_registry: Dict[str, Callable[[int], torch.nn.Module]] = {
     "inceptionv4": _inceptionv4,
     "inceptionv4nobn": _inceptionv4_no_bn,
     "preactresnet34": _resnet34_preact,
+    "vgg16mod": _vgg16mod,
 }
 
 
@@ -233,7 +235,7 @@ def register_model_weights(root: Path):
     modeldefs = list(root.glob("*.yml")) + list(root.glob("*.yaml"))
     for modeldef in modeldefs:
         w = Weights.from_yaml(modeldef)
-        if w.architecture not in timm.list_models() + _model_registry.keys():
+        if w.architecture not in timm.list_models() + list(_model_registry.keys()):
             raise UnknownArchitectureError(f"{w.architecture} implementation not found")
         key = (w.architecture, w.name)
         if key in _known_model_weights:
