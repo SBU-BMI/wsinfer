@@ -1,10 +1,13 @@
 import json
+import math
 from pathlib import Path
+import platform
 import subprocess
 import sys
 from typing import List
 
 from click.testing import CliRunner
+import h5py
 import numpy as np
 import pandas as pd
 import pytest
@@ -298,6 +301,20 @@ def test_cli_run_regression(
     for col, col_prob in zip(class_names, expected_probs):
         col = f"prob_{col}"
         assert np.allclose(df.loc[:, col], col_prob)
+
+    # Test that metadata path exists.
+    metadata_path = results_dir / "run_metadata.json"
+    assert metadata_path.exists()
+    with open(metadata_path) as f:
+        meta = json.load(f)
+    assert meta.keys() == {"model_weights", "runtime", "timestamp"}
+    assert meta["model_weights"]["name"] == weights
+    assert meta["model_weights"]["architecture"] == model
+    assert meta["model_weights"]["class_names"] == class_names
+    assert meta["runtime"]["python_executable"] == sys.executable
+    assert meta["runtime"]["python_version"] == platform.python_version()
+    assert meta["timestamp"]
+    del metadata_path, meta
 
     # Test conversion scripts.
     geojson_dir = results_dir / "geojson"
@@ -768,3 +785,54 @@ def test_model_registration(tmp_path: Path):
     assert all(
         isinstance(m, models.Weights) for m in models._known_model_weights.values()
     )
+
+
+@pytest.mark.parametrize(
+    ["patch_size", "patch_spacing"],
+    [(256, 0.25), (256, 0.50), (350, 0.25)],
+)
+def test_patch_cli(
+    patch_size: int, patch_spacing: float, tmp_path: Path, tiff_image: Path
+):
+    from wsinfer.cli.cli import cli
+
+    orig_slide_width = 4096
+    orig_slide_height = 4096
+    orig_slide_spacing = 0.25
+
+    runner = CliRunner()
+    savedir = tmp_path / "savedir"
+    result = runner.invoke(
+        cli,
+        [
+            "patch",
+            "--source",
+            str(tiff_image.parent),
+            "--save-dir",
+            str(savedir),
+            "--patch-size",
+            str(patch_size),
+            "--patch-spacing",
+            str(patch_spacing),
+        ],
+    )
+    assert result.exit_code == 0
+    stem = tiff_image.stem
+    assert (savedir / "masks" / f"{stem}.jpg").exists()
+    assert (savedir / "patches" / f"{stem}.h5").exists()
+    assert (savedir / "process_list_autogen.csv").exists()
+    assert (savedir / "stitches" / f"{stem}.jpg").exists()
+
+    expected_patch_size = round(patch_size * patch_spacing / orig_slide_spacing)
+    expected_num_patches = math.ceil(4096 / expected_patch_size) ** 2
+    expected_coords = []
+    for x in range(0, orig_slide_width, expected_patch_size):
+        for y in range(0, orig_slide_height, expected_patch_size):
+            expected_coords.append([x, y])
+    expected_coords = np.array(expected_coords)
+
+    with h5py.File(savedir / "patches" / f"{stem}.h5") as f:
+        assert f["/coords"].attrs["patch_size"] == expected_patch_size
+        coords = f["/coords"][()]
+    assert coords.shape == (expected_num_patches, 2)
+    assert np.array_equal(expected_coords, coords)

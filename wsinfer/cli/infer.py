@@ -134,7 +134,8 @@ def _get_info_for_save(weights: models.Weights):
     del cmd, here  # For sanity.
 
     return {
-        "model": {
+        "model_weights": {
+            "name": weights.name,
             "architecture": weights.architecture,
             "weights_url": weights.url,
             "weights_url_file_name": weights.url_file_name,
@@ -144,6 +145,11 @@ def _get_info_for_save(weights: models.Weights):
             "num_classes": weights.num_classes,
             "patch_size_pixels": weights.patch_size_pixels,
             "spacing_um_px": weights.spacing_um_px,
+            "transform": {
+                "resize_size": weights.transform.resize_size,
+                "mean": weights.transform.mean,
+                "std": weights.transform.std,
+            },
             "metadata": weights.metadata or None,
         },
         "runtime": {

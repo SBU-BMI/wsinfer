@@ -65,7 +65,7 @@ class Weights:
     name: str
     architecture: str
     num_classes: int
-    transform: Callable[[Union[Image.Image, torch.Tensor]], torch.Tensor]
+    transform: PatchClassification
     patch_size_pixels: int
     spacing_um_px: float
     class_names: List[str]

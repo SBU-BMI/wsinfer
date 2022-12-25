@@ -24,6 +24,7 @@ Original H&E                        |  Heatmap of Tumor Probability
   * [Output](#output)
   * [Convert to GeoJSON (for QuPath and other viewers)](#convert-to-geojson-for-qupath-and-other-viewers)
   * [Convert to Stony Brook QuIP format](#convert-to-stony-brook-quip-format)
+  * [Add your own model](#add-your-own-model)
 
 # Available models
 
@@ -31,11 +32,11 @@ Original H&E                        |  Heatmap of Tumor Probability
 |-----------------------------------------|----------------------------------------------------------|-----------------|--------------|--------------------------------------------------------------|
 | Breast adenocarcinoma detection         | no-tumor, tumor                                          | inceptionv4     | TCGA-BRCA-v1 | [ref](https://doi.org/10.1016%2Fj.ajpath.2020.03.012)        |
 | Breast adenocarcinoma detection         | no-tumor, tumor                                          | resnet34        | TCGA-BRCA-v1 | [ref](https://doi.org/10.1016%2Fj.ajpath.2020.03.012)        |
-| Breast adenocarcinoma detection         | no-tumor, tumor                                          | vgg16_modified  | TCGA-BRCA-v1 | [ref](https://doi.org/10.1016%2Fj.ajpath.2020.03.012)        |
+| Breast adenocarcinoma detection         | no-tumor, tumor                                          | vgg16mod  | TCGA-BRCA-v1 | [ref](https://doi.org/10.1016%2Fj.ajpath.2020.03.012)        |
 | Lung adenocarcinoma detection           | lepidic, benign, acinar, micropapillary, mucinous, solid | resnet34        | TCGA-LUAD-v1 | [ref](https://github.com/SBU-BMI/quip_lung_cancer_detection) |
-| Pancreatic adenocarcinoma detection     | tumor-positive                                           | resnet34_preact | TCGA-PAAD-v1 | [ref](https://doi.org/10.1007/978-3-030-32239-7_60)          |
+| Pancreatic adenocarcinoma detection     | tumor-positive                                           | preactresnet34 | TCGA-PAAD-v1 | [ref](https://doi.org/10.1007/978-3-030-32239-7_60)          |
 | Prostate adenocarcinoma detection       | grade3, grade4+5, benign                                 | resnet34        | TCGA-PRAD-v1 | [ref](https://github.com/SBU-BMI/quip_prad_cancer_detection) |
-| Tumor-infiltrating lymphocyte detection | til-negative, til-positive                                             | inceptionv4     | TCGA-TILs-v1 | [ref](https://doi.org/10.3389/fonc.2021.806603)              |
+| Tumor-infiltrating lymphocyte detection | til-negative, til-positive                                             | inceptionv4nobn     | TCGA-TILs-v1 | [ref](https://doi.org/10.3389/fonc.2021.806603)              |
 
 # Installation
 
@@ -259,4 +260,49 @@ wsirun tosbu \
     --num-processes 16 \
     results/ \
     results/model-outputs-sbubmi/
+```
+
+## Add your own model
+
+Define a new model with a YAML configuration file. Please see the example below for
+an overview of the specification.
+
+```yaml
+# Models are referenced by the pair of (architecture, weights), so this pair must be unique.
+# The name of the architecture. We use timm to supply hundreds or network architectures,
+# so the name can be one of those models. If the architecture is not provided in timm,
+# then one can add an architecture themselves, but the code will have to be modified. (str)
+architecture: resnet34
+# A unique name for the weights for this architecture. (str)
+name: TCGA-BRCA-v1
+# Where to get the model weights. Either a URL or path to a file.
+# If using a URL, set the url_file_name (the name of the file when it is downloaded).
+# url: https://stonybrookmedicine.box.com/shared/static/dv5bxk6d15uhmcegs9lz6q70yrmwx96p.pt
+# url_file_name: resnet34-brca-20190613-01eaf604.pt
+# If not using a url, then 'file' must be supplied. Use an absolute or relative path. If
+# using a relative path, the path is relative to the location of the yaml file.
+file: path-to-weights.pt
+# Size of patches from the slides. (int)
+patch_size_pixels: 350
+# The microns per pixel of the patches. (float)
+spacing_um_px: 0.25
+# Number of output classes from the model. (int)
+num_classes: 2
+# Names of the model outputs. The order matters. class_names[0] is the name of the first
+# class of the model output.
+class_names:  # (list of strings)
+  - notumor
+  - tumor
+transform:
+  # Size of images immediately prior to inputting to the model. (int)
+  resize_size: 224
+  # Mean and standard deviation for RGB values. (list of three floats)
+  mean: [0.7238, 0.5716, 0.6779]
+  std: [0.1120, 0.1459, 0.1089]
+```
+
+Once you save the configuration file, you can use it with `wsinfer run`:
+
+```bash
+wsinfer run --wsi-dir path/to/slides --results-dir path/to/results --config config.yaml
 ```

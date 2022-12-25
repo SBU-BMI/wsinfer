@@ -451,9 +451,6 @@ def create_patches(
 )
 @click.option("--step-size", default=None, type=int, help="Step size for patching.")
 @click.option("--patch-size", required=True, type=int, help="Patch size in pixels.")
-@click.option("--patch", is_flag=True)
-@click.option("--seg", is_flag=True)
-@click.option("--stitch", is_flag=True)
 @click.option("--no-auto-skip", is_flag=True)
 @click.option(
     "--save-dir",
@@ -463,6 +460,7 @@ def create_patches(
 )
 @click.option(
     "--preset",
+    default="tcga.csv",
     help="Predefined profile of default segmentation and filter parameters (.csv)",
 )
 @click.option(
@@ -478,9 +476,6 @@ def cli(
     source: str,
     step_size: Optional[int],
     patch_size: int,
-    patch: bool,
-    seg: bool,
-    stitch: bool,
     no_auto_skip: bool,
     save_dir: str,
     preset: Optional[str],
@@ -500,9 +495,9 @@ def cli(
         patch_size=patch_size,
         patch_spacing=patch_spacing,
         save_dir=save_dir,
-        patch=patch,
-        seg=seg,
-        stitch=stitch,
+        patch=True,
+        seg=True,
+        stitch=True,
         no_auto_skip=no_auto_skip,
         preset=preset,
         process_list=process_list,
