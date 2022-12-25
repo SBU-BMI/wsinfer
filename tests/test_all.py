@@ -301,6 +301,20 @@ def test_cli_run_regression(
         col = f"prob_{col}"
         assert np.allclose(df.loc[:, col], col_prob)
 
+    # Test that metadata path exists.
+    metadata_path = results_dir / "run_metadata.json"
+    assert metadata_path.exists()
+    with open(metadata_path) as f:
+        meta = json.load(f)
+    assert meta.keys() == {"model_weights", "runtime", "timestamp"}
+    assert meta["model_weights"]["name"] == weights
+    assert meta["model_weights"]["architecture"] == model
+    assert meta["model_weights"]["class_names"] == class_names
+    assert meta["runtime"]["python_executable"] == sys.executable
+    assert meta["runtime"]["python_version"] == sys.version
+    assert meta["timestamp"]
+    del metadata_path, meta
+
     # Test conversion scripts.
     geojson_dir = results_dir / "geojson"
     result = runner.invoke(cli, ["togeojson", str(results_dir), str(geojson_dir)])
