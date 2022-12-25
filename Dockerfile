@@ -1,5 +1,5 @@
 FROM pytorch/pytorch:1.12.1-cuda11.3-cudnn8-runtime
-WORKDIR /opt/wsi-classification
+WORKDIR /opt/wsinfer
 COPY . .
 RUN apt-get update \
     && apt-get install -y --no-install-recommends gcc git libopenslide0 \
@@ -15,4 +15,5 @@ RUN mkdir -p "$TORCH_HOME" \
     && chmod a+s "$TORCH_HOME"
 WORKDIR /work
 ENTRYPOINT ["wsinfer"]
+CMD ["--help"]
 LABEL maintainer="Jakub Kaczmarzyk <jakub.kaczmarzyk@stonybrookmedicine.edu>"
