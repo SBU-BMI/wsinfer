@@ -1,6 +1,7 @@
 import json
 import math
 from pathlib import Path
+import platform
 import subprocess
 import sys
 from typing import List
@@ -311,7 +312,7 @@ def test_cli_run_regression(
     assert meta["model_weights"]["architecture"] == model
     assert meta["model_weights"]["class_names"] == class_names
     assert meta["runtime"]["python_executable"] == sys.executable
-    assert meta["runtime"]["python_version"] == sys.version
+    assert meta["runtime"]["python_version"] == platform.python_version()
     assert meta["timestamp"]
     del metadata_path, meta
 
