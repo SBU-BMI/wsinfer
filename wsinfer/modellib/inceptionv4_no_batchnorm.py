@@ -3,7 +3,8 @@
 # Copyright (c) 2017, Remi Cadene
 # All rights reserved.
 #
-# Downloaded from https://raw.githubusercontent.com/Cadene/pretrained-models.pytorch/e07fb68c317880e780eb5ca9c20cca00f2584878/pretrainedmodels/models/inceptionv4.py
+# Downloaded from
+# https://raw.githubusercontent.com/Cadene/pretrained-models.pytorch/e07fb68c317880e780eb5ca9c20cca00f2584878/pretrainedmodels/models/inceptionv4.py # noqa: E501
 #
 # We downloaded this file here so we did not have to add pretrainedmodels as a
 # dependency (we only use this module).
