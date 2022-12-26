@@ -1,14 +1,14 @@
 # Pancreatic adenocarcinoma detection model.
 #
 # Note about versioning: We should not use the 'latest' tag because it is a moving
-# target. We should prefer using a versioned release of the wsi_inference pipeline.
-FROM kaczmarj/patch-classification-pipeline:v0.2.0
+# target. We should prefer using a versioned release of the wsinfer pipeline.
+FROM kaczmarj/wsinfer:v0.2.1
 
 # The CLI will use these env vars for model and weights.
-ENV WSIRUN_MODEL="resnet34_preact"
-ENV WSIRUN_WEIGHTS="TCGA-PAAD-v1"
+ENV WSINFER_MODEL="preactresnet34"
+ENV WSINFER_WEIGHTS="TCGA-PAAD-v1"
 
 # Download the weights.
-RUN python -c "from wsi_inference.modellib import models; models.$WSIRUN_MODEL(\"$WSIRUN_WEIGHTS\")" \
+RUN python -c "from wsinfer.modellib.models import get_model_weights; get_model_weights(architecture=\"$WSINFER_MODEL\", name=\"$WSINFER_WEIGHTS\").load_model()" \
     # Downloaded models are mode 0600. Make them readable by all users.
     && chmod -R +r $TORCH_HOME/hub/checkpoints/

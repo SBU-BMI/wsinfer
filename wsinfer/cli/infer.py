@@ -1,10 +1,9 @@
 """Detect cancerous regions in a whole slide image."""
 
 import getpass
-import hashlib
 import json
 import os
-import pathlib
+from pathlib import Path
 import platform
 import subprocess
 import sys
@@ -12,18 +11,22 @@ import typing
 
 import click
 
-from .modellib.run_inference import run_inference
-from .modellib import models
-from .patchlib.create_dense_patch_grid import create_grid_and_save_multi_slides
-from .patchlib.create_patches_fp import create_patches
+from ..modellib.run_inference import run_inference
+from ..modellib import models
+from ..patchlib.create_dense_patch_grid import create_grid_and_save_multi_slides
+from ..patchlib.create_patches_fp import create_patches
 
-PathType = typing.Union[str, pathlib.Path]
+PathType = typing.Union[str, Path]
 
 
 def _inside_container() -> str:
-    if pathlib.Path("/.dockerenv").exists():
+    if Path("/.dockerenv").exists():
         return "yes, docker"
-    elif pathlib.Path("/singularity.d").exists():
+    elif (
+        Path("/singularity").exists()
+        or Path("/singularity.d").exists()
+        or Path("/.singularity.d").exists()
+    ):
         # TODO: apptainer might change the name of this directory.
         return "yes, apptainer/singularity"
     return "no"
@@ -41,9 +44,9 @@ def _print_system_info() -> None:
     """Print information about the system."""
     import torch
     import torchvision
-    from . import __version__
+    from .. import __version__
 
-    click.secho(f"\nRunning wsi_inference version {__version__}", fg="green")
+    click.secho(f"\nRunning wsinfer version {__version__}", fg="green")
     print("\nIf you run into issues, please submit a new issue at")
     print("https://github.com/kaczmarj/patch-classification-pipeline/issues/new")
     print("\nSystem information")
@@ -78,7 +81,7 @@ def _print_system_info() -> None:
         click.secho("\n*******************************************", fg="yellow")
         click.secho("GPU WILL NOT BE USED", fg="yellow")
         if torch.version.cuda is None:
-            click.secho("  CPU-only version of PyTorch", fg="yellow")
+            click.secho("  CPU-only version of PyTorch is installed", fg="yellow")
         click.secho("*******************************************", fg="yellow")
     elif not torch.cuda.is_available():
         click.secho("\n*******************************************", fg="yellow")
@@ -88,32 +91,20 @@ def _print_system_info() -> None:
         click.secho("*******************************************", fg="yellow")
 
 
-def _sha256sum(path: PathType) -> str:
-    """Calculate SHA256 of a file."""
-    sha = hashlib.sha256()
-    with open(path, "rb") as f:
-        while True:
-            data = f.read(1024 * 64)  # 64 kb
-            if not data:
-                break
-            sha.update(data)
-    return sha.hexdigest()
-
-
 def _get_info_for_save(weights: models.Weights):
     """Get dictionary with information about the run. To save as JSON in output dir."""
 
     import torch
-    from . import __version__
+    from .. import __version__
 
-    here = pathlib.Path(__file__).parent.resolve()
+    here = Path(__file__).parent.resolve()
 
     def get_git_info():
-        here = pathlib.Path(__file__).parent.resolve()
+        here = Path(__file__).parent.resolve()
 
         def get_stdout(args) -> str:
             proc = subprocess.run(args, capture_output=True, cwd=here)
-            return proc.stdout.decode().strip()
+            return "" if proc.returncode != 0 else proc.stdout.decode().strip()
 
         git_remote = get_stdout("git config --get remote.origin.url".split())
         git_branch = get_stdout("git rev-parse --abbrev-ref HEAD".split())
@@ -129,9 +120,6 @@ def _get_info_for_save(weights: models.Weights):
             "uncommitted_changes": uncommitted_changes,
         }
 
-    weights_path = pathlib.Path(torch.hub.get_dir()) / "checkpoints" / weights.file_name
-    shasum = _sha256sum(weights_path) if weights_path.exists() else None
-
     # Test if we are in a git repo. If we are, then get git info.
     cmd = subprocess.run(
         "git branch".split(),
@@ -146,18 +134,23 @@ def _get_info_for_save(weights: models.Weights):
     del cmd, here  # For sanity.
 
     return {
-        "model": {
-            "architecture": "resnet34",
+        "model_weights": {
+            "name": weights.name,
+            "architecture": weights.architecture,
             "weights_url": weights.url,
-            "weights_path": str(weights_path) if weights_path.exists() else None,
-            "weights_sha256": shasum,
+            "weights_url_file_name": weights.url_file_name,
+            "weights_file": weights.file,
+            "weights_sha256": weights.get_sha256_of_weights(),
             "class_names": weights.class_names,
             "num_classes": weights.num_classes,
-            "metadata": weights.metadata or None,
-        },
-        "input_data": {
             "patch_size_pixels": weights.patch_size_pixels,
             "spacing_um_px": weights.spacing_um_px,
+            "transform": {
+                "resize_size": weights.transform.resize_size,
+                "mean": weights.transform.mean,
+                "std": weights.transform.std,
+            },
+            "metadata": weights.metadata or None,
         },
         "runtime": {
             "version": __version__,
@@ -174,48 +167,53 @@ def _get_info_for_save(weights: models.Weights):
     }
 
 
-@click.command(context_settings=dict(auto_envvar_prefix="WSIRUN"))
+@click.command(context_settings=dict(auto_envvar_prefix="WSINFER"))
 @click.pass_context
 @click.option(
-    "--wsi_dir",
-    type=click.Path(
-        exists=True, file_okay=False, path_type=pathlib.Path, resolve_path=True
-    ),
+    "--wsi-dir",
+    type=click.Path(exists=True, file_okay=False, path_type=Path, resolve_path=True),
     required=True,
     help="Directory containing whole slide images. This directory can *only* contain"
     " whole slide images.",
 )
 @click.option(
-    "--results_dir",
-    type=click.Path(file_okay=False, path_type=pathlib.Path, resolve_path=True),
+    "--results-dir",
+    type=click.Path(file_okay=False, path_type=Path, resolve_path=True),
     required=True,
     help="Directory to store results. If directory exists, will skip"
     " whole slides for which outputs exist.",
 )
 @click.option(
     "--model",
-    type=click.Choice(models.list_models()),
-    required=True,
-    help="Model architecture to use.",
+    type=click.Choice([arch for arch, _ in models.list_all_models_and_weights()]),
+    help="Model architecture to use. Not required if 'config' is used.",
 )
 @click.option(
     "--weights",
-    type=str,
-    default="TCGA-BRCA-v1",
-    show_default=True,
-    help="Weights to use for the model.",
+    type=click.Choice([w for _, w in models.list_all_models_and_weights()]),
+    help="Name of weights to use for the model. Not required if 'config' is used.",
 )
 @click.option(
-    "--batch_size",
+    "--config",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path, resolve_path=True),
+    help=(
+        "Path to configuration for architecture and weights. Use this option if the"
+        " model weights are not registered in wsinfer. Mutually exclusive with"
+        " 'model' and 'weights'."
+    ),
+)
+@click.option(
+    "--batch-size",
     type=click.IntRange(min=1),
     default=32,
     show_default=True,
     help="Batch size during model inference.",
 )
 @click.option(
-    "--num_workers",
+    "--num-workers",
     default=0,
     show_default=True,
+    type=click.IntRange(min=0),
     help="Number of workers to use for data loading during model inference (default=0"
     " for single thread). A reasonable value is 8.",
 )
@@ -226,19 +224,19 @@ def _get_info_for_save(weights: models.Weights):
     help="Use a dense grid of patch coordinates. Patches will be present even if no"
     " tissue is present",
 )
-@click.version_option()
 def cli(
     ctx: click.Context,
     *,
-    wsi_dir: pathlib.Path,
-    results_dir: pathlib.Path,
-    model: str,
-    weights: str,
+    wsi_dir: Path,
+    results_dir: Path,
+    model: typing.Optional[str],
+    weights: typing.Optional[str],
+    config: typing.Optional[Path],
     batch_size: int,
     num_workers: int = 0,
     dense_grid: bool = False,
 ):
-    """Run model inference on a directory of whole slide images (WSI).
+    """Run model inference on a directory of whole slide images.
 
     This command will create a tissue mask of each WSI. Then patch coordinates will be
     computed. The chosen model will be applied to each patch, and the results will be
@@ -246,9 +244,17 @@ def cli(
 
     Example:
 
-    CUDA_VISIBLE_DEVICES=0 wsi_run --wsi_dir slides/ --results_dir results
+    CUDA_VISIBLE_DEVICES=0 wsinfer run --wsi_dir slides/ --results_dir results
     --model resnet34 --weights TCGA-BRCA-v1 --batch_size 32 --num_workers 4
+
+    To list all available models and weights, use `wsinfer list`.
     """
+    if model is None and weights is None and config is None:
+        raise click.UsageError("one of (model and weights) or config is required.")
+    elif (model is not None or weights is not None) and config is not None:
+        raise click.UsageError("model and weights are mutually exclusive with config.")
+    elif (model is not None) ^ (weights is not None):  # XOR
+        raise click.UsageError("model and weights must both be set if one is set.")
 
     wsi_dir = wsi_dir.resolve()
     results_dir = results_dir.resolve()
@@ -273,9 +279,12 @@ def cli(
         print(f"{key} = {value}")
     print("----------------------\n")
 
-    # Get model before running the patching script because we need to get the necessary
-    # spacing and patch size.
-    weights_obj = models.create_model(model, weights=weights)
+    # Get weights object before running the patching script because we need to get the
+    # necessary spacing and patch size.
+    if model is not None and weights is not None:
+        weights_obj = models.get_model_weights(model, name=weights)
+    elif config is not None:
+        weights_obj = models.Weights.from_yaml(config)
 
     click.secho("\nFinding patch coordinates...\n", fg="green")
     if dense_grid:

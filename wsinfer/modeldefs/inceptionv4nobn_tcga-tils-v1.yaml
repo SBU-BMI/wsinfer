@@ -1,0 +1,30 @@
+# Configuration of a tumor infiltrating lymphocyte detection model.
+# The specification version. Only 1.0 is supported at this time.
+version: "1.0"
+# The models are referenced by the pair of [architecture, weights], so this pair must
+# be unique.
+# Inceptionv4 without batch normalization.
+architecture: inceptionv4nobn  # Must be a string.
+name: TCGA-TILs-v1  # Must be a string.
+# Where to get the model weights. Either a URL or path to a file.
+# If using a URL, set the url_file_name (the name of the file when it is downloaded).
+url: https://stonybrookmedicine.box.com/shared/static/sz1gpc6u3mftadh4g6x3csxnpmztj8po.pt
+url_file_name: inceptionv4-tils-v1-20200920-e3e72cd2.pt
+# If using a relative path, the path is relative to the location of the yaml file.
+# file: /path/to/weights.pt
+num_classes: 2
+transform:
+  # These are keyword arguments to the PatchClassification class.
+  resize_size: 299  # Must be a single integer.
+  mean: [0.5, 0.5, 0.5]  # Must be a list of three floats.
+  std: [0.5, 0.5, 0.5]  # Must be a list of three floats.
+patch_size_pixels: 100
+spacing_um_px: 0.5
+class_names:
+  - notils
+  - tils
+metadata:
+  publication: https://doi.org/10.3389/fonc.2021.806603
+  notes: |
+    Implementation does not use batchnorm. Original model was trained with TF Slim
+    and converted to PyTorch format.

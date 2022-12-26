@@ -3,40 +3,19 @@
 # Copyright (c) 2017, Remi Cadene
 # All rights reserved.
 #
-# Downloaded from https://raw.githubusercontent.com/Cadene/pretrained-models.pytorch/e07fb68c317880e780eb5ca9c20cca00f2584878/pretrainedmodels/models/inceptionv4.py
+# Downloaded from
+# https://raw.githubusercontent.com/Cadene/pretrained-models.pytorch/e07fb68c317880e780eb5ca9c20cca00f2584878/pretrainedmodels/models/inceptionv4.py # noqa: E501
 #
 # We downloaded this file here so we did not have to add pretrainedmodels as a
 # dependency (we only use this module).
+#
+# Modified to not use batchnorm. Models trained with TF Slim do not use batchnorm.
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.utils.model_zoo as model_zoo
 
 __all__ = ["InceptionV4", "inceptionv4"]
-
-pretrained_settings = {
-    "inceptionv4": {
-        "imagenet": {
-            "url": "http://data.lip6.fr/cadene/pretrainedmodels/inceptionv4-8e4777a0.pth",
-            "input_space": "RGB",
-            "input_size": [3, 299, 299],
-            "input_range": [0, 1],
-            "mean": [0.5, 0.5, 0.5],
-            "std": [0.5, 0.5, 0.5],
-            "num_classes": 1000,
-        },
-        "imagenet+background": {
-            "url": "http://data.lip6.fr/cadene/pretrainedmodels/inceptionv4-8e4777a0.pth",
-            "input_space": "RGB",
-            "input_size": [3, 299, 299],
-            "input_range": [0, 1],
-            "mean": [0.5, 0.5, 0.5],
-            "std": [0.5, 0.5, 0.5],
-            "num_classes": 1001,
-        },
-    }
-}
 
 
 class BasicConv2d(nn.Module):
@@ -48,19 +27,12 @@ class BasicConv2d(nn.Module):
             kernel_size=kernel_size,
             stride=stride,
             padding=padding,
-            bias=False,
-        )  # verify bias false
-        self.bn = nn.BatchNorm2d(
-            out_planes,
-            eps=0.001,  # value found in tensorflow
-            momentum=0.1,  # default pytorch value
-            affine=True,
+            bias=True,  # Changed this to True after removing batchnorm.
         )
         self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
         x = self.conv(x)
-        x = self.bn(x)
         x = self.relu(x)
         return x
 
@@ -327,51 +299,5 @@ class InceptionV4(nn.Module):
         return x
 
 
-def inceptionv4(num_classes=1000, pretrained="imagenet"):
-    if pretrained:
-        settings = pretrained_settings["inceptionv4"][pretrained]
-        assert (
-            num_classes == settings["num_classes"]
-        ), "num_classes should be {}, but is {}".format(
-            settings["num_classes"], num_classes
-        )
-
-        # both 'imagenet'&'imagenet+background' are loaded from same parameters
-        model = InceptionV4(num_classes=1001)
-        model.load_state_dict(model_zoo.load_url(settings["url"]))
-
-        if pretrained == "imagenet":
-            new_last_linear = nn.Linear(1536, 1000)
-            new_last_linear.weight.data = model.last_linear.weight.data[1:]
-            new_last_linear.bias.data = model.last_linear.bias.data[1:]
-            model.last_linear = new_last_linear
-
-        model.input_space = settings["input_space"]
-        model.input_size = settings["input_size"]
-        model.input_range = settings["input_range"]
-        model.mean = settings["mean"]
-        model.std = settings["std"]
-    else:
-        model = InceptionV4(num_classes=num_classes)
-    return model
-
-
-"""
-TEST
-Run this code with:
-```
-cd $HOME/pretrained-models.pytorch
-python -m pretrainedmodels.inceptionv4
-```
-"""
-if __name__ == "__main__":
-
-    assert inceptionv4(num_classes=10, pretrained=None)
-    print("success")
-    assert inceptionv4(num_classes=1000, pretrained="imagenet")
-    print("success")
-    assert inceptionv4(num_classes=1001, pretrained="imagenet+background")
-    print("success")
-
-    # fail
-    assert inceptionv4(num_classes=1001, pretrained="imagenet")
+def inceptionv4(num_classes=1000):
+    return InceptionV4(num_classes=num_classes)

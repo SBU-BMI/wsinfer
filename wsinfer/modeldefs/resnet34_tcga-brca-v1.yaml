@@ -1,0 +1,24 @@
+# Configuration of a breast cancer tumor detection model.
+# The specification version. Only 1.0 is supported at this time.
+version: "1.0"
+# The models are referenced by the pair of [architecture, weights], so this pair must
+# be unique.
+architecture: resnet34  # Must be a string.
+name: TCGA-BRCA-v1  # Must be a string.
+# Where to get the model weights. Either a URL or path to a file.
+# If using a URL, set the url_file_name (the name of the file when it is downloaded).
+url: https://stonybrookmedicine.box.com/shared/static/dv5bxk6d15uhmcegs9lz6q70yrmwx96p.pt
+url_file_name: resnet34-brca-20190613-01eaf604.pt
+# If using a relative path, the path is relative to the location of the yaml file.
+# file: /path/to/weights.pt
+num_classes: 2
+transform:
+  # These are keyword arguments to the PatchClassification class.
+  resize_size: 224  # Must be a single integer.
+  mean: [0.7238, 0.5716, 0.6779]  # Must be a list of three floats.
+  std: [0.1120, 0.1459, 0.1089]  # Must be a list of three floats.
+patch_size_pixels: 350
+spacing_um_px: 0.25
+class_names:
+  - notumor
+  - tumor

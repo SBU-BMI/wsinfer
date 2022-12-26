@@ -3,18 +3,15 @@
 # Copyright (c) 2017, Remi Cadene
 # All rights reserved.
 #
-# Downloaded from https://raw.githubusercontent.com/Cadene/pretrained-models.pytorch/e07fb68c317880e780eb5ca9c20cca00f2584878/pretrainedmodels/models/inceptionv4.py
+# Downloaded from
+# https://raw.githubusercontent.com/Cadene/pretrained-models.pytorch/e07fb68c317880e780eb5ca9c20cca00f2584878/pretrainedmodels/models/inceptionv4.py  # noqa: E501
 #
 # We downloaded this file here so we did not have to add pretrainedmodels as a
 # dependency (we only use this module).
-#
-# Modified to not use batchnorm. Models trained with TF Slim do not use batchnorm.
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
-__all__ = ["InceptionV4", "inceptionv4"]
 
 
 class BasicConv2d(nn.Module):
@@ -26,12 +23,19 @@ class BasicConv2d(nn.Module):
             kernel_size=kernel_size,
             stride=stride,
             padding=padding,
-            bias=True,  # Changed this to True after removing batchnorm.
+            bias=False,
+        )  # verify bias false
+        self.bn = nn.BatchNorm2d(
+            out_planes,
+            eps=0.001,  # value found in tensorflow
+            momentum=0.1,  # default pytorch value
+            affine=True,
         )
         self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
         x = self.conv(x)
+        x = self.bn(x)
         x = self.relu(x)
         return x
 
@@ -298,8 +302,5 @@ class InceptionV4(nn.Module):
         return x
 
 
-def inceptionv4(num_classes=1000, pretrained=False):
-    if pretrained:
-        raise NotImplementedError()
-    model = InceptionV4(num_classes=num_classes)
-    return model
+def inceptionv4(num_classes: int):
+    return InceptionV4(num_classes=num_classes)

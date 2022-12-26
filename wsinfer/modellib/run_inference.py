@@ -138,7 +138,9 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
     def __len__(self):
         return self.patches.shape[0]
 
-    def __getitem__(self, idx):
+    def __getitem__(
+        self, idx: int
+    ) -> typing.Tuple[typing.Union[Image.Image, torch.Tensor], torch.Tensor]:
         coords: typing.Sequence[int] = self.patches[idx]
         assert len(coords) == 4, "expected 4 coords (minx, miny, width, height)"
         minx, miny, width, height = coords
@@ -155,6 +157,10 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
         patch_im = patch_im.convert("RGB")
         if self.transform is not None:
             patch_im = self.transform(patch_im)
+        if not isinstance(patch_im, (Image.Image, torch.Tensor)):
+            raise TypeError(
+                f"patch image must be an Image of Tensor, but got {type(patch_im)}"
+            )
         return patch_im, torch.as_tensor([minx, miny, width, height])
 
 
@@ -179,7 +185,7 @@ def run_inference(
         whole slide images. Otherwise, an error will be raised during model inference.
     results_dir : str or pathlib.Path
         Directory containing results of patching.
-    weights : wsi_inference.modellib.models.Weights
+    weights : wsinfer.modellib.models.Weights
         Instance of Weights including the model object and information about how to
         apply the model to new data.
     batch_size : int
@@ -217,17 +223,11 @@ def run_inference(
             category=PatchFilesNotFoundWarning,
         )
 
-    if weights.model is None:
-        raise RuntimeError("model cannot be None in the weights object")
-
     model_output_dir = results_dir / "model-outputs"
     model_output_dir.mkdir(exist_ok=True)
 
-    model = weights.model
-    if model is None:
-        raise ValueError("Model was not instantiated... use `create_model`.")
-
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    model = weights.load_model()
     model.eval()
     model.to(device)
 

@@ -40,17 +40,10 @@ import os
 import pathlib
 import numpy as np
 import time
-import argparse
 import pandas as pd
+from typing import Optional
 
 _script_path = pathlib.Path(__file__).resolve().parent
-
-
-def _version() -> str:
-    """Closure to get version without potential for circular imports."""
-    from .. import __version__
-
-    return __version__
 
 
 def stitching(file_path, wsi_object, downscale=64):
@@ -352,7 +345,7 @@ def create_patches(
     patch_size: int,
     patch_spacing: float,
     save_dir: str,
-    step_size: int = None,
+    step_size: Optional[int] = None,
     patch: bool = True,
     seg: bool = True,
     stitch: bool = True,
@@ -438,63 +431,4 @@ def create_patches(
         process_list=process_list,
         auto_skip=no_auto_skip,
         patch_spacing=patch_spacing,
-    )
-
-
-def cli():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--source",
-        type=str,
-        required=True,
-        help="path to folder containing raw wsi image files",
-    )
-    parser.add_argument("--step_size", type=int, default=None, help="step_size")
-    parser.add_argument("--patch_size", type=int, required=True, help="patch_size")
-    parser.add_argument("--patch", default=False, action="store_true")
-    parser.add_argument("--seg", default=False, action="store_true")
-    parser.add_argument("--stitch", default=False, action="store_true")
-    parser.add_argument("--no_auto_skip", default=True, action="store_false")
-    parser.add_argument(
-        "--save_dir", type=str, required=True, help="directory to save processed data"
-    )
-    parser.add_argument(
-        "--preset",
-        default=None,
-        type=str,
-        help="predefined profile of default segmentation and filter parameters (.csv)",
-    )
-    parser.add_argument(
-        "--process_list",
-        type=str,
-        default=None,
-        help="name of list of images to process with parameters (.csv)",
-    )
-    parser.add_argument(
-        "--patch_spacing",
-        type=float,
-        required=True,
-        help="Patch spacing in micrometers per pixel.",
-    )
-    parser.add_argument("--version", action="version", version=f"%(prog)s {_version()}")
-
-    args = parser.parse_args()
-
-    print("create_patches_fp.py  Copyright (C) 2022  Mahmood Lab")
-    print("This program comes with ABSOLUTELY NO WARRANTY.")
-    print("This is free software, and you are welcome to redistribute it")
-    print("under certain conditions.")
-
-    create_patches(
-        source=args.source,
-        step_size=args.step_size,
-        patch_size=args.patch_size,
-        patch_spacing=args.patch_spacing,
-        save_dir=args.save_dir,
-        patch=args.patch,
-        seg=args.seg,
-        stitch=args.stitch,
-        no_auto_skip=args.no_auto_skip,
-        preset=args.preset,
-        process_list=args.process_list,
     )

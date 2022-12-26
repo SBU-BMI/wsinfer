@@ -6,6 +6,10 @@ Original H&E                        |  Heatmap of Tumor Probability
 
 🔥 🚀 Blazingly fast pipeline to run patch-based classification models on whole slide images.
 
+![Continuous Integration](https://github.com/kaczmarj/patch-classification-pipeline/actions/workflows/ci.yml/badge.svg)
+![Supported Python versions](https://img.shields.io/pypi/pyversions/wsinfer)
+![Version on PyPI](https://img.shields.io/pypi/v/wsinfer.svg)
+
 # Table of contents
 
 - [Available models](#available-models)
@@ -22,6 +26,7 @@ Original H&E                        |  Heatmap of Tumor Probability
   * [Output](#output)
   * [Convert to GeoJSON (for QuPath and other viewers)](#convert-to-geojson-for-qupath-and-other-viewers)
   * [Convert to Stony Brook QuIP format](#convert-to-stony-brook-quip-format)
+  * [Add your own model](#add-your-own-model)
 
 # Available models
 
@@ -29,11 +34,11 @@ Original H&E                        |  Heatmap of Tumor Probability
 |-----------------------------------------|----------------------------------------------------------|-----------------|--------------|--------------------------------------------------------------|
 | Breast adenocarcinoma detection         | no-tumor, tumor                                          | inceptionv4     | TCGA-BRCA-v1 | [ref](https://doi.org/10.1016%2Fj.ajpath.2020.03.012)        |
 | Breast adenocarcinoma detection         | no-tumor, tumor                                          | resnet34        | TCGA-BRCA-v1 | [ref](https://doi.org/10.1016%2Fj.ajpath.2020.03.012)        |
-| Breast adenocarcinoma detection         | no-tumor, tumor                                          | vgg16_modified  | TCGA-BRCA-v1 | [ref](https://doi.org/10.1016%2Fj.ajpath.2020.03.012)        |
+| Breast adenocarcinoma detection         | no-tumor, tumor                                          | vgg16mod  | TCGA-BRCA-v1 | [ref](https://doi.org/10.1016%2Fj.ajpath.2020.03.012)        |
 | Lung adenocarcinoma detection           | lepidic, benign, acinar, micropapillary, mucinous, solid | resnet34        | TCGA-LUAD-v1 | [ref](https://github.com/SBU-BMI/quip_lung_cancer_detection) |
-| Pancreatic adenocarcinoma detection     | tumor-positive                                           | resnet34_preact | TCGA-PAAD-v1 | [ref](https://doi.org/10.1007/978-3-030-32239-7_60)          |
+| Pancreatic adenocarcinoma detection     | tumor-positive                                           | preactresnet34 | TCGA-PAAD-v1 | [ref](https://doi.org/10.1007/978-3-030-32239-7_60)          |
 | Prostate adenocarcinoma detection       | grade3, grade4+5, benign                                 | resnet34        | TCGA-PRAD-v1 | [ref](https://github.com/SBU-BMI/quip_prad_cancer_detection) |
-| Tumor-infiltrating lymphocyte detection | til-negative, til-positive                                             | inceptionv4     | TCGA-TILs-v1 | [ref](https://doi.org/10.3389/fonc.2021.806603)              |
+| Tumor-infiltrating lymphocyte detection | til-negative, til-positive                                             | inceptionv4nobn     | TCGA-TILs-v1 | [ref](https://doi.org/10.3389/fonc.2021.806603)              |
 
 # Installation
 
@@ -43,6 +48,12 @@ Pip install this package from GitHub. First install `torch` and `torchvision`
 (please see [the PyTorch documentation](https://pytorch.org/get-started/locally/)).
 We do not install these dependencies automatically because their installation can vary based
 on a user's system. Then use the command below to install this package.
+
+```
+python -m pip install --find-links https://girder.github.io/large_image_wheels wsinfer
+```
+
+To use the _bleed edge_, use
 
 ```
 python -m pip install \
@@ -80,7 +91,7 @@ the available tags. The Dockerfiles are in [`dockerfiles/`](/dockerfiles/) Here 
 ```
 apptainer pull docker://kaczmarj/patch-classification-pipeline:v0.2.0-paad-resnet34
 CUDA_VISIBLE_DEVICES=0 apptainer run --nv --bind $(pwd) patch-classification-pipeline_v0.2.0-paad-resnet34.sif \
-    --wsi_dir slides/ --results_dir results/
+    --wsi-dir slides/ --results-dir results/
 ```
 
 ## Developers
@@ -115,6 +126,18 @@ wget -nc https://openslide.cs.cmu.edu/download/openslide-testdata/Aperio/CMU-1.s
 cd ..
 ```
 
+## List available models and weights
+
+We use "model" as in architecture (like "resnet50"), and "weights" are the pretrained
+parameters that are loaded into the model for a particular task (like "TCGA-BRCA-v1"
+for breast cancer tumor detection). Use the following command to list all available
+models and weights.
+
+```
+wsinfer list
+```
+
+
 ## On "bare metal" (not inside a container)
 
 Run the pipeline (without a container). This will apply the pipeline to all of the
@@ -123,12 +146,12 @@ images in `sample-images/` (only 1 in this example) and will write results to
 `nvidia-smi`. If you do not have a GPU, model inference can take about 20 minutes.
 
 ```
-CUDA_VISIBLE_DEVICES=0 wsi_run \
-    --wsi_dir sample-images/ \
-    --results_dir results/ \
+CUDA_VISIBLE_DEVICES=0 wsinfer run \
+    --wsi-dir sample-images/ \
+    --results-dir results/ \
     --model resnet34 \
     --weights TCGA-BRCA-v1 \
-    --num_workers 8
+    --num-workers 8
 ```
 
 ## Run in an Apptainer container (formerly Singularity)
@@ -147,12 +170,12 @@ CUDA_VISIBLE_DEVICES=0 apptainer run \
     --nv \
     --bind $(pwd) \
     --pwd $(pwd) \
-    patch-classification-pipeline_latest.sif \
-        --wsi_dir sample-images/ \
-        --results_dir results/ \
+    patch-classification-pipeline_latest.sif run \
+        --wsi-dir sample-images/ \
+        --results-dir results/ \
         --model resnet34 \
         --weights TCGA-BRCA-v1 \
-        --num_workers 8
+        --num-workers 8
 ```
 
 ## Run in a Docker container
@@ -185,12 +208,12 @@ docker run --rm -it \
     --env CUDA_VISIBLE_DEVICES=0 \
     --user $(id -u):$(id -g) \
     --mount type=bind,source=$(pwd),target=/work/ \
-    kaczmarj/patch-classification-pipeline \
-        --wsi_dir sample-images/ \
-        --results_dir results/ \
+    kaczmarj/patch-classification-pipeline run \
+        --wsi-dir sample-images/ \
+        --results-dir results/ \
         --model resnet34 \
         --weights TCGA-BRCA-v1 \
-        --num_workers 2
+        --num-workers 2
 ```
 
 ## Output
@@ -219,7 +242,7 @@ are a type of geometric data structure. Popular whole slide image viewers like Q
 are able to load labels in GeoJSON format.
 
 ```bash
-wsi_convert_csv_to_geojson results/ geojson-results
+wsirun togeojson results/ geojson-results
 ```
 
 ## Convert to Stony Brook QuIP format
@@ -231,7 +254,7 @@ create the `color-*` files that contain color information for each patch in the 
 This option is disabled by default because it adds significant processing time.
 
 ```bash
-wsi_convert_csv_to_sbubmi \
+wsirun tosbu \
     --wsi-dir slides/ \
     --execution-id UNIQUE_ID_HERE \
     --study-id TCGA-BRCA \
@@ -239,4 +262,51 @@ wsi_convert_csv_to_sbubmi \
     --num-processes 16 \
     results/ \
     results/model-outputs-sbubmi/
+```
+
+## Add your own model
+
+Define a new model with a YAML configuration file. Please see the example below for
+an overview of the specification.
+
+```yaml
+# The version of the spec. At this time, only "1.0" is valid. (str)
+version: "1.0"
+# Models are referenced by the pair of (architecture, weights), so this pair must be unique.
+# The name of the architecture. We use timm to supply hundreds or network architectures,
+# so the name can be one of those models. If the architecture is not provided in timm,
+# then one can add an architecture themselves, but the code will have to be modified. (str)
+architecture: resnet34
+# A unique name for the weights for this architecture. (str)
+name: TCGA-BRCA-v1
+# Where to get the model weights. Either a URL or path to a file.
+# If using a URL, set the url_file_name (the name of the file when it is downloaded).
+# url: https://stonybrookmedicine.box.com/shared/static/dv5bxk6d15uhmcegs9lz6q70yrmwx96p.pt
+# url_file_name: resnet34-brca-20190613-01eaf604.pt
+# If not using a url, then 'file' must be supplied. Use an absolute or relative path. If
+# using a relative path, the path is relative to the location of the yaml file.
+file: path-to-weights.pt
+# Size of patches from the slides. (int)
+patch_size_pixels: 350
+# The microns per pixel of the patches. (float)
+spacing_um_px: 0.25
+# Number of output classes from the model. (int)
+num_classes: 2
+# Names of the model outputs. The order matters. class_names[0] is the name of the first
+# class of the model output.
+class_names:  # (list of strings)
+  - notumor
+  - tumor
+transform:
+  # Size of images immediately prior to inputting to the model. (int)
+  resize_size: 224
+  # Mean and standard deviation for RGB values. (list of three floats)
+  mean: [0.7238, 0.5716, 0.6779]
+  std: [0.1120, 0.1459, 0.1089]
+```
+
+Once you save the configuration file, you can use it with `wsinfer run`:
+
+```bash
+wsinfer run --wsi-dir path/to/slides --results-dir path/to/results --config config.yaml
 ```

@@ -245,13 +245,6 @@ def write_color_txt(
     df.to_csv(output, header=False, index=False, sep=" ")
 
 
-def _version() -> str:
-    """Return version (avoid possibility of a circular import)."""
-    from . import __version__
-
-    return __version__
-
-
 @click.command()
 @click.argument(
     "results_dir",
@@ -285,7 +278,6 @@ def _version() -> str:
     default=4,
     help="Number of processes to use when `--make-color-text` is enabled.",
 )
-@click.version_option(version=_version())
 def cli(
     *,
     results_dir: Path,
@@ -296,7 +288,9 @@ def cli(
     make_color_text: bool = False,
     num_processes: int = 4,
 ):
-    """Convert CSV of patch predictions to .txt and .json formats for use with Stony
+    """Convert model outputs to Stony Brook format.
+
+    Convert CSVs of patch predictions to .txt and .json formats for use with Stony
     Brook Biomedical Informatics viewers.
 
     RESULTS_DIR     Path to results directory (containing model-outputs dir).

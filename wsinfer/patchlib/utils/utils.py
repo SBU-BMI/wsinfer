@@ -11,6 +11,7 @@ from torch.utils.data import (
 )
 import torch.optim as optim
 from itertools import islice
+import math
 import collections
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -47,7 +48,7 @@ def collate_features(batch):
 
 def get_simple_loader(dataset, batch_size=1, num_workers=1):
     kwargs = (
-        {"num_workers": 4, "pin_memory": False, "num_workers": num_workers}
+        {"pin_memory": False, "num_workers": num_workers}
         if device.type == "cuda"
         else {}
     )
