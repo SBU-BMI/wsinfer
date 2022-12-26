@@ -5,10 +5,10 @@
 FROM kaczmarj/wsinfer:v0.2.1
 
 # The CLI will use these env vars for model and weights.
-ENV WSINFER_MODEL="inceptionv4"
+ENV WSINFER_MODEL="inceptionv4nobn"
 ENV WSINFER_WEIGHTS="TCGA-TILs-v1"
 
 # Download the weights.
-RUN python -c "from wsinfer.modellib import models; models.$WSINFER_MODEL(\"$WSINFER_WEIGHTS\")" \
+RUN python -c "from wsinfer.modellib.models import get_model_weights; get_model_weights(architecture=\"$WSINFER_MODEL\", name=\"$WSINFER_WEIGHTS\").load_model()" \
     # Downloaded models are mode 0600. Make them readable by all users.
     && chmod -R +r $TORCH_HOME/hub/checkpoints/
