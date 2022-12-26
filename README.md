@@ -7,6 +7,8 @@ Original H&E                        |  Heatmap of Tumor Probability
 🔥 🚀 Blazingly fast pipeline to run patch-based classification models on whole slide images.
 
 ![Continuous Integration](https://github.com/kaczmarj/patch-classification-pipeline/actions/workflows/ci.yml/badge.svg)
+![Supported Python versions](https://img.shields.io/pypi/pyversions/wsinfer)
+![Version on PyPI](https://img.shields.io/pypi/v/wsinfer.svg)
 
 # Table of contents
 
@@ -268,6 +270,8 @@ Define a new model with a YAML configuration file. Please see the example below 
 an overview of the specification.
 
 ```yaml
+# The version of the spec. At this time, only "1.0" is valid. (str)
+version: "1.0"
 # Models are referenced by the pair of (architecture, weights), so this pair must be unique.
 # The name of the architecture. We use timm to supply hundreds or network architectures,
 # so the name can be one of those models. If the architecture is not provided in timm,

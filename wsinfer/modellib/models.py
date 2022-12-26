@@ -10,7 +10,6 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 
-from PIL import Image
 import timm
 import torch
 from torch.hub import load_state_dict_from_url
@@ -91,6 +90,7 @@ class Weights:
         # Validate contents.
         # Validate keys.
         required_keys = [
+            "version",
             "name",
             "architecture",
             "num_classes",
@@ -113,6 +113,10 @@ class Weights:
                     f"required key not found in 'transform' section: '{req_key}'"
                 )
 
+        # We include a 'version' key so we can handle updates if needed in the future.
+        # At this point, we only support version 1.0.
+        if d["version"] != "1.0":
+            raise ValueError("config file must include version: '1.0'.")
         # Either 'url' or 'file' is required. If 'url' is used, then 'url_file_name' is
         # required.
         if "url" not in d.keys() and "file" not in d.keys():
