@@ -36,7 +36,6 @@ from .wsi_core.wsi_utils import StitchCoords
 from .wsi_core.batch_process_utils import initialize_df
 
 # other imports
-import click
 import os
 import pathlib
 import numpy as np
@@ -45,13 +44,6 @@ import pandas as pd
 from typing import Optional
 
 _script_path = pathlib.Path(__file__).resolve().parent
-
-
-def _version() -> str:
-    """Closure to get version without potential for circular imports."""
-    from .. import __version__
-
-    return __version__
 
 
 def stitching(file_path, wsi_object, downscale=64):
@@ -439,66 +431,4 @@ def create_patches(
         process_list=process_list,
         auto_skip=no_auto_skip,
         patch_spacing=patch_spacing,
-    )
-
-
-@click.command()
-@click.option(
-    "--source",
-    required=True,
-    type=click.Path(exists=True),
-    help="patch to directory containing whole slide image files",
-)
-@click.option("--step-size", default=None, type=int, help="Step size for patching.")
-@click.option("--patch-size", required=True, type=int, help="Patch size in pixels.")
-@click.option("--no-auto-skip", is_flag=True)
-@click.option(
-    "--save-dir",
-    required=True,
-    type=click.Path(),
-    help="Directory to save processed data",
-)
-@click.option(
-    "--preset",
-    default="tcga.csv",
-    help="Predefined profile of default segmentation and filter parameters (.csv)",
-)
-@click.option(
-    "--process-list", help="Name of list of images to process with parameters (.csv)"
-)
-@click.option(
-    "--patch-spacing",
-    required=True,
-    type=float,
-    help="Patch spacing in micrometers per pixel.",
-)
-def cli(
-    source: str,
-    step_size: Optional[int],
-    patch_size: int,
-    no_auto_skip: bool,
-    save_dir: str,
-    preset: Optional[str],
-    process_list: Optional[str],
-    patch_spacing: float,
-):
-    """Patchify a directory of whole slide images."""
-
-    print("create_patches_fp.py  Copyright (C) 2022  Mahmood Lab")
-    print("This program comes with ABSOLUTELY NO WARRANTY.")
-    print("This is free software, and you are welcome to redistribute it")
-    print("under certain conditions.")
-
-    create_patches(
-        source=source,
-        step_size=step_size,
-        patch_size=patch_size,
-        patch_spacing=patch_spacing,
-        save_dir=save_dir,
-        patch=True,
-        seg=True,
-        stitch=True,
-        no_auto_skip=no_auto_skip,
-        preset=preset,
-        process_list=process_list,
     )
