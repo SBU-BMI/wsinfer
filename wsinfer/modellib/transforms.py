@@ -51,9 +51,11 @@ class PatchClassification(torch.nn.Module):
             f" std={self.std}, interpolation={self.interpolation})"
         )
 
-    def forward(self, img: Union[Image.Image, torch.Tensor]) -> torch.Tensor:
+    def forward(self, input: Union[Image.Image, torch.Tensor]) -> torch.Tensor:
         img = F.resize(
-            img, [self.resize_size, self.resize_size], interpolation=self.interpolation
+            input,
+            [self.resize_size, self.resize_size],
+            interpolation=self.interpolation,
         )
         if not isinstance(img, torch.Tensor):
             img = F.pil_to_tensor(img)
