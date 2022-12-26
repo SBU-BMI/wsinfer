@@ -3,7 +3,8 @@
 # Copyright (c) 2017, Remi Cadene
 # All rights reserved.
 #
-# Downloaded from https://raw.githubusercontent.com/Cadene/pretrained-models.pytorch/e07fb68c317880e780eb5ca9c20cca00f2584878/pretrainedmodels/models/inceptionv4.py
+# Downloaded from
+# https://raw.githubusercontent.com/Cadene/pretrained-models.pytorch/e07fb68c317880e780eb5ca9c20cca00f2584878/pretrainedmodels/models/inceptionv4.py  # noqa: E501
 #
 # We downloaded this file here so we did not have to add pretrainedmodels as a
 # dependency (we only use this module).
@@ -11,32 +12,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.utils.model_zoo as model_zoo
-
-__all__ = ["InceptionV4", "inceptionv4"]
-
-pretrained_settings = {
-    "inceptionv4": {
-        "imagenet": {
-            "url": "http://data.lip6.fr/cadene/pretrainedmodels/inceptionv4-8e4777a0.pth",
-            "input_space": "RGB",
-            "input_size": [3, 299, 299],
-            "input_range": [0, 1],
-            "mean": [0.5, 0.5, 0.5],
-            "std": [0.5, 0.5, 0.5],
-            "num_classes": 1000,
-        },
-        "imagenet+background": {
-            "url": "http://data.lip6.fr/cadene/pretrainedmodels/inceptionv4-8e4777a0.pth",
-            "input_space": "RGB",
-            "input_size": [3, 299, 299],
-            "input_range": [0, 1],
-            "mean": [0.5, 0.5, 0.5],
-            "std": [0.5, 0.5, 0.5],
-            "num_classes": 1001,
-        },
-    }
-}
 
 
 class BasicConv2d(nn.Module):
