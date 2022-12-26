@@ -1,6 +1,5 @@
 import math
 import os
-import time
 from xml.dom import minidom
 import multiprocessing as mp
 import cv2
@@ -143,7 +142,8 @@ class WholeSlideImage(object):
             for cont_idx in hierarchy_1:
                 # actual contour
                 cont = contours[cont_idx]
-                # indices of holes contained in this contour (children of parent contour)
+                # indices of holes contained in this contour
+                # (children of parent contour)
                 holes = np.flatnonzero(hierarchy[:, 1] == cont_idx)
                 # take contour area (includes holes)
                 a = cv2.contourArea(cont)
@@ -346,14 +346,12 @@ class WholeSlideImage(object):
         **kwargs
     ):
         contours = self.contours_tissue
-        contour_holes = self.holes_tissue
 
         print(
             "Creating patches for: ",
             self.name,
             "...",
         )
-        elapsed = time.time()
         for idx, cont in enumerate(contours):
             patch_gen = self._getPatchGenerator(
                 cont, idx, patch_level, save_path, patch_size, step_size, **kwargs
@@ -404,7 +402,8 @@ class WholeSlideImage(object):
             patch_size = target_patch_size * 2
             step_size = step_size * 2
             print(
-                "Custom Downsample: {}, Patching at {} x {}, But Final Patch Size is {} x {}".format(
+                "Custom Downsample: {}, Patching at {} x {}, But Final Patch Size is"
+                " {} x {}".format(
                     custom_downsample,
                     patch_size,
                     patch_size,
@@ -555,7 +554,6 @@ class WholeSlideImage(object):
             self.name,
             "...",
         )
-        elapsed = time.time()
         n_contours = len(self.contours_tissue)
         print("Total number of contours to process: ", n_contours)
         fp_chunk_size = math.ceil(n_contours * 0.05)
@@ -741,13 +739,15 @@ class WholeSlideImage(object):
                 x_start_img = int((x_start - shift[0]) / int(downsample[0]))
                 y_start_img = int((y_start - shift[1]) / int(downsample[1]))
 
-                # 2. compute end points of blend tile, careful not to go over the edge of the image
+                # 2. compute end points of blend tile, careful not to go over the edge
+                # of the image
                 y_end_img = min(h, y_start_img + block_size_y)
                 x_end_img = min(w, x_start_img + block_size_x)
 
                 if y_end_img == y_start_img or x_end_img == x_start_img:
                     continue
-                # print('start_coord: {} end_coord: {}'.format((x_start_img, y_start_img), (x_end_img, y_end_img)))
+                # print('start_coord: {} end_coord: {}'.format(
+                # (x_start_img, y_start_img), (x_end_img, y_end_img)))
 
                 # 3. fetch blend block and size
                 blend_block = img[y_start_img:y_end_img, x_start_img:x_end_img]
@@ -808,7 +808,8 @@ class WholeSlideImage(object):
                     offset=offset,
                     thickness=-1,
                 )
-            # contours_holes = self._scaleContourDim(self.holes_tissue, scale, holes=True, area_thresh=area_thresh)
+            # contours_holes = self._scaleContourDim(self.holes_tissue, scale,
+            # holes=True, area_thresh=area_thresh)
 
         tissue_mask = tissue_mask.astype(bool)
         print(

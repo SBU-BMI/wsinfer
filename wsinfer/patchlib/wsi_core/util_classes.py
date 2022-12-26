@@ -34,7 +34,8 @@ class Mosaic_Canvas(object):
         self.coord = np.array([0, 0])
 
     def increment_coord(self):
-        # print('current coord: {} x {} / {} x {}'.format(self.coord[0], self.coord[1], self.dimensions[0], self.dimensions[1]))
+        # print('current coord: {} x {} / {} x {}'.format(self.coord[0], self.coord[1],
+        # self.dimensions[0], self.dimensions[1]))
         assert np.all(self.coord <= self.dimensions)
         if (
             self.coord[0] + self.downscaled_patch_size
@@ -99,7 +100,8 @@ class isInContourV2(Contour_Checking_fn):
         )
 
 
-# Easy version of 4pt contour checking function - 1 of 4 points need to be in the contour for test to pass
+# Easy version of 4pt contour checking function - 1 of 4 points need to be in the
+# contour for test to pass
 class isInContourV3_Easy(Contour_Checking_fn):
     def __init__(self, contour, patch_size, center_shift=0.5):
         self.cont = contour
@@ -129,7 +131,8 @@ class isInContourV3_Easy(Contour_Checking_fn):
         return 0
 
 
-# Hard version of 4pt contour checking function - all 4 points need to be in the contour for test to pass
+# Hard version of 4pt contour checking function - all 4 points need to be in the
+# contour for test to pass
 class isInContourV3_Hard(Contour_Checking_fn):
     def __init__(self, contour, patch_size, center_shift=0.5):
         self.cont = contour
