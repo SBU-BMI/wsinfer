@@ -15,13 +15,14 @@ def initialize_df(
     initiate a pandas df describing a list of slides to process
     args:
         slides (df or array-like):
-            array-like structure containing list of slide ids, if df, these ids assumed to be
-            stored under the 'slide_id' column
+            array-like structure containing list of slide ids, if df, these ids assumed
+            to be stored under the 'slide_id' column
         seg_params (dict): segmentation paramters
         filter_params (dict): filter parameters
         vis_params (dict): visualization paramters
         patch_params (dict): patching paramters
-        use_heatmap_args (bool): whether to include heatmap arguments such as ROI coordinates
+        use_heatmap_args (bool): whether to include heatmap arguments such as ROI
+            coordinates
     """
     total = len(slides)
     if isinstance(slides, pd.DataFrame):
@@ -95,7 +96,8 @@ def initialize_df(
             default_df_dict
         )  # temporary dataframe w/ default params
         # find key in provided df
-        # if exist, fill empty fields w/ default values, else, insert the default values as a new column
+        # if exist, fill empty fields w/ default values, else, insert the default
+        # values as a new column
         for key in default_df_dict.keys():
             if key in slides.columns:
                 mask = slides[key].isna()

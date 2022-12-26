@@ -199,6 +199,9 @@ class Weights:
             )
         elif self.file:
             state_dict = torch.load(self.file, map_location="cpu")
+            # When training with timm scripts, weights are saved in 'state_dict' key.
+            if "state_dict" in state_dict.keys():
+                state_dict = state_dict["state_dict"]
         else:
             raise RuntimeError("cannot find weights")
 

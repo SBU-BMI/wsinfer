@@ -5,7 +5,7 @@ from .convert_csv_to_geojson import cli as _cli_convert_to_geojson
 from .convert_csv_to_sbubmi import cli as _cli_convert_to_sbubmi
 from .infer import cli as _cli_inference
 from .list_models_and_weights import cli as _cli_list_models_weights
-from ..patchlib.create_patches_fp import cli as _cli_patch
+from .patch import cli as _cli_patch
 
 
 # We use invoke_without_command=True so that 'wsinfer' on its own can be used for

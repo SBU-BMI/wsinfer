@@ -492,7 +492,8 @@ def SamplePatches(
         if custom_downsample > 1:
             patch = patch.resize(tuple(target_patch_size))
 
-        # if isBlackPatch_S(patch, rgbThresh=20, percentage=0.05) or isWhitePatch_S(patch, rgbThresh=220, percentage=0.25):
+        # if isBlackPatch_S(patch, rgbThresh=20, percentage=0.05) or isWhitePatch_S(
+        # patch, rgbThresh=220, percentage=0.25):
         #     continue
 
         if stitch:

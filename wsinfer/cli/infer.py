@@ -246,6 +246,8 @@ def cli(
 
     CUDA_VISIBLE_DEVICES=0 wsinfer run --wsi_dir slides/ --results_dir results
     --model resnet34 --weights TCGA-BRCA-v1 --batch_size 32 --num_workers 4
+
+    To list all available models and weights, use `wsinfer list`.
     """
     if model is None and weights is None and config is None:
         raise click.UsageError("one of (model and weights) or config is required.")
