@@ -62,6 +62,7 @@ def test_cli_list(tmp_path: Path):
     config_root_single.mkdir()
     configs = [
         dict(
+            version="1.0",
             name="foo",
             architecture="resnet34",
             url="foo",
@@ -73,6 +74,7 @@ def test_cli_list(tmp_path: Path):
             class_names=["tumor"],
         ),
         dict(
+            version="1.0",
             name="foo2",
             architecture="resnet34",
             url="foo",
@@ -412,6 +414,7 @@ def test_cli_run_from_config(tiff_image: Path, tmp_path: Path):
         dict(name="foo", architecture="resnet34"),
         # Missing url
         dict(
+            version="1.0",
             name="foo",
             architecture="resnet34",
             # url="foo",
@@ -424,6 +427,7 @@ def test_cli_run_from_config(tiff_image: Path, tmp_path: Path):
         ),
         # missing url_file_name when url is given
         dict(
+            version="1.0",
             name="foo",
             architecture="resnet34",
             url="foo",
@@ -436,6 +440,7 @@ def test_cli_run_from_config(tiff_image: Path, tmp_path: Path):
         ),
         # url and file used together
         dict(
+            version="1.0",
             name="foo",
             architecture="resnet34",
             file=__file__,
@@ -449,6 +454,7 @@ def test_cli_run_from_config(tiff_image: Path, tmp_path: Path):
         ),
         # nonexistent file
         dict(
+            version="1.0",
             name="foo",
             architecture="resnet34",
             file="path/to/fake/file",
@@ -462,6 +468,7 @@ def test_cli_run_from_config(tiff_image: Path, tmp_path: Path):
         ),
         # num_classes missing
         dict(
+            version="1.0",
             name="foo",
             architecture="resnet34",
             url="foo",
@@ -474,6 +481,7 @@ def test_cli_run_from_config(tiff_image: Path, tmp_path: Path):
         ),
         # num classes not equal to len of class names
         dict(
+            version="1.0",
             name="foo",
             architecture="resnet34",
             url="foo",
@@ -486,6 +494,7 @@ def test_cli_run_from_config(tiff_image: Path, tmp_path: Path):
         ),
         # transform missing
         dict(
+            version="1.0",
             name="foo",
             architecture="resnet34",
             url="foo",
@@ -498,6 +507,7 @@ def test_cli_run_from_config(tiff_image: Path, tmp_path: Path):
         ),
         # transform.resize_size missing
         dict(
+            version="1.0",
             name="foo",
             architecture="resnet34",
             url="foo",
@@ -510,6 +520,7 @@ def test_cli_run_from_config(tiff_image: Path, tmp_path: Path):
         ),
         # transform.mean missing
         dict(
+            version="1.0",
             name="foo",
             architecture="resnet34",
             url="foo",
@@ -522,6 +533,7 @@ def test_cli_run_from_config(tiff_image: Path, tmp_path: Path):
         ),
         # transform.std missing
         dict(
+            version="1.0",
             name="foo",
             architecture="resnet34",
             url="foo",
@@ -534,6 +546,7 @@ def test_cli_run_from_config(tiff_image: Path, tmp_path: Path):
         ),
         # transform.resize_size non int
         dict(
+            version="1.0",
             name="foo",
             architecture="resnet34",
             url="foo",
@@ -546,6 +559,7 @@ def test_cli_run_from_config(tiff_image: Path, tmp_path: Path):
         ),
         # transform.resize_size non int
         dict(
+            version="1.0",
             name="foo",
             architecture="resnet34",
             url="foo",
@@ -560,6 +574,7 @@ def test_cli_run_from_config(tiff_image: Path, tmp_path: Path):
         ),
         # transform.mean not a list of three floats
         dict(
+            version="1.0",
             name="foo",
             architecture="resnet34",
             url="foo",
@@ -572,6 +587,7 @@ def test_cli_run_from_config(tiff_image: Path, tmp_path: Path):
         ),
         # transform.mean not a list of three floats
         dict(
+            version="1.0",
             name="foo",
             architecture="resnet34",
             url="foo",
@@ -584,6 +600,7 @@ def test_cli_run_from_config(tiff_image: Path, tmp_path: Path):
         ),
         # transform.mean not a list of three floats
         dict(
+            version="1.0",
             name="foo",
             architecture="resnet34",
             url="foo",
@@ -596,6 +613,7 @@ def test_cli_run_from_config(tiff_image: Path, tmp_path: Path):
         ),
         # transform.std not a list of three floats
         dict(
+            version="1.0",
             name="foo",
             architecture="resnet34",
             url="foo",
@@ -608,6 +626,7 @@ def test_cli_run_from_config(tiff_image: Path, tmp_path: Path):
         ),
         # transform.std not a list of three floats
         dict(
+            version="1.0",
             name="foo",
             architecture="resnet34",
             url="foo",
@@ -620,6 +639,7 @@ def test_cli_run_from_config(tiff_image: Path, tmp_path: Path):
         ),
         # transform.std not a list of three floats
         dict(
+            version="1.0",
             name="foo",
             architecture="resnet34",
             url="foo",
@@ -632,6 +652,7 @@ def test_cli_run_from_config(tiff_image: Path, tmp_path: Path):
         ),
         # invalid patch_size_pixels -- list
         dict(
+            version="1.0",
             name="foo",
             architecture="resnet34",
             url="foo",
@@ -644,6 +665,7 @@ def test_cli_run_from_config(tiff_image: Path, tmp_path: Path):
         ),
         # invalid patch_size_pixels -- float
         dict(
+            version="1.0",
             name="foo",
             architecture="resnet34",
             url="foo",
@@ -656,6 +678,7 @@ def test_cli_run_from_config(tiff_image: Path, tmp_path: Path):
         ),
         # invalid patch_size_pixels -- negative
         dict(
+            version="1.0",
             name="foo",
             architecture="resnet34",
             url="foo",
@@ -668,6 +691,7 @@ def test_cli_run_from_config(tiff_image: Path, tmp_path: Path):
         ),
         # invalid spacing_um_px -- zero
         dict(
+            version="1.0",
             name="foo",
             architecture="resnet34",
             url="foo",
@@ -680,6 +704,7 @@ def test_cli_run_from_config(tiff_image: Path, tmp_path: Path):
         ),
         # invalid spacing_um_px -- list
         dict(
+            version="1.0",
             name="foo",
             architecture="resnet34",
             url="foo",
@@ -692,6 +717,7 @@ def test_cli_run_from_config(tiff_image: Path, tmp_path: Path):
         ),
         # invalid class_names -- str
         dict(
+            version="1.0",
             name="foo",
             architecture="resnet34",
             url="foo",
@@ -704,6 +730,7 @@ def test_cli_run_from_config(tiff_image: Path, tmp_path: Path):
         ),
         # invalid class_names -- len not equal to num_classes
         dict(
+            version="1.0",
             name="foo",
             architecture="resnet34",
             url="foo",
@@ -716,6 +743,7 @@ def test_cli_run_from_config(tiff_image: Path, tmp_path: Path):
         ),
         # invalid class_names -- not list of str
         dict(
+            version="1.0",
             name="foo",
             architecture="resnet34",
             url="foo",
@@ -725,6 +753,33 @@ def test_cli_run_from_config(tiff_image: Path, tmp_path: Path):
             patch_size_pixels=350,
             spacing_um_px=0.25,
             class_names=[1],
+        ),
+        # unknown key
+        dict(
+            fakekey="foobar",
+            version="1.0",
+            name="foo",
+            architecture="resnet34",
+            url="foo",
+            url_file_name="foo",
+            num_classes=1,
+            transform=dict(resize_size=299, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+            patch_size_pixels=350,
+            spacing_um_px=0.25,
+            class_names=["foo"],
+        ),
+        # version != '1.0'
+        dict(
+            version="2.0",
+            name="foo",
+            architecture="resnet34",
+            url="foo",
+            url_file_name="foo",
+            num_classes=1,
+            transform=dict(resize_size=299, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+            patch_size_pixels=350,
+            spacing_um_px=0.25,
+            class_names=["foo"],
         ),
     ],
 )
@@ -744,6 +799,7 @@ def test_model_registration(tmp_path: Path):
 
     # Test that registering duplicate weights will error.
     d = dict(
+        version="1.0",
         name="foo",
         architecture="resnet34",
         url="foo",
@@ -768,6 +824,7 @@ def test_model_registration(tmp_path: Path):
     path = tmp_path / "configs" / "foobar.yaml"
     path.parent.mkdir()
     d = dict(
+        version="1.0",
         name="foo2",
         architecture="resnet34",
         url="foo",

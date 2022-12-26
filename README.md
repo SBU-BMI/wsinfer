@@ -270,6 +270,8 @@ Define a new model with a YAML configuration file. Please see the example below 
 an overview of the specification.
 
 ```yaml
+# The version of the spec. At this time, only "1.0" is valid. (str)
+version: "1.0"
 # Models are referenced by the pair of (architecture, weights), so this pair must be unique.
 # The name of the architecture. We use timm to supply hundreds or network architectures,
 # so the name can be one of those models. If the architecture is not provided in timm,

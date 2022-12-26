@@ -1,4 +1,6 @@
 # Configuration of a tumor infiltrating lymphocyte detection model.
+# The specification version. Only 1.0 is supported at this time.
+version: "1.0"
 # The models are referenced by the pair of [architecture, weights], so this pair must
 # be unique.
 # Inceptionv4 without batch normalization.
