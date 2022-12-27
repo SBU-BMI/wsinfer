@@ -2,7 +2,7 @@ from typing import Optional
 
 import click
 
-from ..patchlib.create_patches_fp import create_patches as _create_patches
+from .._patchlib.create_patches_fp import create_patches as _create_patches
 
 
 @click.command()
