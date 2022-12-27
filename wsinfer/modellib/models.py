@@ -203,7 +203,10 @@ class Weights:
         # Load state dict.
         if self.url and self.url_file_name:
             state_dict = load_state_dict_from_url(
-                url=self.url, check_hash=True, file_name=self.url_file_name
+                url=self.url,
+                map_location="cpu",
+                check_hash=True,
+                file_name=self.url_file_name,
             )
         elif self.file:
             state_dict = torch.load(self.file, map_location="cpu")
