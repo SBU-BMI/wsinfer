@@ -133,13 +133,21 @@ def _get_info_for_save(weights: models.Weights):
         git_info = None
     del cmd, here  # For sanity.
 
+    weights_file = weights.file
+    if weights_file is None:
+        if weights.url_file_name is None:
+            raise TypeError("url_file_name must not be None if file is None.")
+        weights_file = str(
+            Path(torch.hub.get_dir()) / "checkpoints" / weights.url_file_name
+        )
+
     return {
         "model_weights": {
             "name": weights.name,
             "architecture": weights.architecture,
             "weights_url": weights.url,
             "weights_url_file_name": weights.url_file_name,
-            "weights_file": weights.file,
+            "weights_file": weights_file,
             "weights_sha256": weights.get_sha256_of_weights(),
             "class_names": weights.class_names,
             "num_classes": weights.num_classes,
