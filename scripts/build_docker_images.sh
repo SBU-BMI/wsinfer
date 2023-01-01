@@ -2,7 +2,7 @@
 #
 # Build all Docker images. This includes the main image and all app images.
 
-set -ex
+set -e
 
 here=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 cd $here/..
@@ -11,6 +11,7 @@ usage="usage: $0 VERSION [PUSH_IMAGES]"
 
 if [ $# -eq 0 ]; then
     echo "No arguments supplied"
+    echo $usage
     exit 1
 fi
 
@@ -23,23 +24,37 @@ fi
 # Version of the pipeline.
 version=$1
 
+BASE_IMAGE="kaczmarj/wsinfer"
+
+build () {
+    tag=$1
+    file=$2
+    name=$BASE_IMAGE:$tag
+    echo "Building $name from $file"
+    if ! grep --quiet "FROM kaczmarj/wsinfer:$version" $file; then
+        echo "Base image doesn't look right..."
+        exit 1
+    fi
+    docker build -t $name - < $file
+}
+
 # Main image.
 docker build -t kaczmarj/wsinfer:$version .
 
 # TILs
-docker build -t kaczmarj/wsinfer:$version-tils - < dockerfiles/tils.dockerfile
+build $version-tils dockerfiles/tils.dockerfile
 
 # Tumor BRCA
-docker build -t kaczmarj/wsinfer:$version-tumor-brca - < dockerfiles/tumor-brca.dockerfile
+build $version-tumor-brca dockerfiles/tumor-brca.dockerfile
 
 # Tumor LUAD
-docker build -t kaczmarj/wsinfer:$version-tumor-luad - < dockerfiles/tumor-luad.dockerfile
+build $version-tumor-luad dockerfiles/tumor-luad.dockerfile
 
 # Tumor PAAD
-docker build -t kaczmarj/wsinfer:$version-tumor-paad - < dockerfiles/tumor-paad.dockerfile
+build $version-tumor-paad dockerfiles/tumor-paad.dockerfile
 
 # Tumor PRAD
-docker build -t kaczmarj/wsinfer:$version-tumor-prad - < dockerfiles/tumor-prad.dockerfile
+build $version-tumor-prad dockerfiles/tumor-prad.dockerfile
 
 # Push images.
 push_images="${2:-0}"
