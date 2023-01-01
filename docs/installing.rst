@@ -4,12 +4,17 @@ Installing and getting started
 Prerequisites
 -------------
 
-WSInfer supports Python 3.7+.
+WSInfer supports Python 3.7+ and has been tested on Linux.
 
 Install PyTorch before installing WSInfer. Please see
 `PyTorch's installation instructions <https://pytorch.org/get-started/locally/>`_.
 WSInfer does not install PyTorch automatically because the installation depends on
 the type of hardware a user has.
+
+.. note::
+
+    Install PyTorch before installing WSInfer.
+
 
 Manual installation
 -------------------
@@ -36,8 +41,8 @@ Docker images that are more suitable for inference because those include pre-dow
 the "base" WSInfer Docker image, model weights need to be downloaded every time the container
 is used for inference, and the downloaded weights do not persist after the container is stopped.
 
-Development installation
-------------------------
+Developers
+----------
 
 Clone the repository from https://github.com/kaczmarj/wsinfer and install it in editable mode. ::
 
