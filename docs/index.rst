@@ -1,10 +1,25 @@
 :html_theme.sidebar_secondary.remove:
 
-WSInfer: deep learning inference on whole slide images
-======================================================
+WSInfer: blazingly fast inference on whole slide images
+=======================================================
 
-**WSInfer** is a command lineprogram to run patch-based classification inference on
-whole slide images.
+🔥 🚀 **WSInfer** is a blazingly fast pipeline to run patch-based classification models
+on whole slide images.
+
+.. image:: https://github.com/kaczmarj/wsinfer/actions/workflows/ci.yml/badge.svg
+   :alt: GitHub workflow status
+   :target: https://github.com/kaczmarj/wsinfer/actions/workflows/ci.yml
+.. image:: https://readthedocs.org/projects/wsinfer/badge/?version=latest
+  :alt: Documentation build status
+  :target: https://wsinfer.readthedocs.io/en/latest/?badge=latest
+.. image:: https://img.shields.io/pypi/v/wsinfer.svg
+  :alt: PyPI version
+  :target: https://pypi.org/project/wsinfer/
+.. image:: https://img.shields.io/pypi/pyversions/wsinfer
+  :alt: Supported Python versions
+  :target: https://pypi.org/project/wsinfer/
+
+|
 
 .. toctree::
    :maxdepth: 1
