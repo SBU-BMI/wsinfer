@@ -28,6 +28,18 @@ on whole slide images.
    Installing <installing>
    User Guide <user_guide>
 
+
+.. |img-tissue| image:: images/brca-tissue.png
+  :alt: TCGA BRCA sample slide
+.. |img-heatmap| image:: images/brca-heatmap.png
+  :alt: Heatmap of breast cancer detection
+
++----------------+------------------------------+
+| Original H&E   | Heatmap of Tumor Probability |
++================+==============================+
+| |img-tissue|   | |img-heatmap|                |
++----------------+------------------------------+
+
 Available models
 ----------------
 
