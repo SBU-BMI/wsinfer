@@ -67,9 +67,9 @@ def write_heatmap_and_meta_json_lines(
     date = int(time.time())
 
     version_dict: typing.Dict = run_metadata["runtime"]["git"] or {}
-    version_dict["model_path"] = run_metadata["model"]["weights_path"]
-    version_dict["model_hash"] = run_metadata["model"]["weights_sha256"]
-    version_dict["model_url"] = run_metadata["model"]["weights_url"]
+    version_dict["model_path"] = run_metadata["model_weights"]["weights_file"]
+    version_dict["model_hash"] = run_metadata["model_weights"]["weights_sha256"]
+    version_dict["model_url"] = run_metadata["model_weights"]["weights_url"]
     version_dict["model_ver"] = None
 
     def row_to_json(row: pd.Series):
@@ -338,7 +338,7 @@ def cli(
     # Get the output classes of the model. We will create separate directories for each
     # label name. But by default, we do not include labels that start with "no", like
     # "notils" and "notumor".
-    class_names: typing.List[str] = run_metadata["model"]["class_names"]
+    class_names: typing.List[str] = run_metadata["model_weights"]["class_names"]
     ignore_names = {"notils", "notumor"}
     class_names = [n for n in class_names if n not in ignore_names]
 

@@ -79,13 +79,12 @@ class Weights:
         if len(self.class_names) != self.num_classes:
             raise ValueError("length of class_names must be equal to num_classes")
 
-    @classmethod
-    def from_yaml(cls, path):
-        with open(path) as f:
-            d = yaml.safe_load(f)
+    @staticmethod
+    def _validate_input(d) -> None:
+        """Raise error if invalid input."""
 
         if not isinstance(d, dict):
-            raise ValueError("expected YAML config to be a dictionary")
+            raise ValueError("expected config to be a dictionary")
 
         # Validate contents.
         # Validate keys.
@@ -171,6 +170,14 @@ class Weights:
             if not file.exists():
                 raise FileNotFoundError(f"'file' not found: {file}")
 
+    @classmethod
+    def from_yaml(cls, path):
+        """Create a new instance of Weights from a YAML file."""
+
+        with open(path) as f:
+            d = yaml.safe_load(f)
+        cls._validate_input(d)
+
         transform = PatchClassification(
             resize_size=d["transform"]["resize_size"],
             mean=d["transform"]["mean"],
@@ -189,13 +196,17 @@ class Weights:
             class_names=d["class_names"],
         )
 
-    def load_model(self):
+    def load_model(self) -> torch.nn.Module:
+        """Return the pytorch implementation of the architecture with weights loaded."""
         model = _create_model(name=self.architecture, num_classes=self.num_classes)
 
         # Load state dict.
         if self.url and self.url_file_name:
             state_dict = load_state_dict_from_url(
-                url=self.url, check_hash=True, file_name=self.url_file_name
+                url=self.url,
+                map_location="cpu",
+                check_hash=True,
+                file_name=self.url_file_name,
             )
         elif self.file:
             state_dict = torch.load(self.file, map_location="cpu")
@@ -209,6 +220,7 @@ class Weights:
         return model
 
     def get_sha256_of_weights(self) -> str:
+        """Return the sha256 of the weights file."""
         if self.url and self.url_file_name:
             p = Path(torch.hub.get_dir()) / "checkpoints" / self.url_file_name
         elif self.file:
