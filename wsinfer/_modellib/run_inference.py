@@ -5,7 +5,7 @@ From the original paper (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7369575/):
 > normalization of the color channels.
 """
 
-import pathlib
+from pathlib import Path
 import typing
 import warnings
 
@@ -25,9 +25,9 @@ except ImportError:
     )
 import tqdm
 
-from . import models
+from .models import Weights
 
-PathType = typing.Union[str, pathlib.Path]
+PathType = typing.Union[str, Path]
 
 
 class WholeSlideImageDirectoryNotFound(FileNotFoundError):
@@ -116,8 +116,8 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
         self.um_px = float(um_px)
         self.transform = transform
 
-        assert pathlib.Path(wsi_path).exists(), "wsi path not found"
-        assert pathlib.Path(patch_path).exists(), "patch path not found"
+        assert Path(wsi_path).exists(), "wsi path not found"
+        assert Path(patch_path).exists(), "patch path not found"
 
         self.tilesource: large_image.tilesource.TileSource = large_image.getTileSource(
             self.wsi_path
@@ -167,7 +167,7 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
 def run_inference(
     wsi_dir: PathType,
     results_dir: PathType,
-    weights: models.Weights,
+    weights: Weights,
     batch_size: int = 32,
     num_workers: int = 0,
 ) -> None:
@@ -180,12 +180,12 @@ def run_inference(
 
     Parameters
     ----------
-    wsi_dir : str or pathlib.Path
+    wsi_dir : str or Path
         Directory containing whole slide images. This directory can *only* contain
         whole slide images. Otherwise, an error will be raised during model inference.
-    results_dir : str or pathlib.Path
+    results_dir : str or Path
         Directory containing results of patching.
-    weights : wsinfer.modellib.models.Weights
+    weights : wsinfer._modellib.models.Weights
         Instance of Weights including the model object and information about how to
         apply the model to new data.
     batch_size : int
@@ -198,13 +198,13 @@ def run_inference(
     None
     """
     # Make sure required directories exist.
-    wsi_dir = pathlib.Path(wsi_dir)
+    wsi_dir = Path(wsi_dir)
     if not wsi_dir.exists():
         raise WholeSlideImageDirectoryNotFound(f"directory not found: {wsi_dir}")
     wsi_paths = list(wsi_dir.glob("*"))
     if not wsi_paths:
         raise WholeSlideImagesNotFound(wsi_dir)
-    results_dir = pathlib.Path(results_dir)
+    results_dir = Path(results_dir)
     if not results_dir.exists():
         raise ResultsDirectoryNotFound(results_dir)
 
@@ -237,7 +237,7 @@ def run_inference(
         print(f" Slide path: {wsi_path}")
         print(f" Patch path: {patch_path}")
 
-        slide_csv_name = pathlib.Path(wsi_path).with_suffix(".csv").name
+        slide_csv_name = Path(wsi_path).with_suffix(".csv").name
         slide_csv = model_output_dir / slide_csv_name
         if slide_csv.exists():
             print("Output CSV exists... skipping.")
