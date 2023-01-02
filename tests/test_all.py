@@ -784,7 +784,7 @@ def test_cli_run_from_config(tiff_image: Path, tmp_path: Path):
     ],
 )
 def test_invalid_modeldefs(modeldef, tmp_path: Path):
-    from wsinfer.modellib.models import Weights
+    from wsinfer._modellib.models import Weights
 
     path = tmp_path / "foobar.yaml"
     with open(path, "w") as f:
@@ -795,7 +795,7 @@ def test_invalid_modeldefs(modeldef, tmp_path: Path):
 
 
 def test_model_registration(tmp_path: Path):
-    from wsinfer.modellib import models
+    from wsinfer._modellib import models
 
     # Test that registering duplicate weights will error.
     d = dict(
