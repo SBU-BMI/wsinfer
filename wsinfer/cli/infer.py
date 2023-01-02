@@ -11,8 +11,8 @@ import typing
 
 import click
 
-from ..modellib.run_inference import run_inference
-from ..modellib import models
+from .._modellib.run_inference import run_inference
+from .._modellib import models
 from .._patchlib.create_dense_patch_grid import create_grid_and_save_multi_slides
 from .._patchlib.create_patches_fp import create_patches
 
