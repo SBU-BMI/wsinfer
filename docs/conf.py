@@ -14,7 +14,9 @@ author = "Jakub Kaczmarzyk"
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    "autoapi.extension",
+    "sphinx.ext.intersphinx",  # for links
+    "sphinx.ext.napoleon",  # for google style docstrings
+    "autoapi.extension",  # to document the wsinfer api
 ]
 
 autoapi_type = "python"
@@ -28,9 +30,15 @@ autoapi_options = [
     "special-members",
     "imported-members",
 ]
+autoapi_ignore = ["*cli*"]
+
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3/", None),
+    "torch": ("https://pytorch.org/docs/stable", None),
+}
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output

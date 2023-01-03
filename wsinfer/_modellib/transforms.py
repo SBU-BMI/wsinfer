@@ -31,6 +31,8 @@ else:
 
 
 class PatchClassification(torch.nn.Module):
+    """Transform module to process RGB patches."""
+
     def __init__(
         self,
         *,

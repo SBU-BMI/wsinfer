@@ -1,6 +1,6 @@
 import click
 
-from ..modellib import models
+from .._modellib import models
 
 
 @click.command()
