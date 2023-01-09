@@ -38,7 +38,7 @@ jobs:
       - name: Run pytest in Docker image
         run: |
           docker run --rm --workdir /opt/wsinfer/ --entrypoint bash wsinferimage \
-            -c "python -m pip install -e /opt/wsinfer[dev] && python -m pytest /opt/wsinfer/tests/test_all.py"
+            -c "python -m pip install -e /opt/wsinfer[dev] && python -m pytest -v /opt/wsinfer/tests/test_all.py"
       - name: Run wsinfer on a sample image in Docker
         run: |
           mkdir slides
