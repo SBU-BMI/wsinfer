@@ -29,3 +29,49 @@ jobs:
         run: python -m mypy wsinfer/
       - name: Run tests
         run: python -m pytest --verbose tests/
+  test-docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build Docker image
+        run: docker build -t wsinferimage .
+      - name: Run pytest in Docker image
+        run: |
+          docker run --rm --workdir /opt/wsinfer/ --entrypoint bash wsinferimage \
+            -c "python -m pip install -e /opt/wsinfer[dev] && python -m pytest -v /opt/wsinfer/tests/test_all.py"
+      - name: Run wsinfer on a sample image in Docker
+        run: |
+          mkdir slides
+          cd slides
+          wget -q https://openslide.cs.cmu.edu/download/openslide-testdata/Aperio/JP2K-33003-1.svs
+          cd ..
+          docker run --rm --volume $(pwd):/work --workdir /work wsinferimage run \
+            --wsi-dir slides/ --results-dir results/ --model resnet34 --weights TCGA-BRCA-v1
+          test -f results/run_metadata.json
+          test -f results/patches/JP2K-33003-1.h5
+          test -f results/model-outputs/JP2K-33003-1.csv
+          test $(wc -l < results/model-outputs/JP2K-33003-1.csv) -eq 653
+  test-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+      - name: Install the package
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install torch torchvision --extra-index-url https://download.pytorch.org/whl/cpu
+          python -m pip install . --find-links https://girder.github.io/large_image_wheels
+      - name: Run the wsinfer command in a new directory
+        run: |
+          mkdir newdir && cd newdir
+          mkdir slides && cd slides
+          wget -q https://openslide.cs.cmu.edu/download/openslide-testdata/Aperio/JP2K-33003-1.svs
+          cd ..
+          wsinfer run --wsi-dir slides/ --results-dir results/ --model resnet34 --weights TCGA-BRCA-v1
+          test -f results/run_metadata.json
+          test -f results/patches/JP2K-33003-1.h5
+          test -f results/model-outputs/JP2K-33003-1.csv
+          test $(wc -l < results/model-outputs/JP2K-33003-1.csv) -eq 653
