@@ -7,6 +7,7 @@ import sys
 from typing import List
 
 from click.testing import CliRunner
+import geojson as geojsoblib
 import h5py
 import numpy as np
 import pandas as pd
@@ -97,13 +98,13 @@ def test_cli_list(tmp_path: Path):
     )
     assert ret.returncode == 0
     output = ret.stdout.decode()
-    assert configs[0]["name"] in output
-    assert configs[0]["architecture"] in output
-    assert configs[1]["name"] in output
-    assert configs[1]["architecture"] in output
+    assert configs[0]["name"] in output  # type: ignore
+    assert configs[0]["architecture"] in output  # type: ignore
+    assert configs[1]["name"] in output  # type: ignore
+    assert configs[1]["architecture"] in output  # type: ignore
     # Negative control.
     ret = subprocess.run([sys.executable, "-m", "wsinfer", "list"], capture_output=True)
-    assert configs[0]["name"] not in ret.stdout.decode()
+    assert configs[0]["name"] not in ret.stdout.decode()  # type: ignore
     del config_root_single, output, ret, config
 
     # Test of WSINFER_PATH registration... check that the models appear in list.
@@ -123,12 +124,12 @@ def test_cli_list(tmp_path: Path):
     )
     assert ret.returncode == 0
     output = ret.stdout.decode()
-    assert configs[0]["name"] in output
-    assert configs[0]["architecture"] in output
-    assert configs[1]["name"] in output
-    assert configs[1]["architecture"] in output
+    assert configs[0]["name"] in output  # type: ignore
+    assert configs[0]["architecture"] in output  # type: ignore
+    assert configs[1]["name"] in output  # type: ignore
+    assert configs[1]["architecture"] in output  # type: ignore
     ret = subprocess.run([sys.executable, "-m", "wsinfer", "list"], capture_output=True)
-    assert configs[0]["name"] not in ret.stdout.decode()
+    assert configs[0]["name"] not in ret.stdout.decode()  # type: ignore
 
 
 def test_cli_run_args(tmp_path: Path):
@@ -142,9 +143,9 @@ def test_cli_run_args(tmp_path: Path):
     args = [
         "run",
         "--wsi-dir",
-        wsi_dir,
+        str(wsi_dir),
         "--results-dir",
-        tmp_path / "results",
+        str(tmp_path / "results"),
     ]
     # No model, weights, or config.
     result = runner.invoke(cli, args)
@@ -256,7 +257,7 @@ def test_cli_run_args(tmp_path: Path):
 def test_cli_run_regression(
     model: str,
     weights: str,
-    class_names: List[float],
+    class_names: List[str],
     expected_probs: List[float],
     expected_patch_size: int,
     expected_num_patches: int,
@@ -273,13 +274,13 @@ def test_cli_run_regression(
         [
             "run",
             "--wsi-dir",
-            tiff_image.parent,
+            str(tiff_image.parent),
             "--model",
             model,
             "--weights",
             weights,
             "--results-dir",
-            results_dir,
+            str(results_dir),
         ],
     )
     assert result.exit_code == 0
@@ -323,7 +324,8 @@ def test_cli_run_regression(
     result = runner.invoke(cli, ["togeojson", str(results_dir), str(geojson_dir)])
     assert result.exit_code == 0
     with open(geojson_dir / "purple.json") as f:
-        d = json.load(f)
+        d: geojsoblib.GeoJSON = geojsoblib.load(f)
+    assert d.is_valid, "geojson not valid!"
     assert len(d["features"]) == expected_num_patches
 
     for geojson_row in d["features"]:
@@ -379,11 +381,11 @@ def test_cli_run_from_config(tiff_image: Path, tmp_path: Path):
         [
             "run",
             "--wsi-dir",
-            tiff_image.parent,
+            str(tiff_image.parent),
             "--config",
-            config,
+            str(config),
             "--results-dir",
-            results_dir,
+            str(results_dir),
         ],
     )
     assert result.exit_code == 0
