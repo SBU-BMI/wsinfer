@@ -7,7 +7,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "wsinfer"
-copyright = "2022, Jakub Kaczmarzyk"
+copyright = "2023, Jakub Kaczmarzyk"
 author = "Jakub Kaczmarzyk"
 
 # -- General configuration ---------------------------------------------------
