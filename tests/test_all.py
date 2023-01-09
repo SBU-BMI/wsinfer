@@ -7,6 +7,7 @@ import sys
 from typing import List
 
 from click.testing import CliRunner
+import geojson as geojsoblib
 import h5py
 import numpy as np
 import pandas as pd
@@ -323,7 +324,8 @@ def test_cli_run_regression(
     result = runner.invoke(cli, ["togeojson", str(results_dir), str(geojson_dir)])
     assert result.exit_code == 0
     with open(geojson_dir / "purple.json") as f:
-        d = json.load(f)
+        d: geojsoblib.GeoJSON = geojsoblib.load(f)
+    assert d.is_valid, "geojson not valid!"
     assert len(d["features"]) == expected_num_patches
 
     for geojson_row in d["features"]:
