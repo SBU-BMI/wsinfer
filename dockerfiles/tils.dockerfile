@@ -2,10 +2,10 @@
 #
 # Note about versioning: We should not use the 'latest' tag because it is a moving
 # target. We should prefer using a versioned release of the wsinfer pipeline.
-FROM kaczmarj/wsinfer:0.3.3
+FROM kaczmarj/wsinfer:0.3.4
 
 # The CLI will use these env vars for model and weights.
-ENV WSINFER_MODEL="inceptionv4nobn"
+ENV WSINFER_MODEL="inception_v4nobn"
 ENV WSINFER_WEIGHTS="TCGA-TILs-v1"
 
 # Download the weights.
