@@ -227,7 +227,7 @@ def test_cli_run_args(tmp_path: Path):
         ),
         # Inceptionv4nobn TCGA-TILs-v1
         (
-            "inceptionv4nobn",
+            "inception_v4nobn",
             "TCGA-TILs-v1",
             ["notils", "tils"],
             [1.0, 3.427359524660334e-12],

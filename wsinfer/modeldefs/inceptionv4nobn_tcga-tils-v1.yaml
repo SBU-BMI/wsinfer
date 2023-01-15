@@ -4,7 +4,7 @@ version: "1.0"
 # The models are referenced by the pair of [architecture, weights], so this pair must
 # be unique.
 # Inceptionv4 without batch normalization.
-architecture: inceptionv4nobn  # Must be a string.
+architecture: inception_v4nobn  # Must be a string.
 name: TCGA-TILs-v1  # Must be a string.
 # Where to get the model weights. Either a URL or path to a file.
 # If using a URL, set the url_file_name (the name of the file when it is downloaded).
