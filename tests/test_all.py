@@ -216,9 +216,9 @@ def test_cli_run_args(tmp_path: Path):
             350,
             144,
         ),
-        # Inceptionv4 TCGA-BRCA-v1
+        # Inception_v4 TCGA-BRCA-v1
         (
-            "inceptionv4",
+            "inception_v4",
             "TCGA-BRCA-v1",
             ["notumor", "tumor"],
             [0.9564113020896912, 0.043588679283857346],
@@ -227,7 +227,7 @@ def test_cli_run_args(tmp_path: Path):
         ),
         # Inceptionv4nobn TCGA-TILs-v1
         (
-            "inceptionv4nobn",
+            "inception_v4nobn",
             "TCGA-TILs-v1",
             ["notils", "tils"],
             [1.0, 3.427359524660334e-12],
