@@ -15,7 +15,6 @@ import torch
 from torch.hub import load_state_dict_from_url
 import yaml
 
-from .inceptionv4 import inceptionv4 as _inceptionv4
 from .inceptionv4_no_batchnorm import inceptionv4 as _inceptionv4_no_bn
 from .resnet_preact import resnet34_preact as _resnet34_preact
 from .vgg16mod import vgg16mod as _vgg16mod
@@ -233,7 +232,6 @@ class Weights:
 
 # Container for all models we can use that are not in timm.
 _model_registry: Dict[str, Callable[[int], torch.nn.Module]] = {
-    "inceptionv4": _inceptionv4,
     "inceptionv4nobn": _inceptionv4_no_bn,
     "preactresnet34": _resnet34_preact,
     "vgg16mod": _vgg16mod,
