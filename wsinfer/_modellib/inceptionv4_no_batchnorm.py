@@ -18,22 +18,6 @@ from timm.models import register_model
 from timm.models.helpers import build_model_with_cfg
 from timm.models.layers import create_classifier
 
-# default_cfgs = {
-#     "inception_v4": {
-#         "url": "https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-cadene/inceptionv4-8e4777a0.pth",
-#         "num_classes": 1000,
-#         "input_size": (3, 299, 299),
-#         "pool_size": (8, 8),
-#         "crop_pct": 0.875,
-#         "interpolation": "bicubic",
-#         "mean": IMAGENET_INCEPTION_MEAN,
-#         "std": IMAGENET_INCEPTION_STD,
-#         "first_conv": "features.0.conv",
-#         "classifier": "last_linear",
-#         "label_offset": 1,  # 1001 classes in pretrained weights
-#     }
-# }
-
 
 class BasicConv2d(nn.Module):
     def __init__(self, in_planes, out_planes, kernel_size, stride, padding=0):
