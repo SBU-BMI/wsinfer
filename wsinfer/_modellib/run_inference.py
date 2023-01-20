@@ -28,7 +28,6 @@ import tqdm
 from .models import Weights
 
 PathType = typing.Union[str, Path]
-ModelType = typing.Union[torch.jit.ScriptModule, torch.nn.Module, typing.Callable]
 
 
 class WholeSlideImageDirectoryNotFound(FileNotFoundError):
@@ -165,7 +164,9 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
         return patch_im, torch.as_tensor([minx, miny, width, height])
 
 
-def jit_compile(model: torch.nn.Module) -> ModelType:
+def jit_compile(
+    model: torch.nn.Module,
+) -> typing.Union[torch.jit.ScriptModule, torch.nn.Module, typing.Callable]:
     """JIT-compile a model for inference."""
     noncompiled = model
     w = "Warning: could not JIT compile the model. Using non-compiled model instead."
@@ -276,12 +277,15 @@ def run_inference(
     model_output_dir.mkdir(exist_ok=True)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model: ModelType = weights.load_model()
+    model = weights.load_model()
     model.eval()
     model.to(device)
 
     if speedup:
-        model = jit_compile(model)
+        if typing.TYPE_CHECKING:
+            model = type.cast(torch.nn.Module, jit_compile(model))
+        else:
+            model = jit_compile(model)
 
     # results_for_all_slides: typing.List[pd.DataFrame] = []
     for i, (wsi_path, patch_path) in enumerate(zip(wsi_paths, patch_paths)):
