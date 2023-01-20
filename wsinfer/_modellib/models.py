@@ -1,5 +1,4 @@
 import dataclasses
-import functools
 import hashlib
 import os
 from pathlib import Path
@@ -218,6 +217,7 @@ class Weights:
             raise RuntimeError("cannot find weights")
 
         model.load_state_dict(state_dict, strict=True)
+        model.eval()
         return model
 
     def get_sha256_of_weights(self) -> str:
