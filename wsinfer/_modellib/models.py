@@ -1,4 +1,5 @@
 import dataclasses
+import functools
 import hashlib
 import os
 from pathlib import Path
@@ -196,6 +197,7 @@ class Weights:
             class_names=d["class_names"],
         )
 
+    @functools.lru_cache(maxsize=1)
     def load_model(self) -> torch.nn.Module:
         """Return the pytorch implementation of the architecture with weights loaded."""
         model = _create_model(name=self.architecture, num_classes=self.num_classes)
