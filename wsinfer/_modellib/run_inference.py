@@ -164,12 +164,59 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
         return patch_im, torch.as_tensor([minx, miny, width, height])
 
 
+def jit_compile(
+    model: torch.nn.Module,
+) -> typing.Union[torch.jit.ScriptModule, torch.nn.Module, typing.Callable]:
+    """JIT-compile a model for inference."""
+    noncompiled = model
+    w = "Warning: could not JIT compile the model. Using non-compiled model instead."
+    # TODO: consider freezing the model as well.
+    # PyTorch 2.x has torch.compile.
+    if hasattr(torch, "compile"):
+        # Try to get the most optimized model.
+        try:
+            return torch.compile(model, fullgraph=True, mode="max-autotune")
+        except Exception:
+            pass
+        try:
+            return torch.compile(model, mode="max-autotune")
+        except Exception:
+            pass
+        try:
+            return torch.compile(model)
+        except Exception:
+            warnings.warn(w)
+            return noncompiled
+    # For pytorch 1.x, use torch.jit.script.
+    else:
+        # Attempt to script. If it fails, return the original.
+        test_input = torch.ones(1, 3, 224, 224)
+        try:
+            mjit = torch.jit.script(model)
+            with torch.no_grad():
+                mjit(test_input)
+        except Exception:
+            warnings.warn(w)
+            return noncompiled
+        # Now that we have scripted the model, try to optimize it further. If that
+        # fails, return the scripted model.
+        try:
+            mjit_frozen = torch.jit.freeze(mjit)
+            mjit_opt = torch.jit.optimize_for_inference(mjit_frozen)
+            with torch.no_grad():
+                mjit_opt(test_input)
+            return mjit_opt
+        except Exception:
+            return mjit
+
+
 def run_inference(
     wsi_dir: PathType,
     results_dir: PathType,
     weights: Weights,
     batch_size: int = 32,
     num_workers: int = 0,
+    speedup: bool = False,
 ) -> None:
     """Run model inference on a directory of whole slide images and save results to CSV.
 
@@ -192,6 +239,9 @@ def run_inference(
         The batch size during the forward pass (default is 32).
     num_workers : int
         Number of workers for data loading (default is 0, meaning use a single thread).
+    speedup : bool
+        If True, JIT-compile the model. This has a startup cost but model inference
+        should be faster (default False).
 
     Returns
     -------
@@ -230,6 +280,12 @@ def run_inference(
     model = weights.load_model()
     model.eval()
     model.to(device)
+
+    if speedup:
+        if typing.TYPE_CHECKING:
+            model = typing.cast(torch.nn.Module, jit_compile(model))
+        else:
+            model = jit_compile(model)
 
     # results_for_all_slides: typing.List[pd.DataFrame] = []
     for i, (wsi_path, patch_path) in enumerate(zip(wsi_paths, patch_paths)):

@@ -7,13 +7,17 @@ import sys
 from typing import List
 
 from click.testing import CliRunner
-import geojson as geojsoblib
+import geojson as geojsonlib
 import h5py
 import numpy as np
 import pandas as pd
 import pytest
 import tifffile
+import torch
 import yaml
+
+from wsinfer import get_model_weights
+from wsinfer import list_all_models_and_weights
 
 
 @pytest.fixture
@@ -254,6 +258,7 @@ def test_cli_run_args(tmp_path: Path):
         ),
     ],
 )
+@pytest.mark.parametrize("speedup", [False, True])
 def test_cli_run_regression(
     model: str,
     weights: str,
@@ -261,6 +266,7 @@ def test_cli_run_regression(
     expected_probs: List[float],
     expected_patch_size: int,
     expected_num_patches: int,
+    speedup: bool,
     tiff_image: Path,
     tmp_path: Path,
 ):
@@ -281,6 +287,7 @@ def test_cli_run_regression(
             weights,
             "--results-dir",
             str(results_dir),
+            "--speedup" if speedup else "--no-speedup",
         ],
     )
     assert result.exit_code == 0
@@ -324,7 +331,7 @@ def test_cli_run_regression(
     result = runner.invoke(cli, ["togeojson", str(results_dir), str(geojson_dir)])
     assert result.exit_code == 0
     with open(geojson_dir / "purple.json") as f:
-        d: geojsoblib.GeoJSON = geojsoblib.load(f)
+        d: geojsonlib.GeoJSON = geojsonlib.load(f)
     assert d.is_valid, "geojson not valid!"
     assert len(d["features"]) == expected_num_patches
 
@@ -888,10 +895,45 @@ def test_patch_cli(
     for x in range(0, orig_slide_width, expected_patch_size):
         for y in range(0, orig_slide_height, expected_patch_size):
             expected_coords.append([x, y])
-    expected_coords = np.array(expected_coords)
+    expected_coords_arr = np.array(expected_coords)
 
     with h5py.File(savedir / "patches" / f"{stem}.h5") as f:
         assert f["/coords"].attrs["patch_size"] == expected_patch_size
         coords = f["/coords"][()]
     assert coords.shape == (expected_num_patches, 2)
-    assert np.array_equal(expected_coords, coords)
+    assert np.array_equal(expected_coords_arr, coords)
+
+
+@pytest.mark.parametrize(["model_name", "weights_name"], list_all_models_and_weights())
+def test_jit_compile(model_name: str, weights_name: str):
+    import time
+    from wsinfer._modellib.run_inference import jit_compile
+
+    w = get_model_weights(model_name, weights_name)
+    size = w.transform.resize_size
+    x = torch.ones(20, 3, size, size, dtype=torch.float32)
+    model = w.load_model()
+    model.eval()
+    NUM_SAMPLES = 1
+    with torch.no_grad():
+        t0 = time.perf_counter()
+        for _ in range(NUM_SAMPLES):
+            out_nojit = model(x).detach().cpu()
+        time_nojit = time.perf_counter() - t0
+    model_nojit = model
+    model = jit_compile(model)
+    if model is model_nojit:
+        pytest.skip("Failed to compile model (would use original model)")
+    with torch.no_grad():
+        model(x).detach().cpu()  # run it once to compile
+        t0 = time.perf_counter()
+        for _ in range(NUM_SAMPLES):
+            out_jit = model(x).detach().cpu()
+        time_yesjit = time.perf_counter() - t0
+
+    assert torch.allclose(out_nojit, out_jit)
+    if time_nojit < time_yesjit:
+        pytest.skip(
+            "JIT-compiled model was SLOWER than original: "
+            f"jit={time_yesjit:0.3f} vs nojit={time_nojit:0.3f}"
+        )

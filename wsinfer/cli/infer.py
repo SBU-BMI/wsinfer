@@ -226,6 +226,12 @@ def _get_info_for_save(weights: models.Weights):
     " for single thread). A reasonable value is 8.",
 )
 @click.option(
+    "--speedup/--no-speedup",
+    default=False,
+    show_default=True,
+    help="JIT-compile the model for potential speedups.",
+)
+@click.option(
     "--dense-grid/--no-dense-grid",
     default=False,
     show_default=True,
@@ -242,6 +248,7 @@ def cli(
     config: typing.Optional[Path],
     batch_size: int,
     num_workers: int = 0,
+    speedup: bool = False,
     dense_grid: bool = False,
 ):
     """Run model inference on a directory of whole slide images.
@@ -321,6 +328,7 @@ def cli(
         weights=weights_obj,
         batch_size=batch_size,
         num_workers=num_workers,
+        speedup=speedup,
     )
 
     run_metadata_outpath = results_dir / "run_metadata.json"
