@@ -283,7 +283,7 @@ def run_inference(
 
     if speedup:
         if typing.TYPE_CHECKING:
-            model = type.cast(torch.nn.Module, jit_compile(model))
+            model = typing.cast(torch.nn.Module, jit_compile(model))
         else:
             model = jit_compile(model)
 
