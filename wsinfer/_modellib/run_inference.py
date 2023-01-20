@@ -164,8 +164,12 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
         return patch_im, torch.as_tensor([minx, miny, width, height])
 
 
-def jit_compile(model: torch.nn.Module):
-    err = "Warning: could not JIT compile the model. Using non-compiled model instead."
+def jit_compile(
+    model: torch.nn.Module,
+) -> typing.Union[torch.jit.ScriptModule, torch.nn.Module]:
+    """JIT-compile a model for inference."""
+    noncompiled = model
+    w = "Warning: could not JIT compile the model. Using non-compiled model instead."
     # TODO: consider freezing the model as well.
     # PyTorch 2.x has torch.compile.
     if hasattr(torch, "compile"):
@@ -174,14 +178,28 @@ def jit_compile(model: torch.nn.Module):
         try:
             return torch.compile(model)
         except Exception:
-            print(err)
-            return model
+            warnings.warn(w)
+            return noncompiled
     else:
+        # Attempt to script. If it fails, return the original.
+        test_input = torch.ones(1, 3, 224, 224)
         try:
-            return torch.jit.script(model)
+            mjit = torch.jit.script(model)
+            with torch.no_grad():
+                mjit(test_input)
         except Exception:
-            print(err)
-            return model
+            warnings.warn(w)
+            return noncompiled
+        # Now that we have scripted the model, try to optimize it further. If that
+        # fails, return the scripted model.
+        try:
+            mjit_frozen = torch.jit.freeze(mjit)
+            mjit_opt = torch.jit.optimize_for_inference(mjit_frozen)
+            with torch.no_grad():
+                mjit_opt(test_input)
+            return mjit_opt
+        except Exception:
+            return mjit
 
 
 def run_inference(
