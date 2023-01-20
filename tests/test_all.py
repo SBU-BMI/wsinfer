@@ -258,6 +258,7 @@ def test_cli_run_args(tmp_path: Path):
         ),
     ],
 )
+@pytest.mark.parametrize("speedup", [False, True])
 def test_cli_run_regression(
     model: str,
     weights: str,
@@ -265,6 +266,7 @@ def test_cli_run_regression(
     expected_probs: List[float],
     expected_patch_size: int,
     expected_num_patches: int,
+    speedup: bool,
     tiff_image: Path,
     tmp_path: Path,
 ):
@@ -285,6 +287,7 @@ def test_cli_run_regression(
             weights,
             "--results-dir",
             str(results_dir),
+            "--speedup" if speedup else "--no-speedup",
         ],
     )
     assert result.exit_code == 0
