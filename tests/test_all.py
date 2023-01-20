@@ -13,7 +13,11 @@ import numpy as np
 import pandas as pd
 import pytest
 import tifffile
+import torch
 import yaml
+
+from wsinfer import get_model_weights
+from wsinfer import list_all_models_and_weights
 
 
 @pytest.fixture
@@ -895,3 +899,38 @@ def test_patch_cli(
         coords = f["/coords"][()]
     assert coords.shape == (expected_num_patches, 2)
     assert np.array_equal(expected_coords_arr, coords)
+
+
+@pytest.mark.parametrize(["model_name", "weights_name"], list_all_models_and_weights())
+def test_jit_compile(model_name: str, weights_name: str):
+    import time
+    from wsinfer._modellib.run_inference import jit_compile
+
+    w = get_model_weights(model_name, weights_name)
+    size = w.transform.resize_size
+    x = torch.ones(20, 3, size, size, dtype=torch.float32)
+    model = w.load_model()
+    model.eval()
+    NUM_SAMPLES = 1
+    with torch.no_grad():
+        t0 = time.perf_counter()
+        for _ in range(NUM_SAMPLES):
+            out_nojit = model(x).detach().cpu()
+        time_nojit = time.perf_counter() - t0
+    model_nojit = model
+    model = jit_compile(model)
+    if model is model_nojit:
+        pytest.skip("Failed to compile model (would use original model)")
+    with torch.no_grad():
+        model(x).detach().cpu()  # run it once to compile
+        t0 = time.perf_counter()
+        for _ in range(NUM_SAMPLES):
+            out_jit = model(x).detach().cpu()
+        time_yesjit = time.perf_counter() - t0
+
+    assert torch.allclose(out_nojit, out_jit)
+    if time_nojit < time_yesjit:
+        pytest.skip(
+            "JIT-compiled model was SLOWER than original: "
+            f"jit={time_yesjit:0.3f} vs nojit={time_nojit:0.3f}"
+        )
