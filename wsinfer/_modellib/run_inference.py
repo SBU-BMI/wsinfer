@@ -164,7 +164,7 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
         return patch_im, torch.as_tensor([minx, miny, width, height])
 
 
-def _jit_compile(model: torch.nn.Module):
+def jit_compile(model: torch.nn.Module):
     err = "Warning: could not JIT compile the model. Using non-compiled model instead."
     # TODO: consider freezing the model as well.
     # PyTorch 2.x has torch.compile.
@@ -256,7 +256,7 @@ def run_inference(
     model.to(device)
 
     if speedup:
-        model = _jit_compile(model)
+        model = jit_compile(model)
 
     # results_for_all_slides: typing.List[pd.DataFrame] = []
     for i, (wsi_path, patch_path) in enumerate(zip(wsi_paths, patch_paths)):
