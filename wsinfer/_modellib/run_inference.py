@@ -28,6 +28,7 @@ import tqdm
 from .models import Weights
 
 PathType = typing.Union[str, Path]
+ModelType = typing.Union[torch.jit.ScriptModule, torch.nn.Module, typing.Callable]
 
 
 class WholeSlideImageDirectoryNotFound(FileNotFoundError):
@@ -164,22 +165,28 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
         return patch_im, torch.as_tensor([minx, miny, width, height])
 
 
-def jit_compile(
-    model: torch.nn.Module,
-) -> typing.Union[torch.jit.ScriptModule, torch.nn.Module]:
+def jit_compile(model: torch.nn.Module) -> ModelType:
     """JIT-compile a model for inference."""
     noncompiled = model
     w = "Warning: could not JIT compile the model. Using non-compiled model instead."
     # TODO: consider freezing the model as well.
     # PyTorch 2.x has torch.compile.
     if hasattr(torch, "compile"):
-        # Use try-except to perform a sort of transaction. If JIT compilation fails,
-        # do not crash the script. Simply use the non-compiled model.
+        # Try to get the most optimized model.
+        try:
+            return torch.compile(model, fullgraph=True, mode="max-autotune")
+        except Exception:
+            pass
+        try:
+            return torch.compile(model, mode="max-autotune")
+        except Exception:
+            pass
         try:
             return torch.compile(model)
         except Exception:
             warnings.warn(w)
             return noncompiled
+    # For pytorch 1.x, use torch.jit.script.
     else:
         # Attempt to script. If it fails, return the original.
         test_input = torch.ones(1, 3, 224, 224)
@@ -269,7 +276,7 @@ def run_inference(
     model_output_dir.mkdir(exist_ok=True)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model = weights.load_model()
+    model: ModelType = weights.load_model()
     model.eval()
     model.to(device)
 
