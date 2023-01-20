@@ -888,10 +888,10 @@ def test_patch_cli(
     for x in range(0, orig_slide_width, expected_patch_size):
         for y in range(0, orig_slide_height, expected_patch_size):
             expected_coords.append([x, y])
-    expected_coords = np.array(expected_coords)
+    expected_coords_arr = np.array(expected_coords)
 
     with h5py.File(savedir / "patches" / f"{stem}.h5") as f:
         assert f["/coords"].attrs["patch_size"] == expected_patch_size
         coords = f["/coords"][()]
     assert coords.shape == (expected_num_patches, 2)
-    assert np.array_equal(expected_coords, coords)
+    assert np.array_equal(expected_coords_arr, coords)
