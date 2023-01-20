@@ -164,12 +164,33 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
         return patch_im, torch.as_tensor([minx, miny, width, height])
 
 
+def _jit_compile(model: torch.nn.Module):
+    err = "Warning: could not JIT compile the model. Using non-compiled model instead."
+    # TODO: consider freezing the model as well.
+    # PyTorch 2.x has torch.compile.
+    if hasattr(torch, "compile"):
+        # Use try-except to perform a sort of transaction. If JIT compilation fails,
+        # do not crash the script. Simply use the non-compiled model.
+        try:
+            return torch.compile(model)
+        except Exception:
+            print(err)
+            return model
+    else:
+        try:
+            return torch.jit.script(model)
+        except Exception:
+            print(err)
+            return model
+
+
 def run_inference(
     wsi_dir: PathType,
     results_dir: PathType,
     weights: Weights,
     batch_size: int = 32,
     num_workers: int = 0,
+    speedup: bool = False,
 ) -> None:
     """Run model inference on a directory of whole slide images and save results to CSV.
 
@@ -192,6 +213,9 @@ def run_inference(
         The batch size during the forward pass (default is 32).
     num_workers : int
         Number of workers for data loading (default is 0, meaning use a single thread).
+    speedup : bool
+        If True, JIT-compile the model. This has a startup cost but model inference
+        should be faster (default False).
 
     Returns
     -------
@@ -230,6 +254,9 @@ def run_inference(
     model = weights.load_model()
     model.eval()
     model.to(device)
+
+    if speedup:
+        model = _jit_compile(model)
 
     # results_for_all_slides: typing.List[pd.DataFrame] = []
     for i, (wsi_path, patch_path) in enumerate(zip(wsi_paths, patch_paths)):
