@@ -803,6 +803,32 @@ def test_invalid_modeldefs(modeldef, tmp_path: Path):
         Weights.from_yaml(path)
 
 
+def test_valid_modeldefs(tmp_path: Path):
+    from wsinfer._modellib.models import Weights
+
+    weights_file = tmp_path / "weights.pt"
+    modeldef = dict(
+        version="1.0",
+        name="foo",
+        architecture="resnet34",
+        file=str(weights_file),
+        num_classes=2,
+        transform=dict(resize_size=224, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+        patch_size_pixels=350,
+        spacing_um_px=0.25,
+        class_names=["foo", "bar"],
+    )
+    path = tmp_path / "foobar.yaml"
+    with open(path, "w") as f:
+        yaml.safe_dump(modeldef, f)
+
+    with pytest.raises(FileNotFoundError):
+        Weights.from_yaml(path)
+
+    weights_file.touch()
+    assert Weights.from_yaml(path)
+
+
 def test_model_registration(tmp_path: Path):
     from wsinfer._modellib import models
 

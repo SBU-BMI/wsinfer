@@ -80,7 +80,7 @@ class Weights:
             raise ValueError("length of class_names must be equal to num_classes")
 
     @staticmethod
-    def _validate_input(d) -> None:
+    def _validate_input(d: dict, config_path: Path) -> None:
         """Raise error if invalid input."""
 
         if not isinstance(d, dict):
@@ -165,7 +165,7 @@ class Weights:
         if len(d["class_names"]) != d["num_classes"]:
             raise ValueError("mismatch between length of class_names and num_classes.")
         if "file" in d.keys():
-            file = Path(path).parent / d["file"]
+            file = Path(config_path).parent / d["file"]
             file = file.resolve()
             if not file.exists():
                 raise FileNotFoundError(f"'file' not found: {file}")
@@ -176,7 +176,7 @@ class Weights:
 
         with open(path) as f:
             d = yaml.safe_load(f)
-        cls._validate_input(d)
+        cls._validate_input(d, config_path=Path(path))
 
         transform = PatchClassification(
             resize_size=d["transform"]["resize_size"],
