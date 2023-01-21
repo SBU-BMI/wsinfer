@@ -169,6 +169,9 @@ def jit_compile(
 ) -> typing.Union[torch.jit.ScriptModule, torch.nn.Module, typing.Callable]:
     """JIT-compile a model for inference."""
     noncompiled = model
+    device = next(model.parameters()).device
+    # Attempt to script. If it fails, return the original.
+    test_input = torch.ones(1, 3, 224, 224).to(device)
     w = "Warning: could not JIT compile the model. Using non-compiled model instead."
     # TODO: consider freezing the model as well.
     # PyTorch 2.x has torch.compile.
@@ -189,8 +192,6 @@ def jit_compile(
             return noncompiled
     # For pytorch 1.x, use torch.jit.script.
     else:
-        # Attempt to script. If it fails, return the original.
-        test_input = torch.ones(1, 3, 224, 224)
         try:
             mjit = torch.jit.script(model)
             with torch.no_grad():
