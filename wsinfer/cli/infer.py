@@ -322,7 +322,7 @@ def run(
         )
 
     click.secho("\nRunning model inference.\n", fg="green")
-    run_inference(
+    failed_patching, failed_inference = run_inference(
         wsi_dir=wsi_dir,
         results_dir=results_dir,
         weights=weights_obj,
@@ -330,6 +330,15 @@ def run(
         num_workers=num_workers,
         speedup=speedup,
     )
+
+    if failed_patching:
+        click.secho(f"\nPatching failed for {len(failed_patching)} slides", fg="yellow")
+        click.secho("\n".join(failed_patching), fg="yellow")
+    if failed_inference:
+        click.secho(
+            f"\nInference failed for {len(failed_inference)} slides", fg="yellow"
+        )
+        click.secho("\n".join(failed_inference), fg="yellow")
 
     run_metadata_outpath = results_dir / "run_metadata.json"
     click.echo(f"Saving metadata about run to {run_metadata_outpath}")
