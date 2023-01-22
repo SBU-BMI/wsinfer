@@ -13,7 +13,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-# from timm.data import IMAGENET_INCEPTION_MEAN, IMAGENET_INCEPTION_STD
+from timm.data import IMAGENET_INCEPTION_MEAN, IMAGENET_INCEPTION_STD
 from timm.models import register_model
 from timm.models.helpers import build_model_with_cfg
 from timm.models.layers import create_classifier
@@ -337,10 +337,27 @@ class InceptionV4(nn.Module):
 
 
 def _create_inception_v4(variant, pretrained=False, **kwargs):
+    # We include the default config to avoid the message to stderr that a default config
+    # was not used.
+    default_cfg = {
+        "inception_v4": {
+            "url": "",
+            "num_classes": 1000,
+            "input_size": (3, 299, 299),
+            "pool_size": (8, 8),
+            "crop_pct": 0.875,
+            "interpolation": "bicubic",
+            "mean": IMAGENET_INCEPTION_MEAN,
+            "std": IMAGENET_INCEPTION_STD,
+            "first_conv": "features.0.conv",
+            "classifier": "last_linear",
+        }
+    }
     return build_model_with_cfg(
         InceptionV4,
         variant,
         pretrained,
+        pretrained_cfg=default_cfg,
         feature_cfg=dict(flatten_sequential=True),
         **kwargs
     )
