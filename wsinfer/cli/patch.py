@@ -35,7 +35,7 @@ from .._patchlib.create_patches_fp import create_patches as _create_patches
     type=float,
     help="Patch spacing in micrometers per pixel.",
 )
-def cli(
+def patch(
     source: str,
     step_size: Optional[int],
     patch_size: int,

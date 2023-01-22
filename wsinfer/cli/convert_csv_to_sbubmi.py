@@ -278,7 +278,7 @@ def write_color_txt(
     default=4,
     help="Number of processes to use when `--make-color-text` is enabled.",
 )
-def cli(
+def tosbu(
     *,
     results_dir: Path,
     output: Path,

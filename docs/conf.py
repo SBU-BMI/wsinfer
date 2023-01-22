@@ -17,6 +17,7 @@ extensions = [
     "sphinx.ext.intersphinx",  # for links
     "sphinx.ext.napoleon",  # for google style docstrings
     "autoapi.extension",  # to document the wsinfer api
+    "sphinx_click",  # to document click command line
 ]
 
 autoapi_type = "python"
