@@ -46,10 +46,6 @@ class PatchDirectoryNotFound(FileNotFoundError):
     ...
 
 
-class PatchFilesNotFoundWarning(UserWarning):
-    ...
-
-
 def _read_patch_coords(path: PathType) -> np.ndarray:
     """Read HDF5 file of patch coordinates are return numpy array.
 
@@ -218,7 +214,7 @@ def run_inference(
     batch_size: int = 32,
     num_workers: int = 0,
     speedup: bool = False,
-) -> None:
+) -> typing.Tuple[typing.List[str], typing.List[str]]:
     """Run model inference on a directory of whole slide images and save results to CSV.
 
     This assumes the patching has already been done and the results are stored in
@@ -246,7 +242,9 @@ def run_inference(
 
     Returns
     -------
-    None
+    A tuple of two lists of strings. The first list contains the slide IDs for which
+    patching failed, and the second list contains the slide IDs for which model
+    inference failed.
     """
     # Make sure required directories exist.
     wsi_dir = Path(wsi_dir)
@@ -266,13 +264,6 @@ def run_inference(
     # Create the patch paths based on the whole slide image paths. In effect, only
     # create patch paths if the whole slide image patch exists.
     patch_paths = [patch_dir / p.with_suffix(".h5").name for p in wsi_paths]
-    patch_paths_notfound = [p for p in patch_paths if not p.exists()]
-    if patch_paths_notfound:
-        warnings.warn(
-            "Patch extraction seems to have failed for the following slides:"
-            + " ".join(str(p.stem) for p in patch_paths_notfound),
-            category=PatchFilesNotFoundWarning,
-        )
 
     model_output_dir = results_dir / "model-outputs"
     model_output_dir.mkdir(exist_ok=True)
@@ -287,6 +278,9 @@ def run_inference(
             model = typing.cast(torch.nn.Module, jit_compile(model))
         else:
             model = jit_compile(model)
+
+    failed_patching = [p.stem for p in patch_paths if not p.exists()]
+    failed_inference: typing.List[str] = []
 
     # results_for_all_slides: typing.List[pd.DataFrame] = []
     for i, (wsi_path, patch_path) in enumerate(zip(wsi_paths, patch_paths)):
@@ -305,12 +299,16 @@ def run_inference(
             print(f"Skipping because patch file not found: {patch_path}")
             continue
 
-        dset = WholeSlideImagePatches(
-            wsi_path=wsi_path,
-            patch_path=patch_path,
-            um_px=weights.spacing_um_px,
-            transform=weights.transform,
-        )
+        try:
+            dset = WholeSlideImagePatches(
+                wsi_path=wsi_path,
+                patch_path=patch_path,
+                um_px=weights.spacing_um_px,
+                transform=weights.transform,
+            )
+        except Exception:
+            failed_inference.append(wsi_dir.stem)
+            continue
 
         loader = torch.utils.data.DataLoader(
             dset,
@@ -354,4 +352,4 @@ def run_inference(
         slide_df.to_csv(slide_csv, index=False)
         print("-" * 40)
 
-    return
+    return failed_patching, failed_inference
