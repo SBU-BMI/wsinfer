@@ -11,8 +11,8 @@ import typing
 
 import click
 
-from ..modellib.run_inference import run_inference
-from ..modellib import models
+from .._modellib.run_inference import run_inference
+from .._modellib import models
 from .._patchlib.create_dense_patch_grid import create_grid_and_save_multi_slides
 from .._patchlib.create_patches_fp import create_patches
 
@@ -226,13 +226,19 @@ def _get_info_for_save(weights: models.Weights):
     " for single thread). A reasonable value is 8.",
 )
 @click.option(
+    "--speedup/--no-speedup",
+    default=False,
+    show_default=True,
+    help="JIT-compile the model for potential speedups.",
+)
+@click.option(
     "--dense-grid/--no-dense-grid",
     default=False,
     show_default=True,
     help="Use a dense grid of patch coordinates. Patches will be present even if no"
     " tissue is present",
 )
-def cli(
+def run(
     ctx: click.Context,
     *,
     wsi_dir: Path,
@@ -242,6 +248,7 @@ def cli(
     config: typing.Optional[Path],
     batch_size: int,
     num_workers: int = 0,
+    speedup: bool = False,
     dense_grid: bool = False,
 ):
     """Run model inference on a directory of whole slide images.
@@ -321,6 +328,7 @@ def cli(
         weights=weights_obj,
         batch_size=batch_size,
         num_workers=num_workers,
+        speedup=speedup,
     )
 
     run_metadata_outpath = results_dir / "run_metadata.json"

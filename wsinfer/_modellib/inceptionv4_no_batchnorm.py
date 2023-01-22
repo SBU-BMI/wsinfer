@@ -1,17 +1,22 @@
-# BSD 3-Clause License
-#
-# Copyright (c) 2017, Remi Cadene
-# All rights reserved.
-#
-# Downloaded from
-# https://raw.githubusercontent.com/Cadene/pretrained-models.pytorch/e07fb68c317880e780eb5ca9c20cca00f2584878/pretrainedmodels/models/inceptionv4.py  # noqa: E501
-#
-# We downloaded this file here so we did not have to add pretrainedmodels as a
-# dependency (we only use this module).
+# https://raw.githubusercontent.com/rwightman/pytorch-image-models/e9aac412de82310e6905992e802b1ee4dc52b5d1/timm/models/inception_v4.py
+"""
+Pytorch Inception-V4 implementation
+Sourced from https://github.com/Cadene/tensorflow-model-zoo.torch (MIT License) which is
+based upon Google's Tensorflow implementation and pretrained weights
+(Apache 2.0 License).
+
+This source was copied into the wsinfer source code and modified to remove batchnorm.
+Bias terms are added wherever batchnorm is removed.
+"""
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
+# from timm.data import IMAGENET_INCEPTION_MEAN, IMAGENET_INCEPTION_STD
+from timm.models import register_model
+from timm.models.helpers import build_model_with_cfg
+from timm.models.layers import create_classifier
 
 
 class BasicConv2d(nn.Module):
@@ -23,26 +28,21 @@ class BasicConv2d(nn.Module):
             kernel_size=kernel_size,
             stride=stride,
             padding=padding,
-            bias=False,
-        )  # verify bias false
-        self.bn = nn.BatchNorm2d(
-            out_planes,
-            eps=0.001,  # value found in tensorflow
-            momentum=0.1,  # default pytorch value
-            affine=True,
+            bias=True,  # Set to True after removing BatchNorm.
         )
+        # self.bn = nn.BatchNorm2d(out_planes, eps=0.001)
         self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
         x = self.conv(x)
-        x = self.bn(x)
+        # x = self.bn(x)
         x = self.relu(x)
         return x
 
 
-class Mixed_3a(nn.Module):
+class Mixed3a(nn.Module):
     def __init__(self):
-        super(Mixed_3a, self).__init__()
+        super(Mixed3a, self).__init__()
         self.maxpool = nn.MaxPool2d(3, stride=2)
         self.conv = BasicConv2d(64, 96, kernel_size=3, stride=2)
 
@@ -53,9 +53,9 @@ class Mixed_3a(nn.Module):
         return out
 
 
-class Mixed_4a(nn.Module):
+class Mixed4a(nn.Module):
     def __init__(self):
-        super(Mixed_4a, self).__init__()
+        super(Mixed4a, self).__init__()
 
         self.branch0 = nn.Sequential(
             BasicConv2d(160, 64, kernel_size=1, stride=1),
@@ -76,9 +76,9 @@ class Mixed_4a(nn.Module):
         return out
 
 
-class Mixed_5a(nn.Module):
+class Mixed5a(nn.Module):
     def __init__(self):
-        super(Mixed_5a, self).__init__()
+        super(Mixed5a, self).__init__()
         self.conv = BasicConv2d(192, 192, kernel_size=3, stride=2)
         self.maxpool = nn.MaxPool2d(3, stride=2)
 
@@ -89,9 +89,9 @@ class Mixed_5a(nn.Module):
         return out
 
 
-class Inception_A(nn.Module):
+class InceptionA(nn.Module):
     def __init__(self):
-        super(Inception_A, self).__init__()
+        super(InceptionA, self).__init__()
         self.branch0 = BasicConv2d(384, 96, kernel_size=1, stride=1)
 
         self.branch1 = nn.Sequential(
@@ -119,9 +119,9 @@ class Inception_A(nn.Module):
         return out
 
 
-class Reduction_A(nn.Module):
+class ReductionA(nn.Module):
     def __init__(self):
-        super(Reduction_A, self).__init__()
+        super(ReductionA, self).__init__()
         self.branch0 = BasicConv2d(384, 384, kernel_size=3, stride=2)
 
         self.branch1 = nn.Sequential(
@@ -140,9 +140,9 @@ class Reduction_A(nn.Module):
         return out
 
 
-class Inception_B(nn.Module):
+class InceptionB(nn.Module):
     def __init__(self):
-        super(Inception_B, self).__init__()
+        super(InceptionB, self).__init__()
         self.branch0 = BasicConv2d(1024, 384, kernel_size=1, stride=1)
 
         self.branch1 = nn.Sequential(
@@ -173,9 +173,9 @@ class Inception_B(nn.Module):
         return out
 
 
-class Reduction_B(nn.Module):
+class ReductionB(nn.Module):
     def __init__(self):
-        super(Reduction_B, self).__init__()
+        super(ReductionB, self).__init__()
 
         self.branch0 = nn.Sequential(
             BasicConv2d(1024, 192, kernel_size=1, stride=1),
@@ -199,9 +199,9 @@ class Reduction_B(nn.Module):
         return out
 
 
-class Inception_C(nn.Module):
+class InceptionC(nn.Module):
     def __init__(self):
-        super(Inception_C, self).__init__()
+        super(InceptionC, self).__init__()
 
         self.branch0 = BasicConv2d(1536, 256, kernel_size=1, stride=1)
 
@@ -254,53 +254,98 @@ class Inception_C(nn.Module):
 
 
 class InceptionV4(nn.Module):
-    def __init__(self, num_classes=1001):
+    def __init__(
+        self,
+        num_classes=1000,
+        in_chans=3,
+        output_stride=32,
+        drop_rate=0.0,
+        global_pool="avg",
+    ):
         super(InceptionV4, self).__init__()
-        # Special attributs
-        self.input_space = None
-        self.input_size = (299, 299, 3)
-        self.mean = None
-        self.std = None
-        # Modules
+        assert output_stride == 32
+        self.drop_rate = drop_rate
+        self.num_classes = num_classes
+        self.num_features = 1536
+
         self.features = nn.Sequential(
-            BasicConv2d(3, 32, kernel_size=3, stride=2),
+            BasicConv2d(in_chans, 32, kernel_size=3, stride=2),
             BasicConv2d(32, 32, kernel_size=3, stride=1),
             BasicConv2d(32, 64, kernel_size=3, stride=1, padding=1),
-            Mixed_3a(),
-            Mixed_4a(),
-            Mixed_5a(),
-            Inception_A(),
-            Inception_A(),
-            Inception_A(),
-            Inception_A(),
-            Reduction_A(),  # Mixed_6a
-            Inception_B(),
-            Inception_B(),
-            Inception_B(),
-            Inception_B(),
-            Inception_B(),
-            Inception_B(),
-            Inception_B(),
-            Reduction_B(),  # Mixed_7a
-            Inception_C(),
-            Inception_C(),
-            Inception_C(),
+            Mixed3a(),
+            Mixed4a(),
+            Mixed5a(),
+            InceptionA(),
+            InceptionA(),
+            InceptionA(),
+            InceptionA(),
+            ReductionA(),  # Mixed6a
+            InceptionB(),
+            InceptionB(),
+            InceptionB(),
+            InceptionB(),
+            InceptionB(),
+            InceptionB(),
+            InceptionB(),
+            ReductionB(),  # Mixed7a
+            InceptionC(),
+            InceptionC(),
+            InceptionC(),
         )
-        self.last_linear = nn.Linear(1536, num_classes)
+        self.feature_info = [
+            dict(num_chs=64, reduction=2, module="features.2"),
+            dict(num_chs=160, reduction=4, module="features.3"),
+            dict(num_chs=384, reduction=8, module="features.9"),
+            dict(num_chs=1024, reduction=16, module="features.17"),
+            dict(num_chs=1536, reduction=32, module="features.21"),
+        ]
+        self.global_pool, self.last_linear = create_classifier(
+            self.num_features, self.num_classes, pool_type=global_pool
+        )
 
-    def logits(self, features):
-        # Allows image of any size to be processed
-        adaptiveAvgPoolWidth = features.shape[2]
-        x = F.avg_pool2d(features, kernel_size=adaptiveAvgPoolWidth)
-        x = x.view(x.size(0), -1)
-        x = self.last_linear(x)
+    @torch.jit.ignore
+    def group_matcher(self, coarse=False):
+        return dict(stem=r"^features\.[012]\.", blocks=r"^features\.(\d+)")
+
+    @torch.jit.ignore
+    def set_grad_checkpointing(self, enable=True):
+        assert not enable, "gradient checkpointing not supported"
+
+    @torch.jit.ignore
+    def get_classifier(self):
+        return self.last_linear
+
+    def reset_classifier(self, num_classes, global_pool="avg"):
+        self.num_classes = num_classes
+        self.global_pool, self.last_linear = create_classifier(
+            self.num_features, self.num_classes, pool_type=global_pool
+        )
+
+    def forward_features(self, x):
+        return self.features(x)
+
+    def forward_head(self, x, pre_logits: bool = False):
+        x = self.global_pool(x)
+        if self.drop_rate > 0:
+            x = F.dropout(x, p=self.drop_rate, training=self.training)
+        return x if pre_logits else self.last_linear(x)
+
+    def forward(self, x):
+        x = self.forward_features(x)
+        x = self.forward_head(x)
         return x
 
-    def forward(self, input):
-        x = self.features(input)
-        x = self.logits(x)
-        return x
+
+def _create_inception_v4(variant, pretrained=False, **kwargs):
+    return build_model_with_cfg(
+        InceptionV4,
+        variant,
+        pretrained,
+        feature_cfg=dict(flatten_sequential=True),
+        **kwargs
+    )
 
 
-def inceptionv4(num_classes: int):
-    return InceptionV4(num_classes=num_classes)
+@register_model
+def inception_v4nobn(pretrained=False, **kwargs):
+    return _create_inception_v4("inception_v4nobn", pretrained, **kwargs)

@@ -7,12 +7,17 @@ import sys
 from typing import List
 
 from click.testing import CliRunner
+import geojson as geojsonlib
 import h5py
 import numpy as np
 import pandas as pd
 import pytest
 import tifffile
+import torch
 import yaml
+
+from wsinfer import get_model_weights
+from wsinfer import list_all_models_and_weights
 
 
 @pytest.fixture
@@ -97,13 +102,13 @@ def test_cli_list(tmp_path: Path):
     )
     assert ret.returncode == 0
     output = ret.stdout.decode()
-    assert configs[0]["name"] in output
-    assert configs[0]["architecture"] in output
-    assert configs[1]["name"] in output
-    assert configs[1]["architecture"] in output
+    assert configs[0]["name"] in output  # type: ignore
+    assert configs[0]["architecture"] in output  # type: ignore
+    assert configs[1]["name"] in output  # type: ignore
+    assert configs[1]["architecture"] in output  # type: ignore
     # Negative control.
     ret = subprocess.run([sys.executable, "-m", "wsinfer", "list"], capture_output=True)
-    assert configs[0]["name"] not in ret.stdout.decode()
+    assert configs[0]["name"] not in ret.stdout.decode()  # type: ignore
     del config_root_single, output, ret, config
 
     # Test of WSINFER_PATH registration... check that the models appear in list.
@@ -123,12 +128,12 @@ def test_cli_list(tmp_path: Path):
     )
     assert ret.returncode == 0
     output = ret.stdout.decode()
-    assert configs[0]["name"] in output
-    assert configs[0]["architecture"] in output
-    assert configs[1]["name"] in output
-    assert configs[1]["architecture"] in output
+    assert configs[0]["name"] in output  # type: ignore
+    assert configs[0]["architecture"] in output  # type: ignore
+    assert configs[1]["name"] in output  # type: ignore
+    assert configs[1]["architecture"] in output  # type: ignore
     ret = subprocess.run([sys.executable, "-m", "wsinfer", "list"], capture_output=True)
-    assert configs[0]["name"] not in ret.stdout.decode()
+    assert configs[0]["name"] not in ret.stdout.decode()  # type: ignore
 
 
 def test_cli_run_args(tmp_path: Path):
@@ -142,9 +147,9 @@ def test_cli_run_args(tmp_path: Path):
     args = [
         "run",
         "--wsi-dir",
-        wsi_dir,
+        str(wsi_dir),
         "--results-dir",
-        tmp_path / "results",
+        str(tmp_path / "results"),
     ]
     # No model, weights, or config.
     result = runner.invoke(cli, args)
@@ -215,9 +220,9 @@ def test_cli_run_args(tmp_path: Path):
             350,
             144,
         ),
-        # Inceptionv4 TCGA-BRCA-v1
+        # Inception_v4 TCGA-BRCA-v1
         (
-            "inceptionv4",
+            "inception_v4",
             "TCGA-BRCA-v1",
             ["notumor", "tumor"],
             [0.9564113020896912, 0.043588679283857346],
@@ -226,7 +231,7 @@ def test_cli_run_args(tmp_path: Path):
         ),
         # Inceptionv4nobn TCGA-TILs-v1
         (
-            "inceptionv4nobn",
+            "inception_v4nobn",
             "TCGA-TILs-v1",
             ["notils", "tils"],
             [1.0, 3.427359524660334e-12],
@@ -253,13 +258,15 @@ def test_cli_run_args(tmp_path: Path):
         ),
     ],
 )
+@pytest.mark.parametrize("speedup", [False, True])
 def test_cli_run_regression(
     model: str,
     weights: str,
-    class_names: List[float],
+    class_names: List[str],
     expected_probs: List[float],
     expected_patch_size: int,
     expected_num_patches: int,
+    speedup: bool,
     tiff_image: Path,
     tmp_path: Path,
 ):
@@ -273,13 +280,14 @@ def test_cli_run_regression(
         [
             "run",
             "--wsi-dir",
-            tiff_image.parent,
+            str(tiff_image.parent),
             "--model",
             model,
             "--weights",
             weights,
             "--results-dir",
-            results_dir,
+            str(results_dir),
+            "--speedup" if speedup else "--no-speedup",
         ],
     )
     assert result.exit_code == 0
@@ -323,7 +331,8 @@ def test_cli_run_regression(
     result = runner.invoke(cli, ["togeojson", str(results_dir), str(geojson_dir)])
     assert result.exit_code == 0
     with open(geojson_dir / "purple.json") as f:
-        d = json.load(f)
+        d: geojsonlib.GeoJSON = geojsonlib.load(f)
+    assert d.is_valid, "geojson not valid!"
     assert len(d["features"]) == expected_num_patches
 
     for geojson_row in d["features"]:
@@ -379,11 +388,11 @@ def test_cli_run_from_config(tiff_image: Path, tmp_path: Path):
         [
             "run",
             "--wsi-dir",
-            tiff_image.parent,
+            str(tiff_image.parent),
             "--config",
-            config,
+            str(config),
             "--results-dir",
-            results_dir,
+            str(results_dir),
         ],
     )
     assert result.exit_code == 0
@@ -784,7 +793,7 @@ def test_cli_run_from_config(tiff_image: Path, tmp_path: Path):
     ],
 )
 def test_invalid_modeldefs(modeldef, tmp_path: Path):
-    from wsinfer.modellib.models import Weights
+    from wsinfer._modellib.models import Weights
 
     path = tmp_path / "foobar.yaml"
     with open(path, "w") as f:
@@ -794,8 +803,34 @@ def test_invalid_modeldefs(modeldef, tmp_path: Path):
         Weights.from_yaml(path)
 
 
+def test_valid_modeldefs(tmp_path: Path):
+    from wsinfer._modellib.models import Weights
+
+    weights_file = tmp_path / "weights.pt"
+    modeldef = dict(
+        version="1.0",
+        name="foo",
+        architecture="resnet34",
+        file=str(weights_file),
+        num_classes=2,
+        transform=dict(resize_size=224, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+        patch_size_pixels=350,
+        spacing_um_px=0.25,
+        class_names=["foo", "bar"],
+    )
+    path = tmp_path / "foobar.yaml"
+    with open(path, "w") as f:
+        yaml.safe_dump(modeldef, f)
+
+    with pytest.raises(FileNotFoundError):
+        Weights.from_yaml(path)
+
+    weights_file.touch()
+    assert Weights.from_yaml(path)
+
+
 def test_model_registration(tmp_path: Path):
-    from wsinfer.modellib import models
+    from wsinfer._modellib import models
 
     # Test that registering duplicate weights will error.
     d = dict(
@@ -886,10 +921,45 @@ def test_patch_cli(
     for x in range(0, orig_slide_width, expected_patch_size):
         for y in range(0, orig_slide_height, expected_patch_size):
             expected_coords.append([x, y])
-    expected_coords = np.array(expected_coords)
+    expected_coords_arr = np.array(expected_coords)
 
     with h5py.File(savedir / "patches" / f"{stem}.h5") as f:
         assert f["/coords"].attrs["patch_size"] == expected_patch_size
         coords = f["/coords"][()]
     assert coords.shape == (expected_num_patches, 2)
-    assert np.array_equal(expected_coords, coords)
+    assert np.array_equal(expected_coords_arr, coords)
+
+
+@pytest.mark.parametrize(["model_name", "weights_name"], list_all_models_and_weights())
+def test_jit_compile(model_name: str, weights_name: str):
+    import time
+    from wsinfer._modellib.run_inference import jit_compile
+
+    w = get_model_weights(model_name, weights_name)
+    size = w.transform.resize_size
+    x = torch.ones(20, 3, size, size, dtype=torch.float32)
+    model = w.load_model()
+    model.eval()
+    NUM_SAMPLES = 1
+    with torch.no_grad():
+        t0 = time.perf_counter()
+        for _ in range(NUM_SAMPLES):
+            out_nojit = model(x).detach().cpu()
+        time_nojit = time.perf_counter() - t0
+    model_nojit = model
+    model = jit_compile(model)
+    if model is model_nojit:
+        pytest.skip("Failed to compile model (would use original model)")
+    with torch.no_grad():
+        model(x).detach().cpu()  # run it once to compile
+        t0 = time.perf_counter()
+        for _ in range(NUM_SAMPLES):
+            out_jit = model(x).detach().cpu()
+        time_yesjit = time.perf_counter() - t0
+
+    assert torch.allclose(out_nojit, out_jit)
+    if time_nojit < time_yesjit:
+        pytest.skip(
+            "JIT-compiled model was SLOWER than original: "
+            f"jit={time_yesjit:0.3f} vs nojit={time_nojit:0.3f}"
+        )

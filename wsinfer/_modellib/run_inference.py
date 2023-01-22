@@ -5,7 +5,7 @@ From the original paper (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7369575/):
 > normalization of the color channels.
 """
 
-import pathlib
+from pathlib import Path
 import typing
 import warnings
 
@@ -25,9 +25,9 @@ except ImportError:
     )
 import tqdm
 
-from . import models
+from .models import Weights
 
-PathType = typing.Union[str, pathlib.Path]
+PathType = typing.Union[str, Path]
 
 
 class WholeSlideImageDirectoryNotFound(FileNotFoundError):
@@ -116,8 +116,8 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
         self.um_px = float(um_px)
         self.transform = transform
 
-        assert pathlib.Path(wsi_path).exists(), "wsi path not found"
-        assert pathlib.Path(patch_path).exists(), "patch path not found"
+        assert Path(wsi_path).exists(), "wsi path not found"
+        assert Path(patch_path).exists(), "patch path not found"
 
         self.tilesource: large_image.tilesource.TileSource = large_image.getTileSource(
             self.wsi_path
@@ -164,12 +164,60 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
         return patch_im, torch.as_tensor([minx, miny, width, height])
 
 
+def jit_compile(
+    model: torch.nn.Module,
+) -> typing.Union[torch.jit.ScriptModule, torch.nn.Module, typing.Callable]:
+    """JIT-compile a model for inference."""
+    noncompiled = model
+    device = next(model.parameters()).device
+    # Attempt to script. If it fails, return the original.
+    test_input = torch.ones(1, 3, 224, 224).to(device)
+    w = "Warning: could not JIT compile the model. Using non-compiled model instead."
+    # TODO: consider freezing the model as well.
+    # PyTorch 2.x has torch.compile.
+    if hasattr(torch, "compile"):
+        # Try to get the most optimized model.
+        try:
+            return torch.compile(model, fullgraph=True, mode="max-autotune")
+        except Exception:
+            pass
+        try:
+            return torch.compile(model, mode="max-autotune")
+        except Exception:
+            pass
+        try:
+            return torch.compile(model)
+        except Exception:
+            warnings.warn(w)
+            return noncompiled
+    # For pytorch 1.x, use torch.jit.script.
+    else:
+        try:
+            mjit = torch.jit.script(model)
+            with torch.no_grad():
+                mjit(test_input)
+        except Exception:
+            warnings.warn(w)
+            return noncompiled
+        # Now that we have scripted the model, try to optimize it further. If that
+        # fails, return the scripted model.
+        try:
+            mjit_frozen = torch.jit.freeze(mjit)
+            mjit_opt = torch.jit.optimize_for_inference(mjit_frozen)
+            with torch.no_grad():
+                mjit_opt(test_input)
+            return mjit_opt
+        except Exception:
+            return mjit
+
+
 def run_inference(
     wsi_dir: PathType,
     results_dir: PathType,
-    weights: models.Weights,
+    weights: Weights,
     batch_size: int = 32,
     num_workers: int = 0,
+    speedup: bool = False,
 ) -> None:
     """Run model inference on a directory of whole slide images and save results to CSV.
 
@@ -180,31 +228,34 @@ def run_inference(
 
     Parameters
     ----------
-    wsi_dir : str or pathlib.Path
+    wsi_dir : str or Path
         Directory containing whole slide images. This directory can *only* contain
         whole slide images. Otherwise, an error will be raised during model inference.
-    results_dir : str or pathlib.Path
+    results_dir : str or Path
         Directory containing results of patching.
-    weights : wsinfer.modellib.models.Weights
+    weights : wsinfer._modellib.models.Weights
         Instance of Weights including the model object and information about how to
         apply the model to new data.
     batch_size : int
         The batch size during the forward pass (default is 32).
     num_workers : int
         Number of workers for data loading (default is 0, meaning use a single thread).
+    speedup : bool
+        If True, JIT-compile the model. This has a startup cost but model inference
+        should be faster (default False).
 
     Returns
     -------
     None
     """
     # Make sure required directories exist.
-    wsi_dir = pathlib.Path(wsi_dir)
+    wsi_dir = Path(wsi_dir)
     if not wsi_dir.exists():
         raise WholeSlideImageDirectoryNotFound(f"directory not found: {wsi_dir}")
     wsi_paths = list(wsi_dir.glob("*"))
     if not wsi_paths:
         raise WholeSlideImagesNotFound(wsi_dir)
-    results_dir = pathlib.Path(results_dir)
+    results_dir = Path(results_dir)
     if not results_dir.exists():
         raise ResultsDirectoryNotFound(results_dir)
 
@@ -231,13 +282,19 @@ def run_inference(
     model.eval()
     model.to(device)
 
+    if speedup:
+        if typing.TYPE_CHECKING:
+            model = typing.cast(torch.nn.Module, jit_compile(model))
+        else:
+            model = jit_compile(model)
+
     # results_for_all_slides: typing.List[pd.DataFrame] = []
     for i, (wsi_path, patch_path) in enumerate(zip(wsi_paths, patch_paths)):
         print(f"Slide {i+1} of {len(wsi_paths)}")
         print(f" Slide path: {wsi_path}")
         print(f" Patch path: {patch_path}")
 
-        slide_csv_name = pathlib.Path(wsi_path).with_suffix(".csv").name
+        slide_csv_name = Path(wsi_path).with_suffix(".csv").name
         slide_csv = model_output_dir / slide_csv_name
         if slide_csv.exists():
             print("Output CSV exists... skipping.")
