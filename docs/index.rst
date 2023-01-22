@@ -27,6 +27,7 @@ on whole slide images.
 
    Installing <installing>
    User Guide <user_guide>
+   CLI <cli>
 
 
 .. |img-tissue| image:: images/brca-tissue.png

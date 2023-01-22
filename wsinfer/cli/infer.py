@@ -238,7 +238,7 @@ def _get_info_for_save(weights: models.Weights):
     help="Use a dense grid of patch coordinates. Patches will be present even if no"
     " tissue is present",
 )
-def cli(
+def run(
     ctx: click.Context,
     *,
     wsi_dir: Path,

@@ -78,7 +78,7 @@ def convert(input, output) -> None:
     "output",
     type=click.Path(exists=False, path_type=Path, resolve_path=True),
 )
-def cli(*, results_dir: Path, output: Path):
+def togeojson(*, results_dir: Path, output: Path):
     """Convert model outputs to GeoJSON format.
 
     GeoJSON files can be used with pathology viewers like QuPath.

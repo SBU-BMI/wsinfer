@@ -4,7 +4,7 @@ from .._modellib import models
 
 
 @click.command()
-def cli():
+def list():
     """Show all available models and weights."""
     models_weights = models.list_all_models_and_weights()
 
