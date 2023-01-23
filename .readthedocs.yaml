@@ -7,14 +7,11 @@ build:
   os: ubuntu-22.04
   tools:
     python: "3.10"
+  jobs:
+    post_create_environment:
+      - python -m pip install torch torchvision --extra-index-url https://download.pytorch.org/whl/cpu
+      - python -m pip install .[docs] --find-links https://girder.github.io/large_image_wheels
 
 # Build documentation in the docs/ directory with Sphinx
 sphinx:
    configuration: docs/conf.py
-
-python:
-  install:
-    - method: pip
-      path: .
-      extra_requirements:
-        - docs
