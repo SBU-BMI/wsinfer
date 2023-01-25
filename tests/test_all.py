@@ -1,5 +1,6 @@
 import json
 import math
+import os
 from pathlib import Path
 import platform
 import subprocess
@@ -963,3 +964,27 @@ def test_jit_compile(model_name: str, weights_name: str):
             "JIT-compiled model was SLOWER than original: "
             f"jit={time_yesjit:0.3f} vs nojit={time_nojit:0.3f}"
         )
+
+
+def test_issue_89():
+    from wsinfer.cli.infer import _get_info_for_save
+
+    w = get_model_weights("resnet34", "TCGA-BRCA-v1")
+    d = _get_info_for_save(w)
+    assert d
+    assert "git" in d["runtime"]
+    assert d["runtime"]["git"]
+    assert d["runtime"]["git"]["git_remote"]
+    assert d["runtime"]["git"]["git_branch"]
+
+    # Test that _get_info_for_save does not fail if git is not found.
+    orig_path = os.environ["PATH"]
+    try:
+        os.environ["PATH"] = ""
+        w = get_model_weights("resnet34", "TCGA-BRCA-v1")
+        d = _get_info_for_save(w)
+        assert d
+        assert "git" in d["runtime"]
+        assert d["runtime"]["git"] is None
+    finally:
+        os.environ["PATH"] = orig_path  # reset path
