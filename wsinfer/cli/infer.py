@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import shutil
 import subprocess
 import sys
 import typing
@@ -121,17 +122,20 @@ def _get_info_for_save(weights: models.Weights):
         }
 
     # Test if we are in a git repo. If we are, then get git info.
-    cmd = subprocess.run(
-        "git branch".split(),
-        cwd=here,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
-    if cmd.returncode == 0:
+    git_program = shutil.which("git")
+    git_installed = git_program is not None
+    is_git_repo = False
+    if git_installed:
+        cmd = subprocess.run(
+            [str(git_program), "branch"],
+            cwd=here,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        is_git_repo = cmd.returncode == 0
+    git_info = None
+    if git_installed and is_git_repo:
         git_info = get_git_info()
-    else:
-        git_info = None
-    del cmd, here  # For sanity.
 
     weights_file = weights.file
     if weights_file is None:
