@@ -20,6 +20,16 @@ from .._patchlib.create_patches_fp import create_patches
 PathType = typing.Union[str, Path]
 
 
+def _num_cpus() -> int:
+    """Get number of CPUs on the system."""
+    try:
+        return len(os.sched_getaffinity(0))
+    # os.sched_getaffinity seems to be linux only.
+    except AttributeError:
+        count = os.cpu_count()  # potentially None
+        return count or 0
+
+
 def _inside_container() -> str:
     if Path("/.dockerenv").exists():
         return "yes, docker"
@@ -197,12 +207,12 @@ def _get_info_for_save(weights: models.Weights):
 )
 @click.option(
     "--model",
-    type=click.Choice([arch for arch, _ in models.list_all_models_and_weights()]),
+    type=click.Choice(sorted({a for a, _ in models.list_all_models_and_weights()})),
     help="Model architecture to use. Not required if 'config' is used.",
 )
 @click.option(
     "--weights",
-    type=click.Choice([w for _, w in models.list_all_models_and_weights()]),
+    type=click.Choice(sorted({w for _, w in models.list_all_models_and_weights()})),
     help="Name of weights to use for the model. Not required if 'config' is used.",
 )
 @click.option(
@@ -223,11 +233,11 @@ def _get_info_for_save(weights: models.Weights):
 )
 @click.option(
     "--num-workers",
-    default=0,
+    default=min(_num_cpus(), 8),  # Use at most 8 workers by default.
     show_default=True,
     type=click.IntRange(min=0),
-    help="Number of workers to use for data loading during model inference (default=0"
-    " for single thread). A reasonable value is 8.",
+    help="Number of workers to use for data loading during model inference (n=0 for"
+    " single thread). Set this to the number of cores on your machine or lower.",
 )
 @click.option(
     "--speedup/--no-speedup",

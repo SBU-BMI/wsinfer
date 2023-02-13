@@ -279,10 +279,10 @@ def get_model_weights(architecture: str, name: str) -> Weights:
     try:
         return _known_model_weights[key]
     except KeyError:
+        pairs = " | ".join(" / ".join(p) for p in list_all_models_and_weights())
         raise ModelWeightsNotFound(
-            f"model weights are not found for architecture '{architecture}' and "
-            f"weights name '{name}'. Available models are"
-            f"{list_all_models_and_weights()}."
+            f"Invalid model-weight pair: '{architecture}' and '{name}'. Available"
+            f" models/weight pairs are {pairs}."
         )
 
 
