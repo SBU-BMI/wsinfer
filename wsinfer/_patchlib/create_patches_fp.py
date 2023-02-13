@@ -118,7 +118,6 @@ def seg_and_patch(
     process_list=None,
     patch_spacing=None,
 ):
-
     slides = sorted(os.listdir(source))
     slides = [slide for slide in slides if os.path.isfile(os.path.join(source, slide))]
     if process_list is None:
@@ -160,7 +159,7 @@ def seg_and_patch(
         df.to_csv(os.path.join(save_dir, "process_list_autogen.csv"), index=False)
         idx = process_stack.index[i]
         slide = process_stack.loc[idx, "slide_id"]
-        print("\n\nprogress: {:.2f}, {}/{}".format(i / total, i, total))
+        print("\n\nprogress: {:.1%}, {}/{}".format(i / total, i + 1, total))
         print("processing {}".format(slide))
 
         df.loc[idx, "process"] = 0
@@ -173,7 +172,12 @@ def seg_and_patch(
 
         # Inialize WSI
         full_path = os.path.join(source, slide)
-        WSI_object = WholeSlideImage(full_path)
+        # Some slide files might be malformed and unreadable. Skip them.
+        try:
+            WSI_object = WholeSlideImage(full_path)
+        except Exception:
+            print(f"Failed to load slide, skipping {full_path}")
+            continue
 
         if use_default_params:
             current_vis_params = vis_params.copy()
