@@ -204,7 +204,6 @@ def sample_rois(
     top_left=None,
     bot_right=None,
 ):
-
     if len(scores.shape) == 2:
         scores = scores.flatten()
 
