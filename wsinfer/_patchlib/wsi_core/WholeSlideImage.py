@@ -28,7 +28,6 @@ Image.MAX_IMAGE_PIXELS = 933120000
 
 class WholeSlideImage(object):
     def __init__(self, path):
-
         """
         Args:
             path (str): fullpath to WSI file
@@ -242,7 +241,6 @@ class WholeSlideImage(object):
         seg_display=True,
         annot_display=True,
     ):
-
         downsample = self.level_downsamples[vis_level]
         scale = [1 / downsample[0], 1 / downsample[1]]
 
@@ -456,7 +454,6 @@ class WholeSlideImage(object):
         count = 0
         for y in range(start_y, stop_y, step_size_y):
             for x in range(start_x, stop_x, step_size_x):
-
                 if not self.isInContours(
                     cont_check_fn,
                     (x, y),
