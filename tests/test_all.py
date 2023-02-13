@@ -1,5 +1,6 @@
 import json
 import math
+import os
 from pathlib import Path
 import platform
 import subprocess
@@ -52,7 +53,6 @@ def tiff_image(tmp_path: Path) -> Path:
 
 
 def test_cli_list(tmp_path: Path):
-
     from wsinfer.cli.cli import cli
 
     runner = CliRunner()
@@ -963,3 +963,59 @@ def test_jit_compile(model_name: str, weights_name: str):
             "JIT-compiled model was SLOWER than original: "
             f"jit={time_yesjit:0.3f} vs nojit={time_nojit:0.3f}"
         )
+
+
+def test_issue_89():
+    """Do not fail if 'git' is not installed."""
+    from wsinfer.cli.infer import _get_info_for_save
+
+    w = get_model_weights("resnet34", "TCGA-BRCA-v1")
+    d = _get_info_for_save(w)
+    assert d
+    assert "git" in d["runtime"]
+    assert d["runtime"]["git"]
+    assert d["runtime"]["git"]["git_remote"]
+    assert d["runtime"]["git"]["git_branch"]
+
+    # Test that _get_info_for_save does not fail if git is not found.
+    orig_path = os.environ["PATH"]
+    try:
+        os.environ["PATH"] = ""
+        w = get_model_weights("resnet34", "TCGA-BRCA-v1")
+        d = _get_info_for_save(w)
+        assert d
+        assert "git" in d["runtime"]
+        assert d["runtime"]["git"] is None
+    finally:
+        os.environ["PATH"] = orig_path  # reset path
+
+
+def test_issue_94(tmp_path: Path, tiff_image: Path):
+    """Gracefully handle unreadable slides."""
+    from wsinfer.cli.cli import cli
+
+    # We have a valid tiff in 'tiff_image.parent'. We put in an unreadable file too.
+    badpath = tiff_image.parent / "bad.svs"
+    badpath.touch()
+
+    runner = CliRunner()
+    results_dir = tmp_path / "inference"
+    result = runner.invoke(
+        cli,
+        [
+            "run",
+            "--wsi-dir",
+            str(tiff_image.parent),
+            "--model",
+            "resnet34",
+            "--weights",
+            "TCGA-BRCA-v1",
+            "--results-dir",
+            str(results_dir),
+        ],
+    )
+    # Important part is that we run through all of the files, despite the unreadble
+    # file.
+    assert result.exit_code == 0
+    assert results_dir.joinpath("model-outputs").joinpath("purple.csv").exists()
+    assert not results_dir.joinpath("model-outputs").joinpath("bad.csv").exists()

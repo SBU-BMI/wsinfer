@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import shutil
 import subprocess
 import sys
 import typing
@@ -17,6 +18,16 @@ from .._patchlib.create_dense_patch_grid import create_grid_and_save_multi_slide
 from .._patchlib.create_patches_fp import create_patches
 
 PathType = typing.Union[str, Path]
+
+
+def _num_cpus() -> int:
+    """Get number of CPUs on the system."""
+    try:
+        return len(os.sched_getaffinity(0))
+    # os.sched_getaffinity seems to be linux only.
+    except AttributeError:
+        count = os.cpu_count()  # potentially None
+        return count or 0
 
 
 def _inside_container() -> str:
@@ -121,17 +132,20 @@ def _get_info_for_save(weights: models.Weights):
         }
 
     # Test if we are in a git repo. If we are, then get git info.
-    cmd = subprocess.run(
-        "git branch".split(),
-        cwd=here,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
-    if cmd.returncode == 0:
+    git_program = shutil.which("git")
+    git_installed = git_program is not None
+    is_git_repo = False
+    if git_installed:
+        cmd = subprocess.run(
+            [str(git_program), "branch"],
+            cwd=here,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        is_git_repo = cmd.returncode == 0
+    git_info = None
+    if git_installed and is_git_repo:
         git_info = get_git_info()
-    else:
-        git_info = None
-    del cmd, here  # For sanity.
 
     weights_file = weights.file
     if weights_file is None:
@@ -193,12 +207,12 @@ def _get_info_for_save(weights: models.Weights):
 )
 @click.option(
     "--model",
-    type=click.Choice([arch for arch, _ in models.list_all_models_and_weights()]),
+    type=click.Choice(sorted({a for a, _ in models.list_all_models_and_weights()})),
     help="Model architecture to use. Not required if 'config' is used.",
 )
 @click.option(
     "--weights",
-    type=click.Choice([w for _, w in models.list_all_models_and_weights()]),
+    type=click.Choice(sorted({w for _, w in models.list_all_models_and_weights()})),
     help="Name of weights to use for the model. Not required if 'config' is used.",
 )
 @click.option(
@@ -219,11 +233,11 @@ def _get_info_for_save(weights: models.Weights):
 )
 @click.option(
     "--num-workers",
-    default=0,
+    default=min(_num_cpus(), 8),  # Use at most 8 workers by default.
     show_default=True,
     type=click.IntRange(min=0),
-    help="Number of workers to use for data loading during model inference (default=0"
-    " for single thread). A reasonable value is 8.",
+    help="Number of workers to use for data loading during model inference (n=0 for"
+    " single thread). Set this to the number of cores on your machine or lower.",
 )
 @click.option(
     "--speedup/--no-speedup",
@@ -322,7 +336,7 @@ def run(
         )
 
     click.secho("\nRunning model inference.\n", fg="green")
-    run_inference(
+    failed_patching, failed_inference = run_inference(
         wsi_dir=wsi_dir,
         results_dir=results_dir,
         weights=weights_obj,
@@ -330,6 +344,15 @@ def run(
         num_workers=num_workers,
         speedup=speedup,
     )
+
+    if failed_patching:
+        click.secho(f"\nPatching failed for {len(failed_patching)} slides", fg="yellow")
+        click.secho("\n".join(failed_patching), fg="yellow")
+    if failed_inference:
+        click.secho(
+            f"\nInference failed for {len(failed_inference)} slides", fg="yellow"
+        )
+        click.secho("\n".join(failed_inference), fg="yellow")
 
     run_metadata_outpath = results_dir / "run_metadata.json"
     click.echo(f"Saving metadata about run to {run_metadata_outpath}")

@@ -182,7 +182,6 @@ def generate_split(
             all_val_ids.extend(val_ids)
 
             if custom_test_ids is None:  # sample test split
-
                 test_ids = np.random.choice(remaining_ids, test_num[c], replace=False)
                 remaining_ids = np.setdiff1d(remaining_ids, test_ids)
                 all_test_ids.extend(test_ids)

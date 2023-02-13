@@ -13,10 +13,25 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-# from timm.data import IMAGENET_INCEPTION_MEAN, IMAGENET_INCEPTION_STD
+from timm.data import IMAGENET_INCEPTION_MEAN, IMAGENET_INCEPTION_STD
 from timm.models import register_model
 from timm.models.helpers import build_model_with_cfg
 from timm.models.layers import create_classifier
+
+default_cfgs = {
+    "inception_v4nobn": {
+        "url": "",
+        "num_classes": 1000,
+        "input_size": (3, 299, 299),
+        "pool_size": (8, 8),
+        "crop_pct": 0.875,
+        "interpolation": "bicubic",
+        "mean": IMAGENET_INCEPTION_MEAN,
+        "std": IMAGENET_INCEPTION_STD,
+        "first_conv": "features.0.conv",
+        "classifier": "last_linear",
+    }
+}
 
 
 class BasicConv2d(nn.Module):
