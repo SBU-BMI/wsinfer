@@ -197,12 +197,12 @@ def _get_info_for_save(weights: models.Weights):
 )
 @click.option(
     "--model",
-    type=click.Choice([arch for arch, _ in models.list_all_models_and_weights()]),
+    type=click.Choice(sorted({a for a, _ in models.list_all_models_and_weights()})),
     help="Model architecture to use. Not required if 'config' is used.",
 )
 @click.option(
     "--weights",
-    type=click.Choice([w for _, w in models.list_all_models_and_weights()]),
+    type=click.Choice(sorted({w for _, w in models.list_all_models_and_weights()})),
     help="Name of weights to use for the model. Not required if 'config' is used.",
 )
 @click.option(
@@ -223,11 +223,11 @@ def _get_info_for_save(weights: models.Weights):
 )
 @click.option(
     "--num-workers",
-    default=0,
+    default=4,  # most CPUs will have 4 or more cores.
     show_default=True,
     type=click.IntRange(min=0),
-    help="Number of workers to use for data loading during model inference (default=0"
-    " for single thread). A reasonable value is 8.",
+    help="Number of workers to use for data loading during model inference (n=0 for"
+    "single thread). Set this to the number of cores on your machine or lower.",
 )
 @click.option(
     "--speedup/--no-speedup",
