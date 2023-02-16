@@ -313,7 +313,7 @@ def test_cli_run_regression(
         assert np.allclose(df.loc[:, col], col_prob)
 
     # Test that metadata path exists.
-    metadata_paths = list(results_dir.glob("results_metadata_*.json"))
+    metadata_paths = list(results_dir.glob("run_metadata_*.json"))
     assert len(metadata_paths) == 1
     metadata_path = metadata_paths[0]
     assert metadata_path.exists()
