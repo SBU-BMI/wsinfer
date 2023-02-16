@@ -46,6 +46,11 @@ class PatchDirectoryNotFound(FileNotFoundError):
     ...
 
 
+# Set the maximum number of TileSource objects to cache. We use 1 to minimize how many
+# file handles we keep open.
+large_image.config.setConfig("cache_tilesource_maximum", 1)
+
+
 def _read_patch_coords(path: PathType) -> np.ndarray:
     """Read HDF5 file of patch coordinates are return numpy array.
 
