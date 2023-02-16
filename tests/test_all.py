@@ -313,7 +313,9 @@ def test_cli_run_regression(
         assert np.allclose(df.loc[:, col], col_prob)
 
     # Test that metadata path exists.
-    metadata_path = results_dir / "run_metadata.json"
+    metadata_paths = list(results_dir.glob("results_metadata_*.json"))
+    assert len(metadata_paths) == 1
+    metadata_path = metadata_paths[0]
     assert metadata_path.exists()
     with open(metadata_path) as f:
         meta = json.load(f)
@@ -1019,3 +1021,47 @@ def test_issue_94(tmp_path: Path, tiff_image: Path):
     assert result.exit_code == 0
     assert results_dir.joinpath("model-outputs").joinpath("purple.csv").exists()
     assert not results_dir.joinpath("model-outputs").joinpath("bad.csv").exists()
+
+
+def test_issue_97(tmp_path: Path, tiff_image: Path):
+    """Write a run_metadata file per run."""
+    from wsinfer.cli.cli import cli
+
+    runner = CliRunner()
+    results_dir = tmp_path / "inference"
+    result = runner.invoke(
+        cli,
+        [
+            "run",
+            "--wsi-dir",
+            str(tiff_image.parent),
+            "--model",
+            "resnet34",
+            "--weights",
+            "TCGA-BRCA-v1",
+            "--results-dir",
+            str(results_dir),
+        ],
+    )
+    assert result.exit_code == 0
+    metas = list(results_dir.glob("run_metadata_*.json"))
+    assert len(metas) == 1
+
+    # Run again...
+    result = runner.invoke(
+        cli,
+        [
+            "run",
+            "--wsi-dir",
+            str(tiff_image.parent),
+            "--model",
+            "resnet34",
+            "--weights",
+            "TCGA-BRCA-v1",
+            "--results-dir",
+            str(results_dir),
+        ],
+    )
+    assert result.exit_code == 0
+    metas = list(results_dir.glob("run_metadata_*.json"))
+    assert len(metas) == 2
