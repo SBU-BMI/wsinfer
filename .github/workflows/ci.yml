@@ -65,7 +65,7 @@ jobs:
           cd ..
           docker run --rm --shm-size=512m --volume $(pwd):/work --workdir /work wsinferimage run \
             --wsi-dir slides/ --results-dir results/ --model resnet34 --weights TCGA-BRCA-v1
-          test -f results/run_metadata.json
+          test -f results/run_metadata_*.json
           test -f results/patches/JP2K-33003-1.h5
           test -f results/model-outputs/JP2K-33003-1.csv
           test $(wc -l < results/model-outputs/JP2K-33003-1.csv) -eq 653
@@ -89,7 +89,7 @@ jobs:
           wget -q https://openslide.cs.cmu.edu/download/openslide-testdata/Aperio/JP2K-33003-1.svs
           cd ..
           wsinfer run --wsi-dir slides/ --results-dir results/ --model resnet34 --weights TCGA-BRCA-v1
-          test -f results/run_metadata.json
+          test -f results/run_metadata_*.json
           test -f results/patches/JP2K-33003-1.h5
           test -f results/model-outputs/JP2K-33003-1.csv
           test $(wc -l < results/model-outputs/JP2K-33003-1.csv) -eq 653

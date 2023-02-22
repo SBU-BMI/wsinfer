@@ -6,7 +6,7 @@ Original H&E                        |  Heatmap of Tumor Probability
 
 🔥 🚀 Blazingly fast pipeline to run patch-based classification models on whole slide images.
 
-[![Continuous Integration](https://github.com/kaczmarj/wsinfer/actions/workflows/ci.yml/badge.svg)](https://github.com/kaczmarj/wsinfer/actions/workflows/ci.yml)
+[![Continuous Integration](https://github.com/SBU-BMI/wsinfer/actions/workflows/ci.yml/badge.svg)](https://github.com/SBU-BMI/wsinfer/actions/workflows/ci.yml)
 [![Documentation Status](https://readthedocs.org/projects/wsinfer/badge/?version=latest)](https://wsinfer.readthedocs.io/en/latest/?badge=latest)
 [![Version on PyPI](https://img.shields.io/pypi/v/wsinfer.svg)](https://pypi.org/project/wsinfer/)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/wsinfer)](https://pypi.org/project/wsinfer/)
@@ -31,7 +31,7 @@ To use the _bleeding edge_, use
 ```
 python -m pip install \
     --find-links https://girder.github.io/large_image_wheels \
-    git+https://github.com/kaczmarj/wsinfer.git
+    git+https://github.com/SBU-BMI/wsinfer.git
 ```
 
 ## Developers
@@ -39,7 +39,7 @@ python -m pip install \
 Clone this GitHub repository and install the package (in editable mode with the `dev` extras).
 
 ```
-git clone https://github.com/kaczmarj/wsinfer.git
+git clone https://github.com/SBU-BMI/wsinfer.git
 cd wsinfer
 python -m pip install --editable .[dev] --find-links https://girder.github.io/large_image_wheels
 ```

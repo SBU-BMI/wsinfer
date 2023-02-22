@@ -1,5 +1,6 @@
 """Detect cancerous regions in a whole slide image."""
 
+from datetime import datetime
 import getpass
 import json
 import os
@@ -44,8 +45,6 @@ def _inside_container() -> str:
 
 
 def _get_timestamp() -> str:
-    from datetime import datetime
-
     dt = datetime.now().astimezone()
     # Thu Aug 25 23:32:17 2022 EDT
     return dt.strftime("%c %Z")
@@ -82,6 +81,7 @@ def _print_system_info() -> None:
     cuda_is_available = torch.cuda.is_available()
     if cuda_is_available:
         click.secho("GPU available", fg="green")
+        click.secho(f"  Using {torch.cuda.device_count()} GPU(s)", fg="green")
         cuda_ver = torch.version.cuda or "NOT FOUND"
         print(f"  CUDA version: {cuda_ver}")
     else:
@@ -94,7 +94,7 @@ def _print_system_info() -> None:
         if torch.version.cuda is None:
             click.secho("  CPU-only version of PyTorch is installed", fg="yellow")
         click.secho("*******************************************", fg="yellow")
-    elif not torch.cuda.is_available():
+    elif not cuda_is_available:
         click.secho("\n*******************************************", fg="yellow")
         click.secho("GPU WILL NOT BE USED", fg="yellow")
         if torch.version.cuda is None:
@@ -229,7 +229,8 @@ def _get_info_for_save(weights: models.Weights):
     type=click.IntRange(min=1),
     default=32,
     show_default=True,
-    help="Batch size during model inference.",
+    help="Batch size during model inference. If using multiple GPUs, increase the"
+    " batch size.",
 )
 @click.option(
     "--num-workers",
@@ -354,7 +355,8 @@ def run(
         )
         click.secho("\n".join(failed_inference), fg="yellow")
 
-    run_metadata_outpath = results_dir / "run_metadata.json"
+    timestamp = datetime.now().astimezone().strftime("%Y%m%dT%H%M%S")
+    run_metadata_outpath = results_dir / f"run_metadata_{timestamp}.json"
     click.echo(f"Saving metadata about run to {run_metadata_outpath}")
     run_metadata = _get_info_for_save(weights_obj)
     with open(run_metadata_outpath, "w") as f:
