@@ -14,15 +14,7 @@ import large_image
 import numpy as np
 import pandas as pd
 from PIL import Image
-
-# Torch and torchvision are not in the requirements (setup.cfg) because the installation
-# can vary based on platform and hardware.
-try:
-    import torch
-except ImportError:
-    raise ImportError(
-        "Please install torch and torchvision: https://pytorch.org/get-started/locally/"
-    )
+import torch
 import tqdm
 
 from .models import Weights
@@ -273,9 +265,12 @@ def run_inference(
     model_output_dir = results_dir / "model-outputs"
     model_output_dir.mkdir(exist_ok=True)
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = weights.load_model()
     model.eval()
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if torch.cuda.device_count() > 1:
+        model = torch.nn.DataParallel(model)
     model.to(device)
 
     if speedup:

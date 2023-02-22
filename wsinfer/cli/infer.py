@@ -81,6 +81,7 @@ def _print_system_info() -> None:
     cuda_is_available = torch.cuda.is_available()
     if cuda_is_available:
         click.secho("GPU available", fg="green")
+        click.secho(f"  Using {torch.cuda.device_count()} GPU(s)", fg="green")
         cuda_ver = torch.version.cuda or "NOT FOUND"
         print(f"  CUDA version: {cuda_ver}")
     else:
@@ -93,7 +94,7 @@ def _print_system_info() -> None:
         if torch.version.cuda is None:
             click.secho("  CPU-only version of PyTorch is installed", fg="yellow")
         click.secho("*******************************************", fg="yellow")
-    elif not torch.cuda.is_available():
+    elif not cuda_is_available:
         click.secho("\n*******************************************", fg="yellow")
         click.secho("GPU WILL NOT BE USED", fg="yellow")
         if torch.version.cuda is None:
@@ -228,7 +229,8 @@ def _get_info_for_save(weights: models.Weights):
     type=click.IntRange(min=1),
     default=32,
     show_default=True,
-    help="Batch size during model inference.",
+    help="Batch size during model inference. If using multiple GPUs, increase the"
+    " batch size.",
 )
 @click.option(
     "--num-workers",
