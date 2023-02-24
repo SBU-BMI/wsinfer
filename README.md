@@ -60,5 +60,5 @@ the version you will release.
 4. Build wheel: `python -m build`
 5. Create a fresh virtual environment and install the wheel. Make sure `wsinfer --help` works.
 6. Push code to GitHub: `git push --tags`
-6. Build and push docker images: `bash scripts/build_docker_imagse.sh 1`
+6. Build and push docker images: `bash scripts/build_docker_images.sh 0.3.6 1`
 7. Push wheel to PyPI: `twine upload dist/*`
