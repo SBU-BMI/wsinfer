@@ -1,0 +1,20 @@
+# Configuration of a tumor infiltrating lymphocyte detection model (VGG16).
+version: "1.0"
+architecture: vgg16
+name: TCGA-TILs-v1
+url: https://stonybrookmedicine.box.com/shared/static/t7mbqcvv4fsd6jzzgf8pl1imvyobeg1x.pt
+url_file_name: vgg16-tils-v1-20220112-f7988712.pt
+num_classes: 2
+transform:
+  resize_size: 224
+  # Normalize to [-1, 1]
+  mean: [0.5, 0.5, 0.5]
+  std: [0.5, 0.5, 0.5]
+patch_size_pixels: 100
+spacing_um_px: 0.5
+class_names:
+  - notils
+  - tils
+metadata:
+  notes: |
+    Original code and data are available at https://stonybrookmedicine.app.box.com/folder/128593362243
