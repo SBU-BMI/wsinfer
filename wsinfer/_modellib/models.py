@@ -138,14 +138,22 @@ class Weights:
             raise ValueError("'num_classes' must be an integer")
         if not isinstance(d["transform"]["resize_size"], int):
             raise ValueError("'transform.resize_size' must be an integer")
-        if not isinstance(d["transform"]["mean"], list):
-            raise ValueError("'transform.mean' must be a list")
-        if not all(isinstance(num, float) for num in d["transform"]["mean"]):
-            raise ValueError("'transform.mean' must be a list of floats")
-        if not isinstance(d["transform"]["std"], list):
-            raise ValueError("'transform.std' must be a list")
-        if not all(isinstance(num, float) for num in d["transform"]["std"]):
-            raise ValueError("'transform.std' must be a list of floats")
+        if (
+            not isinstance(d["transform"]["mean"], list)
+            and d["transform"]["mean"] != "sample"
+        ):
+            raise ValueError("'transform.mean' must be a list or 'sample'")
+        if isinstance(d["transform"]["mean"], list):
+            if not all(isinstance(num, float) for num in d["transform"]["mean"]):
+                raise ValueError("'transform.mean' must be a list of floats")
+        if (
+            not isinstance(d["transform"]["std"], list)
+            and d["transform"]["std"] != "sample"
+        ):
+            raise ValueError("'transform.std' must be a list or 'sample'")
+        if isinstance(d["transform"]["std"], list):
+            if not all(isinstance(num, float) for num in d["transform"]["std"]):
+                raise ValueError("'transform.std' must be a list of floats")
         if not isinstance(d["patch_size_pixels"], int) or d["patch_size_pixels"] <= 0:
             raise ValueError("patch_size_pixels must be a positive integer")
         if not isinstance(d["spacing_um_px"], float) or d["spacing_um_px"] <= 0:
@@ -156,10 +164,20 @@ class Weights:
             raise ValueError("'class_names' must be a list of strings")
 
         # Validate values.
-        if len(d["transform"]["mean"]) != 3:
-            raise ValueError("transform.mean must be a list of three numbers")
-        if len(d["transform"]["std"]) != 3:
-            raise ValueError("transform.std must be a list of three numbers")
+        # mean and std must be either a list of three floats or 'sample'. In the case
+        # of 'sample', each image is normalized to have mean 0 and variance 1.
+        if isinstance(d["transform"]["mean"], list):
+            if len(d["transform"]["mean"]) != 3:
+                raise ValueError("transform.mean must be a list of three numbers")
+        else:
+            if d["transform"]["mean"] != "sample":
+                raise ValueError("transform.mean must be 'sample' if not a list")
+        if isinstance(d["transform"]["std"], list):
+            if len(d["transform"]["std"]) != 3:
+                raise ValueError("transform.std must be a list of three numbers")
+        else:
+            if d["transform"]["mean"] != "sample":
+                raise ValueError("transform.mean must be 'sample' if not a list")
         if len(d["class_names"]) != len(set(d["class_names"])):
             raise ValueError("duplicate values found in 'class_names'")
         if len(d["class_names"]) != d["num_classes"]:
