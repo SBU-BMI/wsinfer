@@ -4,7 +4,6 @@ From
 https://github.com/pytorch/vision/blob/528651a031a08f9f97cc75bd619a326387708219/torchvision/transforms/_presets.py#L1
 """
 
-from typing import Literal
 from typing import Tuple
 from typing import Union
 
@@ -38,14 +37,14 @@ class PatchClassification(torch.nn.Module):
         self,
         *,
         resize_size: int,
-        mean: Union[Tuple[float, float, float], Literal["sample"]],
-        std: Union[Tuple[float, float, float], Literal["sample"]],
+        mean: Tuple[float, float, float],
+        std: Tuple[float, float, float],
         interpolation=BILINEAR,
     ) -> None:
         super().__init__()
         self.resize_size = resize_size
-        self.mean = mean
-        self.std = std
+        self.mean = list(mean)
+        self.std = list(std)
         self.interpolation = interpolation
 
     def __repr__(self):
@@ -63,9 +62,5 @@ class PatchClassification(torch.nn.Module):
         if not isinstance(img, torch.Tensor):
             img = F.pil_to_tensor(img)
         img = F.convert_image_dtype(img, torch.float)
-        if self.mean == "sample" or self.std == "sample":
-            # Normalize by sample mean and std dev so image has mean 0 and var 1.
-            img = (img - img.mean()) / img.std()
-        else:
-            img = F.normalize(img, mean=self.mean, std=self.std)
+        img = F.normalize(img, mean=self.mean, std=self.std)
         return img
