@@ -172,7 +172,6 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
 
         # If an ROI is given, keep patches that intersect it.
         if self.roi_path is not None:
-            print("Filtering patches...")
             self.patches = _filter_patches_in_rois(
                 geojson_path=self.roi_path, coords=self.patches
             )
