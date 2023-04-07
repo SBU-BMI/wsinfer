@@ -66,6 +66,7 @@ def convert_tf_to_pytorch(input_path, output_path, num_classes: int):
         elif "fc" in tf_weights:
             if tf_weights == "vgg_16/fc6/weights":
                 # [7, 7, 512, 4096] -> [25088, 4096]
+                tf_weight_array = tf_weight_array.transpose([2, 0, 1, 3])
                 tf_weight_array = tf_weight_array.reshape((25088, 4096))
             # E.g., go from shape [1, 1, 4096, 1000] to [1000, 4096]
             tf_weight_array = tf_weight_array.squeeze().T
