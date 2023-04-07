@@ -244,7 +244,7 @@ def test_cli_run_args(tmp_path: Path):
             "vgg16",
             "TCGA-TILs-v1",
             ["notils", "tils"],
-            [0.998769, 0.001231],
+            [0.9987693428993224, 0.0012305785203352],
             200,
             441,
         ),
