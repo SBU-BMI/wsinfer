@@ -79,6 +79,42 @@ def _read_patch_coords(path: PathType) -> np.ndarray:
     return coords
 
 
+def _filter_patches_in_rois(
+    *, geojson_path: PathType, coords: np.ndarray
+) -> np.ndarray:
+    """Keep the patches that intersect the ROI(s).
+
+    Parameters
+    ----------
+    geojson_path : str, Path
+        Path to the GeoJSON file that encodes the points of the ROI(s).
+    coords : ndarray
+        Two-dimensional array where each row has minx, miny, width, height.
+
+    Returns
+    -------
+    ndarray of filtered coords.
+    """
+    import geojson
+    from shapely import STRtree
+    from shapely.geometry import box, shape
+
+    with open(geojson_path) as f:
+        geo = geojson.load(f)
+    num_rois = len(geo["features"])
+    for roi in geo["features"]:
+        assert roi.is_valid, "an ROI geometry is not valid"
+    geoms_rois = [shape(roi["geometry"]) for roi in geo["features"]]
+    coords = coords.copy()
+    coords[:, 2] += coords[:, 0]  # Calculate maxx.
+    coords[:, 3] += coords[:, 1]  # Calculate maxy.
+    boxes = [box(*coords[idx]) for idx in range(coords.shape[0])]
+    tree = STRtree(boxes)
+    _, intersecting_ids = tree.query(geoms_rois, predicate="intersects")
+    intersecting_ids = np.sort(np.unique(intersecting_ids))
+    return coords[intersecting_ids]
+
+
 class WholeSlideImagePatches(torch.utils.data.Dataset):
     """Dataset of one whole slide image.
 
@@ -89,12 +125,15 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
     wsi_path : str, Path
         Path to whole slide image file.
     patch_path : str, Path
-        Path to npy file with coordinates of input image.
+        Path to HDF5 file with coordinates of input image.
     um_px : float
         Scale of the resulting patches. Use 0.5 for 20x magnification.
     transform : callable, optional
         A callable to modify a retrieved patch. The callable must accept a
         PIL.Image.Image instance and return a torch.Tensor.
+    roi_path : str, Path, optional
+        Path to GeoJSON file that outlines the region of interest (ROI). Only patches
+        within the ROI(s) will be used.
     """
 
     def __init__(
@@ -103,14 +142,18 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
         patch_path: PathType,
         um_px: float,
         transform: typing.Optional[typing.Callable[[Image.Image], torch.Tensor]] = None,
+        roi_path: typing.Optional[PathType] = None,
     ):
         self.wsi_path = wsi_path
         self.patch_path = patch_path
         self.um_px = float(um_px)
         self.transform = transform
+        self.roi_path = roi_path
 
         assert Path(wsi_path).exists(), "wsi path not found"
         assert Path(patch_path).exists(), "patch path not found"
+        if roi_path is not None:
+            assert Path(roi_path).exists(), "roi path not found"
 
         self.tilesource: large_image.tilesource.TileSource = large_image.getTileSource(
             self.wsi_path
@@ -124,6 +167,15 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
             pass
 
         self.patches = _read_patch_coords(self.patch_path)
+
+        # If an ROI is given, keep patches that intersect it.
+        if self.roi_path is not None:
+            self.patches = _filter_patches_in_rois(
+                geojson_path=self.roi_path, coords=self.patches
+            )
+            if self.patches.shape[0] == 0:
+                raise ValueError("No patches left after taking intersection with ROI")
+
         assert self.patches.ndim == 2, "expected 2D array of patch coordinates"
         # x, y, width, height
         assert self.patches.shape[1] == 4, "expected second dimension to have len 4"
@@ -211,6 +263,7 @@ def run_inference(
     batch_size: int = 32,
     num_workers: int = 0,
     speedup: bool = False,
+    roi_path: typing.Optional[PathType] = None,
 ) -> typing.Tuple[typing.List[str], typing.List[str]]:
     """Run model inference on a directory of whole slide images and save results to CSV.
 
@@ -236,6 +289,9 @@ def run_inference(
     speedup : bool
         If True, JIT-compile the model. This has a startup cost but model inference
         should be faster (default False).
+    roi_path : str, Path, optional
+        Path to GeoJSON file that outlines the region of interest (ROI). Only patches
+        within the ROI(s) will be used.
 
     Returns
     -------
@@ -305,6 +361,7 @@ def run_inference(
                 patch_path=patch_path,
                 um_px=weights.spacing_um_px,
                 transform=weights.transform,
+                roi_path=roi_path,
             )
         except Exception:
             failed_inference.append(wsi_dir.stem)

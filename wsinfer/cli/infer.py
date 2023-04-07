@@ -247,6 +247,15 @@ def _get_info_for_save(weights: models.Weights):
     help="JIT-compile the model for potential speedups.",
 )
 @click.option(
+    "--roi-path",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path, resolve_path=True),
+    help=(
+        "Path to a GeoJSON file that specifies a region of interest (ROI). Only patches"
+        " inside the ROI(s) will be used."
+    ),
+    default=None,
+)
+@click.option(
     "--dense-grid/--no-dense-grid",
     default=False,
     show_default=True,
@@ -264,6 +273,7 @@ def run(
     batch_size: int,
     num_workers: int = 0,
     speedup: bool = False,
+    roi_path: typing.Optional[PathType] = None,
     dense_grid: bool = False,
 ):
     """Run model inference on a directory of whole slide images.
@@ -344,6 +354,7 @@ def run(
         batch_size=batch_size,
         num_workers=num_workers,
         speedup=speedup,
+        roi_path=roi_path,
     )
 
     if failed_patching:
