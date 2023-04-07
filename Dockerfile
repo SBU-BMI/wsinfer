@@ -1,4 +1,4 @@
-FROM pytorch/pytorch:1.12.1-cuda11.3-cudnn8-runtime
+FROM pytorch/pytorch:2.0.0-cuda11.7-cudnn8-runtime
 WORKDIR /opt/wsinfer
 COPY . .
 RUN apt-get update \
