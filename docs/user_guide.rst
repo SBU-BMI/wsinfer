@@ -1,3 +1,5 @@
+.. _User Guide:
+
 User Guide
 ==========
 
@@ -37,8 +39,8 @@ The option :code:`--num-workers` controls how many processes to use for data loa
 Using more workers will typically speed up processing at the expense of more RAM and
 processor use.
 
-The results directory includes a file named :code:`run_metadata.json` with provenance
-information.
+The results directory includes a file named :code:`run_metadata_TIMESTAMP.json` with
+provenance information.
 
 Run model inference in containers
 ---------------------------------
@@ -57,7 +59,7 @@ addition of downloaded weights.
   The base image :code:`kaczmarj/wsinfer` does not include downloaded models. The models
   will be downloaded automatically but will be lost when the container is stopped. Use
   versioned, application-specific containers like
-  :code:`kaczmarj/wsinfer:0.3.2-tumor-brca` as they already include weights.
+  :code:`kaczmarj/wsinfer:0.3.5-tumor-brca` as they already include weights.
 
 Apptainer/Singularity
 ^^^^^^^^^^^^^^^^^^^^^
@@ -65,11 +67,36 @@ Apptainer/Singularity
 We use :code:`apptainer` in this example. You can replace that name with
 :code:`singularity` if you do not have :code:`apptainer`.
 
-::
+Pull the container: ::
 
-  apptainer pull docker://kaczmarj/wsinfer:0.3.2-tumor-paad
-  CUDA_VISIBLE_DEVICES=0 apptainer run --nv --bind $(pwd) wsinfer_0.3.2-tumor-paad.sif \
-    run --wsi-dir slides/ --results-dir results/
+  apptainer pull docker://kaczmarj/wsinfer:latest
+
+Run inference: ::
+
+   apptainer run \
+      --nv \
+      --bind $(pwd) \
+      --env TORCH_HOME="" \
+      --env CUDA_VISIBLE_DEVICES=0 \
+      wsinfer_latest.sif run \
+         --wsi-dir slides/ \
+         --results-dir results/ \
+         --model resnet34 \
+         --weights TCGA-BRCA-v1 \
+         --num-workers 8
+
+.. note::
+
+   If you get an error like :code:`Read-only file system: '/var/lib/wsinfer/hub/checkpoints/tmp4rs7aaz9'`,
+   then unset the environment variable :code:`TORCH_HOME`.
+
+   ::
+
+      apptainer run --nv --bind $(pwd) --env TORCH_HOME="" wsinfer_latest.sif
+
+   This happens when model weights are downloaded. Apptainer/Singularity containers are
+   not writable, so writing the weights file to the container fails. Unsetting
+   :code:`TORCH_HOME` will cause the models to be downloaded to the current directory.
 
 Docker
 ^^^^^^
@@ -93,7 +120,7 @@ When mounting data, keep in mind that the workdir in the Docker container is :co
 
 Pull the Docker image: ::
 
-  docker pull kaczmarj/wsinfer:0.3.2-tumor-paad
+  docker pull kaczmarj/wsinfer:latest
 
 Run inference: ::
 
@@ -103,7 +130,7 @@ Run inference: ::
       --env CUDA_VISIBLE_DEVICES=0 \
       --user $(id -u):$(id -g) \
       --mount type=bind,source=$(pwd),target=/work/ \
-      kaczmarj/wsinfer:0.3.2-tumor-paad run \
+      kaczmarj/wsinfer:latest run \
           --wsi-dir slides/ \
           --results-dir results/ \
           --model resnet34 \
@@ -166,6 +193,9 @@ GeoJSON is a JSON format compatible with whole slide image viewers like QuPath.
 ::
 
    wsirun togeojson results/ geojson-results/
+
+If you open one of your slides in QuPath, you can drag and drop the corresponding
+JSON file into the QuPath window to load the model outputs.
 
 Convert model outputs to Stony Brook format (QuIP)
 --------------------------------------------------

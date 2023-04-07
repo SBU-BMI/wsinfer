@@ -5,6 +5,7 @@ from pathlib import Path
 import platform
 import subprocess
 import sys
+import time
 from typing import List
 
 from click.testing import CliRunner
@@ -1046,6 +1047,8 @@ def test_issue_97(tmp_path: Path, tiff_image: Path):
     assert result.exit_code == 0
     metas = list(results_dir.glob("run_metadata_*.json"))
     assert len(metas) == 1
+
+    time.sleep(2)  # make sure some time has passed so the timestamp is different
 
     # Run again...
     result = runner.invoke(

@@ -43,3 +43,22 @@ git clone https://github.com/SBU-BMI/wsinfer.git
 cd wsinfer
 python -m pip install --editable .[dev] --find-links https://girder.github.io/large_image_wheels
 ```
+
+# Cutting a release
+
+When ready to cut a new release, follow these steps:
+
+1. Update the base image versions Dockerfiles in `dockerfiles/`. Update the version to
+the version you will release.
+2. Commit this change.
+3. Create a tag, where VERSION is a string like `v0.3.6`:
+
+    ```
+    git tag -a -m 'wsinfer version VERSION' VERSION
+    ```
+
+4. Build wheel: `python -m build`
+5. Create a fresh virtual environment and install the wheel. Make sure `wsinfer --help` works.
+6. Push code to GitHub: `git push --tags`
+6. Build and push docker images: `bash scripts/build_docker_images.sh 0.3.6 1`
+7. Push wheel to PyPI: `twine upload dist/*`
