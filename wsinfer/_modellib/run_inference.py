@@ -371,7 +371,7 @@ def run_inference(
             if not roi_path.exists():
                 roi_path = None
             else:
-                print(f"  ROI path: {roi_path}")
+                print(f" ROI path: {roi_path}")
 
         try:
             dset = WholeSlideImagePatches(
