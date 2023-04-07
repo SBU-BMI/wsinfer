@@ -248,7 +248,9 @@ def _get_info_for_save(weights: models.Weights):
 )
 @click.option(
     "--roi-dir",
-    type=click.Path(exists=True, dir_okay=False, path_type=Path, resolve_path=True),
+    type=click.Path(
+        exists=True, dir_okay=True, file_okay=False, path_type=Path, resolve_path=True
+    ),
     help=(
         "Directory of regions of interest (ROIs) encoded as GeoJSON files. Files must"
         " be named with SLIDE_ID.json, where SLIDE_ID is the name of the whole slide"
