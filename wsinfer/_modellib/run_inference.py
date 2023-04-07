@@ -264,7 +264,7 @@ def run_inference(
     batch_size: int = 32,
     num_workers: int = 0,
     speedup: bool = False,
-    roi_path: typing.Optional[PathType] = None,
+    roi_dir: typing.Optional[PathType] = None,
 ) -> typing.Tuple[typing.List[str], typing.List[str]]:
     """Run model inference on a directory of whole slide images and save results to CSV.
 
@@ -290,9 +290,10 @@ def run_inference(
     speedup : bool
         If True, JIT-compile the model. This has a startup cost but model inference
         should be faster (default False).
-    roi_path : str, Path, optional
-        Path to GeoJSON file that outlines the region of interest (ROI). Only patches
-        within the ROI(s) will be used.
+    roi_dir : str, Path, optional
+        Directory containing GeoJSON files that outlines the regions of interest (ROI).
+        Only patches within the ROI(s) will be used. The GeoJSON files must have the
+        extension ".json".
 
     Returns
     -------
@@ -339,6 +340,12 @@ def run_inference(
     failed_patching = [p.stem for p in patch_paths if not p.exists()]
     failed_inference: typing.List[str] = []
 
+    # Get paths to ROI geojson files.
+    if roi_dir is not None:
+        roi_paths = [Path(roi_dir) / p.with_suffix(".json").name for p in wsi_paths]
+    else:
+        roi_paths = None
+
     # results_for_all_slides: typing.List[pd.DataFrame] = []
     for i, (wsi_path, patch_path) in enumerate(zip(wsi_paths, patch_paths)):
         print(f"Slide {i+1} of {len(wsi_paths)}")
@@ -355,6 +362,16 @@ def run_inference(
         if not patch_path.exists():
             print(f"Skipping because patch file not found: {patch_path}")
             continue
+
+        roi_path = None
+        if roi_paths is not None:
+            roi_path = roi_paths[i]
+            # We grab all potential names of ROI paths, but we do not require all of
+            # them to exist. We only use those that exist.
+            if not roi_path.exists():
+                roi_path = None
+            else:
+                print(f"  ROI path: {roi_path}")
 
         try:
             dset = WholeSlideImagePatches(

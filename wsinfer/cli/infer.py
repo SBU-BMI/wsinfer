@@ -247,11 +247,13 @@ def _get_info_for_save(weights: models.Weights):
     help="JIT-compile the model for potential speedups.",
 )
 @click.option(
-    "--roi-path",
+    "--roi-dir",
     type=click.Path(exists=True, dir_okay=False, path_type=Path, resolve_path=True),
     help=(
-        "Path to a GeoJSON file that specifies a region of interest (ROI). Only patches"
-        " inside the ROI(s) will be used."
+        "Directory of regions of interest (ROIs) encoded as GeoJSON files. Files must"
+        " be named with SLIDE_ID.json, where SLIDE_ID is the name of the whole slide"
+        " image without its suffix. The ROI will be used only if the file exists. If"
+        " an ROI file is not found, then all patches within tissue will be used."
     ),
     default=None,
 )
@@ -273,7 +275,7 @@ def run(
     batch_size: int,
     num_workers: int = 0,
     speedup: bool = False,
-    roi_path: typing.Optional[PathType] = None,
+    roi_dir: typing.Optional[PathType] = None,
     dense_grid: bool = False,
 ):
     """Run model inference on a directory of whole slide images.
@@ -354,7 +356,7 @@ def run(
         batch_size=batch_size,
         num_workers=num_workers,
         speedup=speedup,
-        roi_path=roi_path,
+        roi_dir=roi_dir,
     )
 
     if failed_patching:
