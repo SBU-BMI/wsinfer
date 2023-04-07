@@ -2,8 +2,8 @@
 version: "1.0"
 architecture: vgg16
 name: TCGA-TILs-v1
-url: https://stonybrookmedicine.box.com/shared/static/t7mbqcvv4fsd6jzzgf8pl1imvyobeg1x.pt
-url_file_name: vgg16-tils-v1-20220112-f7988712.pt
+url: https://stonybrookmedicine.box.com/shared/static/0orxxw2aai3l3lztetvukwqetvr3z4lr.pt
+url_file_name: vgg16-tils-20220112-3088cb70.pt
 num_classes: 2
 transform:
   resize_size: 224
@@ -17,4 +17,4 @@ class_names:
   - tils
 metadata:
   notes: |
-    Original code and data are available at https://stonybrookmedicine.app.box.com/folder/128593362243
+    Original code available at https://github.com/SBU-BMI/u24_lymphocyte.
