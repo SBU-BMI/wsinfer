@@ -44,6 +44,9 @@ docker build -t kaczmarj/wsinfer:$version .
 # TILs
 build $version-tils dockerfiles/tils.dockerfile
 
+# TILs VGG16
+build $version-tils-vgg16 dockerfiles/tils-vgg16.dockerfile
+
 # Tumor BRCA
 build $version-tumor-brca dockerfiles/tumor-brca.dockerfile
 
@@ -64,6 +67,7 @@ else
     echo "Pushing images."
     docker push kaczmarj/wsinfer:$version
     docker push kaczmarj/wsinfer:$version-tils
+    docker push kaczmarj/wsinfer:$version-tils-vgg16
     docker push kaczmarj/wsinfer:$version-tumor-brca
     docker push kaczmarj/wsinfer:$version-tumor-luad
     docker push kaczmarj/wsinfer:$version-tumor-paad
