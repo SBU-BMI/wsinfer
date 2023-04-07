@@ -105,18 +105,16 @@ def _filter_patches_in_rois(
         raise ValueError("GeoJSON of ROI is not valid")
     for roi in geo["features"]:
         assert roi.is_valid, "an ROI geometry is not valid"
-    print("Converting geojson to shapely...")
     geoms_rois = [shape(roi["geometry"]) for roi in geo["features"]]
+    coords_orig = coords.copy()
     coords = coords.copy()
     coords[:, 2] += coords[:, 0]  # Calculate maxx.
     coords[:, 3] += coords[:, 1]  # Calculate maxy.
-    print("Making boxes...")
     boxes = [box(*coords[idx]) for idx in range(coords.shape[0])]
     tree = STRtree(boxes)
-    print("Finding intersecting boxes...")
     _, intersecting_ids = tree.query(geoms_rois, predicate="intersects")
     intersecting_ids = np.sort(np.unique(intersecting_ids))
-    return coords[intersecting_ids]
+    return coords_orig[intersecting_ids]
 
 
 class WholeSlideImagePatches(torch.utils.data.Dataset):
