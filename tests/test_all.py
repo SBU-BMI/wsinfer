@@ -239,6 +239,15 @@ def test_cli_run_args(tmp_path: Path):
             200,
             441,
         ),
+        # VGG16 TCGA-TILs-v1
+        (
+            "vgg16",
+            "TCGA-TILs-v1",
+            ["notils", "tils"],
+            [0.998769, 0.001231],
+            200,
+            441,
+        ),
         # Vgg16mod TCGA-BRCA-v1
         (
             "vgg16mod",
@@ -950,7 +959,7 @@ def test_jit_compile(model_name: str, weights_name: str):
             out_nojit = model(x).detach().cpu()
         time_nojit = time.perf_counter() - t0
     model_nojit = model
-    model = jit_compile(model)
+    model = jit_compile(model)  # type: ignore
     if model is model_nojit:
         pytest.skip("Failed to compile model (would use original model)")
     with torch.no_grad():
