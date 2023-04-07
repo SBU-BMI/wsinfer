@@ -101,7 +101,8 @@ def _filter_patches_in_rois(
 
     with open(geojson_path) as f:
         geo = geojson.load(f)
-    num_rois = len(geo["features"])
+    if not geo.is_valid:
+        raise ValueError("GeoJSON of ROI is not valid")
     for roi in geo["features"]:
         assert roi.is_valid, "an ROI geometry is not valid"
     geoms_rois = [shape(roi["geometry"]) for roi in geo["features"]]
