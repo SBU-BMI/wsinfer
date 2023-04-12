@@ -307,10 +307,17 @@ def tosbu(
             " not. Please provide the path to the directory that contains"
             " model-outputs, masks, and patches."
         )
-    if not (results_dir / "run_metadata.json").exists():
+
+    # Find the newest runtime JSON file.
+    metadatas_found = list(results_dir.glob("run_metadata*.json"))
+    if not metadatas_found:
         raise click.ClickException(
-            f"Cannot find {results_dir / 'run_metadata.json'}. Was model inference run?"
+            "Cannot find any files matching run_metadata*.json. Did you run model"
+            " inference already?"
         )
+    run_metadata_path = max(metadatas_found, key=lambda p: p.stat().st_ctime)
+    click.echo(f"Using metadata from {run_metadata_path}")
+
     if not wsi_dir.exists():
         raise click.ClickException("Whole slide image directory does not exist.")
 
@@ -320,8 +327,9 @@ def tosbu(
 
     output.mkdir(exist_ok=False)
 
-    with open(results_dir / "run_metadata.json") as f:
+    with open(run_metadata_path) as f:
         run_metadata: typing.Dict = json.load(f)
+    del run_metadata_path
 
     print("-" * 40)
     print("Run metadata")
