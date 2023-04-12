@@ -231,17 +231,10 @@ def write_color_txt(
             )
         )
     df.loc[:, ["whiteness", "blackness", "redness"]] = results
-    cx = df.minx + ((df.minx + df.width) / 2)
-    assert np.array_equal(cx.astype(int), cx), "not all center x's are integer"
-    df.loc[:, "cx"] = cx.astype(int)
-    del cx  # sanity
-
-    cy = df.miny + ((df.miny + df.height) / 2)
-    assert np.array_equal(cy.astype(int), cy), "not all center y's are integer"
-    df.loc[:, "cy"] = cy.astype(int)
-    del cy
-
-    df = df.loc[:, ["cx", "cy", "whiteness", "blackness", "redness"]]
+    df["cx"] = (df["minx"] + (df["width"] / 2)).round().astype(int)
+    df["cy"] = (df["miny"] + (df["height"] / 2)).round().astype(int)
+    # Reorder columns.
+    df = df[["cx", "cy", "whiteness", "blackness", "redness"]]
     df.to_csv(output, header=False, index=False, sep=" ")
 
 
