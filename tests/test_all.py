@@ -378,7 +378,6 @@ def test_cli_run_regression(
         assert [df_coords] == geojson_row["geometry"]["coordinates"]
 
 
-@pytest.mark.xfail
 def test_convert_to_sbu():
     # TODO: create a synthetic output and then convert it. Check that it is valid.
     assert False
