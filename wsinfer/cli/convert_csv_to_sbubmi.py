@@ -2,17 +2,17 @@
 
 Output directory tree for single class outputs:
 ├── heatmap_jsons
-│   ├── heatmap-SLIDEID.json
-│   └── meta-SLIDEID.json
+│   ├── heatmap-SLIDEID.json
+│   └── meta-SLIDEID.json
 └── heatmap_txt
     ├── color-SLIDEID
     └── prediction-SLIDEID
 
 Output directory tree for multi-class outputs:
 ├── heatmap_jsons
-│   └── CLASS_LABEL
-│       ├── heatmap-SLIDEID.json
-│       └── meta-SLIDEID.json
+│   └── CLASS_LABEL
+│       ├── heatmap-SLIDEID.json
+│       └── meta-SLIDEID.json
 └── heatmap_txt
     └── CLASS_LABEL
         ├── color-SLIDEID
