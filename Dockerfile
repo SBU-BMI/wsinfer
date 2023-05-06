@@ -5,7 +5,6 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends gcc g++ git libopenslide0 \
     && python -m pip install --no-cache-dir --editable . \
         --find-links https://girder.github.io/large_image_wheels \
-    && apt-get autoremove --yes gcc \
     && rm -rf /var/lib/apt/lists/*
 # Use a writable directory for downloading model weights. Default is ~/.cache, which is
 # not guaranteed to be writable in a Docker container.
