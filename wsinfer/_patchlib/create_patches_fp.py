@@ -18,6 +18,7 @@
 # - add --patch_spacing command line arg to request a patch size at a particular
 #   spacing. The patch coordinates are calculated at the base (highest) resolution.
 # - format code with black
+# - add segmentation_dir option to use pre-existing tissue masks
 
 """Create tissue mask and patch a whole slide image.
 Copyright (C) 2022  Mahmood Lab
@@ -117,6 +118,7 @@ def seg_and_patch(
     auto_skip=True,
     process_list=None,
     patch_spacing=None,
+    segmentation_dir=None,
 ):
     slides = sorted(os.listdir(source))
     slides = [slide for slide in slides if os.path.isfile(os.path.join(source, slide))]
@@ -260,8 +262,22 @@ def seg_and_patch(
 
         seg_time_elapsed = -1
         if seg:
+            mask_file = None
+            if segmentation_dir is not None:
+                print("Attempting to find pre-made segmentation...")
+                mask_file = os.path.join(segmentation_dir, f"{slide_id}.pkl")
+                if os.path.exists(mask_file):
+                    print("Found it, will not segment tissue:", mask_file)
+                else:
+                    print("Not found, segmenting tissue now.")
+                    mask_file = None
+            else:
+                print("No segmentation dir passed... segmenting tissue.")
             WSI_object, seg_time_elapsed = segment(
-                WSI_object, current_seg_params, current_filter_params
+                WSI_object,
+                current_seg_params,
+                current_filter_params,
+                mask_file=mask_file,
             )
 
         if save_mask:
@@ -357,6 +373,7 @@ def create_patches(
     no_auto_skip: bool = True,
     preset=None,
     process_list=None,
+    segmentation_dir=None,
 ):
     patch_save_dir = os.path.join(save_dir, "patches")
     mask_save_dir = os.path.join(save_dir, "masks")
@@ -369,6 +386,7 @@ def create_patches(
         process_list = None
 
     print("source: ", source)
+    print("mask read dir: ", segmentation_dir or "<not specified>")
     print("patch_save_dir: ", patch_save_dir)
     print("mask_save_dir: ", mask_save_dir)
     print("stitch_save_dir: ", stitch_save_dir)
@@ -436,4 +454,5 @@ def create_patches(
         process_list=process_list,
         auto_skip=no_auto_skip,
         patch_spacing=patch_spacing,
+        segmentation_dir=segmentation_dir,
     )
