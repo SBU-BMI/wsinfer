@@ -35,6 +35,11 @@ from .._patchlib.create_patches_fp import create_patches as _create_patches
     type=float,
     help="Patch spacing in micrometers per pixel.",
 )
+@click.option(
+    "--segmentation-dir",
+    type=click.Path(),
+    help="Directory containing .pkl files with tissue segmentations",
+)
 def patch(
     source: str,
     step_size: Optional[int],
@@ -44,6 +49,7 @@ def patch(
     preset: Optional[str],
     process_list: Optional[str],
     patch_spacing: float,
+    segmentation_dir: Optional[str],
 ):
     """Patchify a directory of whole slide images."""
 
@@ -64,4 +70,5 @@ def patch(
         no_auto_skip=no_auto_skip,
         preset=preset,
         process_list=process_list,
+        segmentation_dir=segmentation_dir,
     )
