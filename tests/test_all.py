@@ -818,12 +818,15 @@ def test_invalid_modeldefs(modeldef, tmp_path: Path):
 def test_valid_modeldefs(tmp_path: Path):
     from wsinfer._modellib.models import Weights
 
-    weights_file = tmp_path / "weights.pt"
+    # Put the weights in a different directory than the config to make sure that
+    # relative paths work.
+    weights_file = tmp_path / "ckpts" / "weights.pt"
+    weights_file.parent.mkdir()
     modeldef = dict(
         version="1.0",
         name="foo",
         architecture="resnet34",
-        file=str(weights_file),
+        file="ckpts/weights.pt",
         num_classes=2,
         transform=dict(resize_size=224, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
         patch_size_pixels=350,
@@ -838,7 +841,9 @@ def test_valid_modeldefs(tmp_path: Path):
         Weights.from_yaml(path)
 
     weights_file.touch()
-    assert Weights.from_yaml(path)
+    w = Weights.from_yaml(path)
+    assert w.file is not None
+    assert Path(w.file).exists()
 
 
 def test_model_registration(tmp_path: Path):

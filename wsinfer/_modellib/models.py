@@ -173,22 +173,27 @@ class Weights:
     @classmethod
     def from_yaml(cls, path):
         """Create a new instance of Weights from a YAML file."""
+        path = Path(path)
 
         with open(path) as f:
             d = yaml.safe_load(f)
-        cls._validate_input(d, config_path=Path(path))
+        cls._validate_input(d, config_path=path)
 
         transform = PatchClassification(
             resize_size=d["transform"]["resize_size"],
             mean=d["transform"]["mean"],
             std=d["transform"]["std"],
         )
+        if d.get("file") is not None:
+            file = path.parent / d.get("file")
+        else:
+            file = None
         return Weights(
             name=d["name"],
             architecture=d["architecture"],
             url=d.get("url"),
             url_file_name=d.get("url_file_name"),
-            file=d.get("file"),
+            file=file,
             num_classes=d["num_classes"],
             transform=transform,
             patch_size_pixels=d["patch_size_pixels"],
