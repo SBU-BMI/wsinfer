@@ -107,7 +107,7 @@ Available models
      - 350 @ 1.5
      - `Ref <https://doi.org/10.1007/978-3-030-32239-7_60>`_
    * - Prostate adenocarcinoma detection
-     - grade3, grade4+5, benign
+     - grade3, grade4or5, benign
      - resnet34
      - TCGA-PRAD-v1
      - 175 @ 0.5

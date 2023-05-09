@@ -216,7 +216,7 @@ def test_cli_run_args(tmp_path: Path):
         (
             "resnet34",
             "TCGA-PRAD-v1",
-            ["grade3", "grade4+5", "benign"],
+            ["grade3", "grade4or5", "benign"],
             [0.0010944147361442447, 3.371985076228157e-05, 0.9988718628883362],
             350,
             144,
