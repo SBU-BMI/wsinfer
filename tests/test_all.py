@@ -1082,3 +1082,27 @@ def test_issue_97(tmp_path: Path, tiff_image: Path):
     assert result.exit_code == 0
     metas = list(results_dir.glob("run_metadata_*.json"))
     assert len(metas) == 2
+
+
+def test_issue_125(tmp_path: Path):
+    from wsinfer.cli.infer import _get_info_for_save
+    from wsinfer._modellib.models import Weights
+    from wsinfer._modellib.transforms import PatchClassification
+
+    w = Weights(
+        name="foo",
+        architecture="resnet34",
+        # We are testing whether we can still save if file is a Path instance.
+        file=Path(__file__),
+        num_classes=1,
+        transform=PatchClassification(
+            resize_size=299, mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)
+        ),
+        patch_size_pixels=350,
+        spacing_um_px=0.25,
+        class_names=["tumor"],
+    )
+
+    info = _get_info_for_save(w)
+    with open(tmp_path / "foo.json", "w") as f:
+        json.dump(info, f)

@@ -70,7 +70,7 @@ class Weights:
     class_names: List[str]
     url: Optional[str] = None
     url_file_name: Optional[str] = None
-    file: Optional[str] = None
+    file: Optional[Union[str, Path]] = None
     metadata: Optional[Dict[str, Any]] = None
 
     def __post_init__(self):
