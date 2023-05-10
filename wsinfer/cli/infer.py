@@ -154,6 +154,9 @@ def _get_info_for_save(weights: models.Weights):
         weights_file = str(
             Path(torch.hub.get_dir()) / "checkpoints" / weights.url_file_name
         )
+    else:
+        # Weights file could have been a pathlib.Path object.
+        weights_file = str(weights_file)
 
     return {
         "model_weights": {
