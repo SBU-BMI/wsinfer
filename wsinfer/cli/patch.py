@@ -14,7 +14,7 @@ from .._patchlib.create_patches_fp import create_patches as _create_patches
 )
 @click.option("--step-size", default=None, type=int, help="Step size for patching.")
 @click.option("--patch-size", required=True, type=int, help="Patch size in pixels.")
-@click.option("--no-auto-skip", is_flag=True)
+@click.option("--auto-skip/--no-auto-skip", default=True, help="Skip existing outputs.")
 @click.option(
     "--save-dir",
     required=True,
@@ -44,7 +44,7 @@ def patch(
     source: str,
     step_size: Optional[int],
     patch_size: int,
-    no_auto_skip: bool,
+    auto_skip: bool,
     save_dir: str,
     preset: Optional[str],
     process_list: Optional[str],
@@ -67,7 +67,7 @@ def patch(
         patch=True,
         seg=True,
         stitch=True,
-        no_auto_skip=no_auto_skip,
+        auto_skip=auto_skip,
         preset=preset,
         process_list=process_list,
         segmentation_dir=segmentation_dir,
