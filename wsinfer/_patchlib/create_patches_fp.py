@@ -273,12 +273,17 @@ def seg_and_patch(
                     mask_file = None
             else:
                 print("No segmentation dir passed... segmenting tissue.")
-            WSI_object, seg_time_elapsed = segment(
-                WSI_object,
-                current_seg_params,
-                current_filter_params,
-                mask_file=mask_file,
-            )
+            try:
+                WSI_object, seg_time_elapsed = segment(
+                    WSI_object,
+                    current_seg_params,
+                    current_filter_params,
+                    mask_file=mask_file,
+                )
+            except Exception as e:
+                print(f"Failed to segment slide, skipping {full_path}")
+                print("Error", e)
+                continue
 
         if save_mask:
             mask = WSI_object.visWSI(**current_vis_params)
@@ -324,10 +329,15 @@ def seg_and_patch(
                     "save_path": patch_save_dir,
                 }
             )
-            file_path, patch_time_elapsed = patching(
-                WSI_object=WSI_object,
-                **current_patch_params,
-            )
+            try:
+                file_path, patch_time_elapsed = patching(
+                    WSI_object=WSI_object,
+                    **current_patch_params,
+                )
+            except Exception as e:
+                print(f"Failed to patch slide, skipping {full_path}")
+                print("Error", e)
+                continue
 
         stitch_time_elapsed = -1
         if stitch:
@@ -370,7 +380,7 @@ def create_patches(
     patch: bool = True,
     seg: bool = True,
     stitch: bool = True,
-    no_auto_skip: bool = True,
+    auto_skip: bool = True,
     preset=None,
     process_list=None,
     segmentation_dir=None,
@@ -452,7 +462,7 @@ def create_patches(
         patch_level=0,  # args.patch_level,
         patch=patch,
         process_list=process_list,
-        auto_skip=no_auto_skip,
+        auto_skip=auto_skip,
         patch_spacing=patch_spacing,
         segmentation_dir=segmentation_dir,
     )
