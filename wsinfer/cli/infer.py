@@ -18,10 +18,10 @@ import wsinfer_zoo.client
 import yaml
 from wsinfer_zoo.client import HFModel, ModelConfiguration
 
-from .._modellib import models
-from .._modellib.run_inference import run_inference
-from .._patchlib.create_dense_patch_grid import create_grid_and_save_multi_slides
-from .._patchlib.create_patches_fp import create_patches
+from ..modellib import models
+from ..modellib.run_inference import run_inference
+from ..patchlib.create_dense_patch_grid import create_grid_and_save_multi_slides
+from ..patchlib.create_patches_fp import create_patches
 
 PathType = Union[str, Path]
 
