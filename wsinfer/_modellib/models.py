@@ -1,239 +1,46 @@
 import dataclasses
-import hashlib
-import os
-from pathlib import Path
-from typing import Any
 from typing import Callable
 from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Tuple
 from typing import Union
+import warnings
 
+import safetensors.torch
 import timm
 import torch
-from torch.hub import load_state_dict_from_url
-import yaml
+from wsinfer_zoo.client import (
+    HFModel,
+    HFModelTorchScript,
+    HFModelWeightsOnly,
+    Model,
+)
+import wsinfer_zoo
 
 # Imported for side effects of registering model.
-from . import inceptionv4_no_batchnorm as _  # noqa
-from .resnet_preact import resnet34_preact as _resnet34_preact
-from .vgg16mod import vgg16mod as _vgg16mod
-from .transforms import PatchClassification
-
-
-class WsinferException(Exception):
-    "Base class for wsinfer exceptions."
-
-
-class UnknownArchitectureError(WsinferException):
-    """Architecture is unknown and cannot be found."""
-
-
-class ModelWeightsNotFound(WsinferException):
-    """Model weights are not found, likely because they are not in the registry."""
-
-
-class DuplicateModelWeights(WsinferException):
-    """A duplicate key was passed to the model weights registry."""
-
-
-class ModelRegistrationError(WsinferException):
-    """Error during model registration."""
-
-
-PathType = Union[str, Path]
-
-
-def _sha256sum(path: PathType) -> str:
-    """Calculate SHA256 of a file."""
-    sha = hashlib.sha256()
-    with open(path, "rb") as f:
-        while True:
-            data = f.read(1024 * 64)  # 64 kb
-            if not data:
-                break
-            sha.update(data)
-    return sha.hexdigest()
+from ..errors import UnknownArchitectureError
+from .custom_models import inceptionv4_no_batchnorm as _  # noqa
+from .custom_models.resnet_preact import resnet34_preact as _resnet34_preact
+from .custom_models.vgg16mod import vgg16mod as _vgg16mod
 
 
 @dataclasses.dataclass
-class Weights:
-    """Container for data associated with a trained model."""
-
-    name: str
-    architecture: str
-    num_classes: int
-    transform: PatchClassification
-    patch_size_pixels: int
-    spacing_um_px: float
-    class_names: List[str]
-    url: Optional[str] = None
-    url_file_name: Optional[str] = None
-    file: Optional[str] = None
-    metadata: Optional[Dict[str, Any]] = None
-
-    def __post_init__(self):
-        if len(set(self.class_names)) != len(self.class_names):
-            raise ValueError("class_names cannot contain duplicates")
-        if len(self.class_names) != self.num_classes:
-            raise ValueError("length of class_names must be equal to num_classes")
-
-    @staticmethod
-    def _validate_input(d: dict, config_path: Path) -> None:
-        """Raise error if invalid input."""
-
-        if not isinstance(d, dict):
-            raise ValueError("expected config to be a dictionary")
-
-        # Validate contents.
-        # Validate keys.
-        required_keys = [
-            "version",
-            "name",
-            "architecture",
-            "num_classes",
-            "transform",
-            "patch_size_pixels",
-            "spacing_um_px",
-            "class_names",
-        ]
-        optional_keys = ["url", "url_file_name", "file", "metadata"]
-        all_keys = required_keys + optional_keys
-        for req_key in required_keys:
-            if req_key not in d.keys():
-                raise KeyError(f"required key not found: '{req_key}'")
-        unknown_keys = [k for k in d.keys() if k not in all_keys]
-        if unknown_keys:
-            raise KeyError(f"unknown keys: {unknown_keys}")
-        for req_key in ["resize_size", "mean", "std"]:
-            if req_key not in d["transform"].keys():
-                raise KeyError(
-                    f"required key not found in 'transform' section: '{req_key}'"
-                )
-
-        # We include a 'version' key so we can handle updates if needed in the future.
-        # At this point, we only support version 1.0.
-        if d["version"] != "1.0":
-            raise ValueError("config file must include version: '1.0'.")
-        # Either 'url' or 'file' is required. If 'url' is used, then 'url_file_name' is
-        # required.
-        if "url" not in d.keys() and "file" not in d.keys():
-            raise KeyError("'url' or 'file' must be provided")
-        if "url" in d.keys() and "file" in d.keys():
-            raise KeyError("only on of 'url' and 'file' can be used")
-        if "url" in d.keys() and "url_file_name" not in d.keys():
-            raise KeyError("when using 'url', 'url_file_name' must also be provided")
-
-        # Validate types.
-        if not isinstance("architecture", str):
-            raise ValueError("'architecture' must be a string")
-        if not isinstance("name", str):
-            raise ValueError("'name' must be a string")
-        if "url" in d.keys() and not isinstance(d["url"], str):
-            raise ValueError("'url' must be a string")
-        if "url_file_name" in d.keys() and not isinstance(d["url"], str):
-            raise ValueError("'url_file_name' must be a string")
-        if not isinstance(d["num_classes"], int):
-            raise ValueError("'num_classes' must be an integer")
-        if not isinstance(d["transform"]["resize_size"], int):
-            raise ValueError("'transform.resize_size' must be an integer")
-        if not isinstance(d["transform"]["mean"], list):
-            raise ValueError("'transform.mean' must be a list")
-        if not all(isinstance(num, float) for num in d["transform"]["mean"]):
-            raise ValueError("'transform.mean' must be a list of floats")
-        if not isinstance(d["transform"]["std"], list):
-            raise ValueError("'transform.std' must be a list")
-        if not all(isinstance(num, float) for num in d["transform"]["std"]):
-            raise ValueError("'transform.std' must be a list of floats")
-        if not isinstance(d["patch_size_pixels"], int) or d["patch_size_pixels"] <= 0:
-            raise ValueError("patch_size_pixels must be a positive integer")
-        if not isinstance(d["spacing_um_px"], float) or d["spacing_um_px"] <= 0:
-            raise ValueError("spacing_um_px must be a positive float")
-        if not isinstance(d["class_names"], list):
-            raise ValueError("'class_names' must be a list")
-        if not all(isinstance(c, str) for c in d["class_names"]):
-            raise ValueError("'class_names' must be a list of strings")
-
-        # Validate values.
-        if len(d["transform"]["mean"]) != 3:
-            raise ValueError("transform.mean must be a list of three numbers")
-        if len(d["transform"]["std"]) != 3:
-            raise ValueError("transform.std must be a list of three numbers")
-        if len(d["class_names"]) != len(set(d["class_names"])):
-            raise ValueError("duplicate values found in 'class_names'")
-        if len(d["class_names"]) != d["num_classes"]:
-            raise ValueError("mismatch between length of class_names and num_classes.")
-        if "file" in d.keys():
-            file = Path(config_path).parent / d["file"]
-            file = file.resolve()
-            if not file.exists():
-                raise FileNotFoundError(f"'file' not found: {file}")
-
-    @classmethod
-    def from_yaml(cls, path):
-        """Create a new instance of Weights from a YAML file."""
-
-        with open(path) as f:
-            d = yaml.safe_load(f)
-        cls._validate_input(d, config_path=Path(path))
-
-        transform = PatchClassification(
-            resize_size=d["transform"]["resize_size"],
-            mean=d["transform"]["mean"],
-            std=d["transform"]["std"],
-        )
-        return Weights(
-            name=d["name"],
-            architecture=d["architecture"],
-            url=d.get("url"),
-            url_file_name=d.get("url_file_name"),
-            file=d.get("file"),
-            num_classes=d["num_classes"],
-            transform=transform,
-            patch_size_pixels=d["patch_size_pixels"],
-            spacing_um_px=d["spacing_um_px"],
-            class_names=d["class_names"],
-        )
-
-    def load_model(self) -> torch.nn.Module:
-        """Return the pytorch implementation of the architecture with weights loaded."""
-        model = _create_model(name=self.architecture, num_classes=self.num_classes)
-
-        # Load state dict.
-        if self.url and self.url_file_name:
-            state_dict = load_state_dict_from_url(
-                url=self.url,
-                map_location="cpu",
-                check_hash=True,
-                file_name=self.url_file_name,
-            )
-        elif self.file:
-            state_dict = torch.load(self.file, map_location="cpu")
-            # When training with timm scripts, weights are saved in 'state_dict' key.
-            if "state_dict" in state_dict.keys():
-                state_dict = state_dict["state_dict"]
-        else:
-            raise RuntimeError("cannot find weights")
-
-        model.load_state_dict(state_dict, strict=True)
-        model.eval()
-        return model
-
-    def get_sha256_of_weights(self) -> str:
-        """Return the sha256 of the weights file."""
-        if self.url and self.url_file_name:
-            p = Path(torch.hub.get_dir()) / "checkpoints" / self.url_file_name
-        elif self.file:
-            p = Path(self.file)
-        else:
-            raise RuntimeError("cannot find path to weights")
-        sha = _sha256sum(p)
-        return sha
+class LocalModel(Model):
+    ...
 
 
-# Container for all models we can use that are not in timm.
-_model_registry: Dict[str, Callable[[int], torch.nn.Module]] = {
+@dataclasses.dataclass
+class LocalModelTorchScript(Model):
+    ...
+
+
+@dataclasses.dataclass
+class LocalModelWeightsOnly(Model):
+    ...
+
+
+# Container for all architectures we can use that are not in timm.
+# The values are functions, which are expected to accept one integer
+# argument for the number of classes the model outputs.
+_architecture_registry: Dict[str, Callable[[int], torch.nn.Module]] = {
     "preactresnet34": _resnet34_preact,
     "vgg16mod": _vgg16mod,
 }
@@ -241,64 +48,93 @@ _model_registry: Dict[str, Callable[[int], torch.nn.Module]] = {
 
 def _create_model(name: str, num_classes: int) -> torch.nn.Module:
     """Return a torch model architecture."""
-    if name in _model_registry.keys():
-        return _model_registry[name](num_classes)
+    if name in _architecture_registry.keys():
+        return _architecture_registry[name](num_classes)
     else:
         if name not in timm.list_models():
             raise UnknownArchitectureError(f"unknown architecture: '{name}'")
         return timm.create_model(name, num_classes=num_classes)
 
 
-# Keys are tuple of (architecture, weights_name).
-_known_model_weights: Dict[Tuple[str, str], Weights] = {}
+def get_registered_model(
+    name: str, torchscript: bool = False, safetensors: bool = False
+) -> HFModel:
+    model = wsinfer_zoo.registry.get_model_by_name(name=name)
+    if torchscript:
+        return model.load_model_torchscript()
+    else:
+        return model.load_model_weights(safetensors=safetensors)
 
 
-def register_model_weights(root: Path):
-    modeldefs = list(root.glob("*.yml")) + list(root.glob("*.yaml"))
-    for modeldef in modeldefs:
-        try:
-            w = Weights.from_yaml(modeldef)
-        except Exception as e:
-            raise ModelRegistrationError(
-                f"Error registering model from config file ('{modeldef}')\n"
-                f"Original error is: {e}"
-            )
-        if w.architecture not in timm.list_models() + list(_model_registry.keys()):
-            raise UnknownArchitectureError(f"{w.architecture} implementation not found")
-        key = (w.architecture, w.name)
-        if key in _known_model_weights:
-            raise DuplicateModelWeights(
-                f"duplicate models weights: {(w.architecture, w.name)}"
-            )
-        _known_model_weights[key] = w
+def get_pretrained_torch_module(model: Union[LocalModel, HFModel]) -> torch.nn.Module:
+    """Get a PyTorch Module with weights loaded."""
 
+    if isinstance(model, (HFModelTorchScript, LocalModelTorchScript)):
+        return torch.jit.load(model.model_path, map_location="cpu")
 
-def get_model_weights(architecture: str, name: str) -> Weights:
-    """Get weights object for an architecture and weights name."""
-    key = (architecture, name)
-    try:
-        return _known_model_weights[key]
-    except KeyError:
-        pairs = " | ".join(" / ".join(p) for p in list_all_models_and_weights())
-        raise ModelWeightsNotFound(
-            f"Invalid model-weight pair: '{architecture}' and '{name}'. Available"
-            f" models/weight pairs are {pairs}."
+    elif isinstance(model, (HFModelWeightsOnly, LocalModelWeightsOnly)):
+        arch = _create_model(
+            name=model.config.architecture, num_classes=model.config.num_classes
+        )
+        # FIXME: this might cause problems for us down the line. Is it this
+        # specific enough?
+        if model.model_path.endswith(".safetensors"):
+            state_dict = safetensors.torch.load_file(model.model_path)
+        else:
+            state_dict = torch.load(model.model_path, map_location="cpu")
+        arch.load_state_dict(state_dict)
+        return arch
+    else:
+        raise ValueError(
+            f"expected Model or ModelWeightsOnly instance but got {type(model)}"
         )
 
 
-register_model_weights(Path(__file__).parent / ".." / "modeldefs")
+def jit_compile(
+    model: torch.nn.Module,
+) -> Union[torch.jit.ScriptModule, torch.nn.Module, Callable]:
+    """JIT-compile a model for inference.
 
-# Register any user-supplied configurations.
-wsinfer_path = os.environ.get("WSINFER_PATH")
-if wsinfer_path is not None:
-    for path in wsinfer_path.split(":"):
-        register_model_weights(Path(path))
-    del path
-del wsinfer_path
-
-
-def list_all_models_and_weights() -> List[Tuple[str, str]]:
-    """Return list of tuples of `(model_name, weights_name)` with available pairs."""
-    vals = list(_known_model_weights.keys())
-    vals.sort()
-    return vals
+    A torchscript model may be JIT compiled here as well.
+    """
+    noncompiled = model
+    device = next(model.parameters()).device
+    # Attempt to script. If it fails, return the original.
+    test_input = torch.ones(1, 3, 224, 224).to(device)
+    w = "Warning: could not JIT compile the model. Using non-compiled model instead."
+    # TODO: consider freezing the model as well.
+    # PyTorch 2.x has torch.compile.
+    if hasattr(torch, "compile"):
+        # Try to get the most optimized model.
+        try:
+            return torch.compile(model, fullgraph=True, mode="max-autotune")
+        except Exception:
+            pass
+        try:
+            return torch.compile(model, mode="max-autotune")
+        except Exception:
+            pass
+        try:
+            return torch.compile(model)
+        except Exception:
+            warnings.warn(w)
+            return noncompiled
+    # For pytorch 1.x, use torch.jit.script.
+    else:
+        try:
+            mjit = torch.jit.script(model)
+            with torch.no_grad():
+                mjit(test_input)
+        except Exception:
+            warnings.warn(w)
+            return noncompiled
+        # Now that we have scripted the model, try to optimize it further. If that
+        # fails, return the scripted model.
+        try:
+            mjit_frozen = torch.jit.freeze(mjit)
+            mjit_opt = torch.jit.optimize_for_inference(mjit_frozen)
+            with torch.no_grad():
+                mjit_opt(test_input)
+            return mjit_opt
+        except Exception:
+            return mjit

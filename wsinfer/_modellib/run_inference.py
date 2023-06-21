@@ -7,211 +7,30 @@ From the original paper (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7369575/):
 
 from pathlib import Path
 import typing
-import warnings
+from typing import Union, Tuple, List
 
-import h5py
-import large_image
 import numpy as np
 import pandas as pd
-from PIL import Image
 import torch
 import tqdm
+import wsinfer_zoo.client
 
-from .models import Weights
+from .. import errors
+from .data import WholeSlideImagePatches
+from .models import get_pretrained_torch_module, jit_compile, LocalModel
+from .transforms import make_compose_from_transform_config
 
-PathType = typing.Union[str, Path]
-
-
-class WholeSlideImageDirectoryNotFound(FileNotFoundError):
-    ...
-
-
-class WholeSlideImagesNotFound(FileNotFoundError):
-    ...
-
-
-class ResultsDirectoryNotFound(FileNotFoundError):
-    ...
-
-
-class PatchDirectoryNotFound(FileNotFoundError):
-    ...
-
-
-# Set the maximum number of TileSource objects to cache. We use 1 to minimize how many
-# file handles we keep open.
-large_image.config.setConfig("cache_tilesource_maximum", 1)
-
-
-def _read_patch_coords(path: PathType) -> np.ndarray:
-    """Read HDF5 file of patch coordinates are return numpy array.
-
-    Returned array has shape (num_patches, 4). Each row has values
-    [minx, miny, width, height].
-    """
-    with h5py.File(path, mode="r") as f:
-        coords = f["/coords"][()]
-        coords_metadata = f["/coords"].attrs
-        if "patch_level" not in coords_metadata.keys():
-            raise KeyError(
-                "Could not find required key 'patch_level' in hdf5 of patch "
-                "coordinates. Has the version of CLAM been updated?"
-            )
-        patch_level = coords_metadata["patch_level"]
-        if patch_level != 0:
-            raise NotImplementedError(
-                f"This script is designed for patch_level=0 but got {patch_level}"
-            )
-        if coords.ndim != 2:
-            raise ValueError(f"expected coords to have 2 dimensions, got {coords.ndim}")
-        if coords.shape[1] != 2:
-            raise ValueError(
-                f"expected second dim of coords to have len 2 but got {coords.shape[1]}"
-            )
-
-        if "patch_size" not in coords_metadata.keys():
-            raise KeyError("expected key 'patch_size' in attrs of coords dataset")
-        # Append width and height values to the coords, so now each row is
-        # [minx, miny, width, height]
-        wh = np.full_like(coords, coords_metadata["patch_size"])
-        coords = np.concatenate((coords, wh), axis=1)
-
-    return coords
-
-
-class WholeSlideImagePatches(torch.utils.data.Dataset):
-    """Dataset of one whole slide image.
-
-    This object retrieves patches from a whole slide image on the fly.
-
-    Parameters
-    ----------
-    wsi_path : str, Path
-        Path to whole slide image file.
-    patch_path : str, Path
-        Path to npy file with coordinates of input image.
-    um_px : float
-        Scale of the resulting patches. Use 0.5 for 20x magnification.
-    transform : callable, optional
-        A callable to modify a retrieved patch. The callable must accept a
-        PIL.Image.Image instance and return a torch.Tensor.
-    """
-
-    def __init__(
-        self,
-        wsi_path: PathType,
-        patch_path: PathType,
-        um_px: float,
-        transform: typing.Optional[typing.Callable[[Image.Image], torch.Tensor]] = None,
-    ):
-        self.wsi_path = wsi_path
-        self.patch_path = patch_path
-        self.um_px = float(um_px)
-        self.transform = transform
-
-        assert Path(wsi_path).exists(), "wsi path not found"
-        assert Path(patch_path).exists(), "patch path not found"
-
-        self.tilesource: large_image.tilesource.TileSource = large_image.getTileSource(
-            self.wsi_path
-        )
-        # Disable the tile cache. We wrap this in a try-except because we are accessing
-        # a private attribute. It is possible that this attribute will change names
-        # in the future, and if that happens, we do not want to raise errors.
-        try:
-            self.tilesource.cache._Cache__maxsize = 0
-        except AttributeError:
-            pass
-
-        self.patches = _read_patch_coords(self.patch_path)
-        assert self.patches.ndim == 2, "expected 2D array of patch coordinates"
-        # x, y, width, height
-        assert self.patches.shape[1] == 4, "expected second dimension to have len 4"
-
-    def __len__(self):
-        return self.patches.shape[0]
-
-    def __getitem__(
-        self, idx: int
-    ) -> typing.Tuple[typing.Union[Image.Image, torch.Tensor], torch.Tensor]:
-        coords: typing.Sequence[int] = self.patches[idx]
-        assert len(coords) == 4, "expected 4 coords (minx, miny, width, height)"
-        minx, miny, width, height = coords
-        source_region = dict(
-            left=minx, top=miny, width=width, height=height, units="base_pixels"
-        )
-        target_scale = dict(mm_x=self.um_px / 1000)
-
-        patch_im, _ = self.tilesource.getRegionAtAnotherScale(
-            sourceRegion=source_region,
-            targetScale=target_scale,
-            format=large_image.tilesource.TILE_FORMAT_PIL,
-        )
-        patch_im = patch_im.convert("RGB")
-        if self.transform is not None:
-            patch_im = self.transform(patch_im)
-        if not isinstance(patch_im, (Image.Image, torch.Tensor)):
-            raise TypeError(
-                f"patch image must be an Image of Tensor, but got {type(patch_im)}"
-            )
-        return patch_im, torch.as_tensor([minx, miny, width, height])
-
-
-def jit_compile(
-    model: torch.nn.Module,
-) -> typing.Union[torch.jit.ScriptModule, torch.nn.Module, typing.Callable]:
-    """JIT-compile a model for inference."""
-    noncompiled = model
-    device = next(model.parameters()).device
-    # Attempt to script. If it fails, return the original.
-    test_input = torch.ones(1, 3, 224, 224).to(device)
-    w = "Warning: could not JIT compile the model. Using non-compiled model instead."
-    # TODO: consider freezing the model as well.
-    # PyTorch 2.x has torch.compile.
-    if hasattr(torch, "compile"):
-        # Try to get the most optimized model.
-        try:
-            return torch.compile(model, fullgraph=True, mode="max-autotune")
-        except Exception:
-            pass
-        try:
-            return torch.compile(model, mode="max-autotune")
-        except Exception:
-            pass
-        try:
-            return torch.compile(model)
-        except Exception:
-            warnings.warn(w)
-            return noncompiled
-    # For pytorch 1.x, use torch.jit.script.
-    else:
-        try:
-            mjit = torch.jit.script(model)
-            with torch.no_grad():
-                mjit(test_input)
-        except Exception:
-            warnings.warn(w)
-            return noncompiled
-        # Now that we have scripted the model, try to optimize it further. If that
-        # fails, return the scripted model.
-        try:
-            mjit_frozen = torch.jit.freeze(mjit)
-            mjit_opt = torch.jit.optimize_for_inference(mjit_frozen)
-            with torch.no_grad():
-                mjit_opt(test_input)
-            return mjit_opt
-        except Exception:
-            return mjit
+PathType = Union[str, Path]
 
 
 def run_inference(
     wsi_dir: PathType,
     results_dir: PathType,
-    weights: Weights,
+    model_info: Union[wsinfer_zoo.client.HFModel, LocalModel],
     batch_size: int = 32,
     num_workers: int = 0,
     speedup: bool = False,
-) -> typing.Tuple[typing.List[str], typing.List[str]]:
+) -> Tuple[List[str], List[str]]:
     """Run model inference on a directory of whole slide images and save results to CSV.
 
     This assumes the patching has already been done and the results are stored in
@@ -226,7 +45,7 @@ def run_inference(
         whole slide images. Otherwise, an error will be raised during model inference.
     results_dir : str or Path
         Directory containing results of patching.
-    weights : wsinfer._modellib.models.Weights
+    model_info :
         Instance of Weights including the model object and information about how to
         apply the model to new data.
     batch_size : int
@@ -246,18 +65,18 @@ def run_inference(
     # Make sure required directories exist.
     wsi_dir = Path(wsi_dir)
     if not wsi_dir.exists():
-        raise WholeSlideImageDirectoryNotFound(f"directory not found: {wsi_dir}")
+        raise errors.WholeSlideImageDirectoryNotFound(f"directory not found: {wsi_dir}")
     wsi_paths = list(wsi_dir.glob("*"))
     if not wsi_paths:
-        raise WholeSlideImagesNotFound(wsi_dir)
+        raise errors.WholeSlideImagesNotFound(wsi_dir)
     results_dir = Path(results_dir)
     if not results_dir.exists():
-        raise ResultsDirectoryNotFound(results_dir)
+        raise errors.ResultsDirectoryNotFound(results_dir)
 
     # Check patches directory.
     patch_dir = results_dir / "patches"
     if not patch_dir.exists():
-        raise PatchDirectoryNotFound("Results dir must include 'patches' dir")
+        raise errors.PatchDirectoryNotFound("Results dir must include 'patches' dir")
     # Create the patch paths based on the whole slide image paths. In effect, only
     # create patch paths if the whole slide image patch exists.
     patch_paths = [patch_dir / p.with_suffix(".h5").name for p in wsi_paths]
@@ -265,7 +84,7 @@ def run_inference(
     model_output_dir = results_dir / "model-outputs"
     model_output_dir.mkdir(exist_ok=True)
 
-    model = weights.load_model()
+    model = get_pretrained_torch_module(model=model_info)
     model.eval()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -279,8 +98,10 @@ def run_inference(
         else:
             model = jit_compile(model)
 
+    transform = make_compose_from_transform_config(model_info.config.transform)
+
     failed_patching = [p.stem for p in patch_paths if not p.exists()]
-    failed_inference: typing.List[str] = []
+    failed_inference: List[str] = []
 
     # results_for_all_slides: typing.List[pd.DataFrame] = []
     for i, (wsi_path, patch_path) in enumerate(zip(wsi_paths, patch_paths)):
@@ -303,8 +124,8 @@ def run_inference(
             dset = WholeSlideImagePatches(
                 wsi_path=wsi_path,
                 patch_path=patch_path,
-                um_px=weights.spacing_um_px,
-                transform=weights.transform,
+                um_px=model_info.config.spacing_um_px,
+                transform=transform,
             )
         except Exception:
             failed_inference.append(wsi_dir.stem)
@@ -319,8 +140,8 @@ def run_inference(
 
         # Store the coordinates and model probabiltiies of each patch in this slide.
         # This lets us know where the probabiltiies map to in the slide.
-        slide_coords: typing.List[np.ndarray] = []
-        slide_probs: typing.List[np.ndarray] = []
+        slide_coords: List[np.ndarray] = []
+        slide_probs: List[np.ndarray] = []
         for batch_imgs, batch_coords in tqdm.tqdm(loader):
             assert batch_imgs.shape[0] == batch_coords.shape[0], "length mismatch"
             with torch.no_grad():
@@ -336,6 +157,7 @@ def run_inference(
         slide_coords_arr = np.concatenate(slide_coords, axis=0)
         slide_df = pd.DataFrame(
             dict(
+                # FIXME: should we include the slide path in the CSV? Probably not.
                 slide=wsi_path,
                 minx=slide_coords_arr[:, 0],
                 miny=slide_coords_arr[:, 1],
@@ -347,7 +169,7 @@ def run_inference(
         # Use 'prob-' prefix for all classes. This should make it clearer that the
         # column has probabilities for the class. It also makes it easier for us to
         # identify columns associated with probabilities.
-        prob_colnames = [f"prob_{c}" for c in weights.class_names]
+        prob_colnames = [f"prob_{c}" for c in model_info.config.class_names]
         slide_df.loc[:, prob_colnames] = slide_probs_arr
         slide_df.to_csv(slide_csv, index=False)
         print("-" * 40)
