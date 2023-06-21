@@ -95,9 +95,10 @@ def jit_compile(
     # Attempt to script. If it fails, return the original.
     test_input = torch.ones(1, 3, 224, 224).to(device)
     w = "Warning: could not JIT compile the model. Using non-compiled model instead."
-    # TODO: consider freezing the model as well.
-    # PyTorch 2.x has torch.compile.
-    if hasattr(torch, "compile"):
+
+    # PyTorch 2.x has torch.compile but it does not work when applied
+    # to TorchScript models.
+    if hasattr(torch, "compile") and not isinstance(model, torch.jit.ScriptModule):
         # Try to get the most optimized model.
         try:
             return torch.compile(model, fullgraph=True, mode="max-autotune")
