@@ -4,8 +4,8 @@ GeoJSON files can be loaded into whole slide image viewers like QuPath.
 """
 
 import json
-from pathlib import Path
 import typing
+from pathlib import Path
 
 import click
 import pandas as pd

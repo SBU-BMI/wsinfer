@@ -5,9 +5,9 @@ From the original paper (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7369575/):
 > normalization of the color channels.
 """
 
-from pathlib import Path
 import typing
-from typing import Union, Tuple, List
+from pathlib import Path
+from typing import List, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -17,7 +17,7 @@ import wsinfer_zoo.client
 
 from .. import errors
 from .data import WholeSlideImagePatches
-from .models import get_pretrained_torch_module, jit_compile, LocalModel
+from .models import LocalModel, get_pretrained_torch_module, jit_compile
 from .transforms import make_compose_from_transform_config
 
 PathType = Union[str, Path]

@@ -1,12 +1,11 @@
 from pathlib import Path
-from typing import Union, Callable, Optional, Tuple, Sequence
+from typing import Callable, Optional, Sequence, Tuple, Union
 
 import h5py
 import large_image
 import numpy as np
-from PIL import Image
 import torch
-
+from PIL import Image
 
 # Set the maximum number of TileSource objects to cache. We use 1 to minimize how many
 # file handles we keep open.

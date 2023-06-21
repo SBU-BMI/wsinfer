@@ -30,18 +30,20 @@ the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 """
 
-# internal imports
-from .wsi_core.WholeSlideImage import WholeSlideImage
-from .wsi_core.wsi_utils import StitchCoords
-from .wsi_core.batch_process_utils import initialize_df
-
 # other imports
 import os
 import pathlib
-import numpy as np
 import time
-import pandas as pd
 from typing import Optional
+
+import numpy as np
+import pandas as pd
+
+from .wsi_core.batch_process_utils import initialize_df
+
+# internal imports
+from .wsi_core.WholeSlideImage import WholeSlideImage
+from .wsi_core.wsi_utils import StitchCoords
 
 _script_path = pathlib.Path(__file__).resolve().parent
 

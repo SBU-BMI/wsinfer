@@ -1,24 +1,25 @@
 """Detect cancerous regions in a whole slide image."""
 
 import dataclasses
-from datetime import datetime
 import getpass
 import json
 import os
-from pathlib import Path
 import platform
 import shutil
 import subprocess
 import sys
-from typing import Union, Optional
+from datetime import datetime
+from pathlib import Path
+from typing import Optional, Union
+
 import click
 import wsinfer_zoo
-from wsinfer_zoo.client import ModelConfiguration, HFModel
 import wsinfer_zoo.client
 import yaml
+from wsinfer_zoo.client import HFModel, ModelConfiguration
 
-from .._modellib.run_inference import run_inference
 from .._modellib import models
+from .._modellib.run_inference import run_inference
 from .._patchlib.create_dense_patch_grid import create_grid_and_save_multi_slides
 from .._patchlib.create_patches_fp import create_patches
 
@@ -58,6 +59,7 @@ def _print_system_info() -> None:
     """Print information about the system."""
     import torch
     import torchvision
+
     from .. import __version__
 
     click.secho(f"\nRunning wsinfer version {__version__}", fg="green")
@@ -110,6 +112,7 @@ def _get_info_for_save(model_obj: Union[models.LocalModel, HFModel]):
     """Get dictionary with information about the run. To save as JSON in output dir."""
 
     import torch
+
     from .. import __version__
 
     here = Path(__file__).parent.resolve()

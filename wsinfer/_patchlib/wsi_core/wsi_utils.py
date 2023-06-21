@@ -1,9 +1,10 @@
+import math
+import os
+
+import cv2
 import h5py
 import numpy as np
-import os
 from PIL import Image
-import math
-import cv2
 
 from .util_classes import Mosaic_Canvas
 

@@ -21,19 +21,18 @@ Output directory tree for multi-class outputs:
 
 import json
 import multiprocessing
-from pathlib import Path
 import pprint
 import random
 import shutil
 import time
 import typing
+from pathlib import Path
 
 import click
 import large_image
 import numpy as np
 import pandas as pd
 import tqdm
-
 
 PathType = typing.Union[str, Path]
 

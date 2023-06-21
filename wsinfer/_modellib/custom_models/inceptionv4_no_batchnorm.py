@@ -12,7 +12,6 @@ Bias terms are added wherever batchnorm is removed.
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
 from timm.data import IMAGENET_INCEPTION_MEAN, IMAGENET_INCEPTION_STD
 from timm.models import register_model
 from timm.models.helpers import build_model_with_cfg

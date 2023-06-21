@@ -1,18 +1,19 @@
-import torch
+import collections
+import math
+from itertools import islice
+
 import numpy as np
+import torch
 import torch.nn as nn
+import torch.optim as optim
 from torch.utils.data import (
     DataLoader,
-    Sampler,
-    WeightedRandomSampler,
     RandomSampler,
+    Sampler,
     SequentialSampler,
+    WeightedRandomSampler,
     sampler,
 )
-import torch.optim as optim
-from itertools import islice
-import math
-import collections
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

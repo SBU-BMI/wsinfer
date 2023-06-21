@@ -1,27 +1,28 @@
 import math
+import multiprocessing as mp
 import os
 from xml.dom import minidom
-import multiprocessing as mp
+
 import cv2
 import numpy as np
 import openslide
 from PIL import Image
 
-from .wsi_utils import (
-    savePatchIter_bag_hdf5,
-    initialize_hdf5_bag,
-    save_hdf5,
-    isBlackPatch,
-    isWhitePatch,
-)
+from ..utils.file_utils import load_pkl, save_pkl
 from .util_classes import (
+    Contour_Checking_fn,
     isInContourV1,
     isInContourV2,
     isInContourV3_Easy,
     isInContourV3_Hard,
-    Contour_Checking_fn,
 )
-from ..utils.file_utils import load_pkl, save_pkl
+from .wsi_utils import (
+    initialize_hdf5_bag,
+    isBlackPatch,
+    isWhitePatch,
+    save_hdf5,
+    savePatchIter_bag_hdf5,
+)
 
 Image.MAX_IMAGE_PIXELS = 933120000
 
