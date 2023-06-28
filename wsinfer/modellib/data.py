@@ -1,14 +1,17 @@
 from pathlib import Path
-from typing import Callable, Optional, Sequence, Tuple, Union
+from typing import Callable
+from typing import Optional
+from typing import Sequence
+from typing import Tuple
+from typing import Union
 
 import h5py
 import numpy as np
-import torch
 import openslide
+import torch
 from PIL import Image
 
-from ..slide_utils import _get_avg_mpp
-
+from ..slide_utils import get_avg_mpp
 
 PathType = Union[str, Path]
 
@@ -83,7 +86,7 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
         assert Path(patch_path).exists(), "patch path not found"
 
         self.oslide = openslide.OpenSlide(self.wsi_path)
-        self.slide_mpp = _get_avg_mpp(self.wsi_path)
+        self.slide_mpp = get_avg_mpp(self.wsi_path)
         self.patches = _read_patch_coords(self.patch_path)
 
         # The factor by which to resize the patches.

@@ -8,21 +8,18 @@ import numpy as np
 import openslide
 from PIL import Image
 
-from ..utils.file_utils import load_pkl, save_pkl
-from .util_classes import (
-    Contour_Checking_fn,
-    isInContourV1,
-    isInContourV2,
-    isInContourV3_Easy,
-    isInContourV3_Hard,
-)
-from .wsi_utils import (
-    initialize_hdf5_bag,
-    isBlackPatch,
-    isWhitePatch,
-    save_hdf5,
-    savePatchIter_bag_hdf5,
-)
+from ..utils.file_utils import load_pkl
+from ..utils.file_utils import save_pkl
+from .util_classes import Contour_Checking_fn
+from .util_classes import isInContourV1
+from .util_classes import isInContourV2
+from .util_classes import isInContourV3_Easy
+from .util_classes import isInContourV3_Hard
+from .wsi_utils import initialize_hdf5_bag
+from .wsi_utils import isBlackPatch
+from .wsi_utils import isWhitePatch
+from .wsi_utils import save_hdf5
+from .wsi_utils import savePatchIter_bag_hdf5
 
 Image.MAX_IMAGE_PIXELS = 933120000
 

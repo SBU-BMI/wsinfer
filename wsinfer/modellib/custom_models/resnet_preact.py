@@ -1,6 +1,6 @@
 """Pre-activation ResNet."""
 
-import torch
+import torch  # noqa
 import torch.nn as nn
 import torch.nn.functional as F
 

@@ -1,12 +1,13 @@
 from pathlib import Path
-from typing import Tuple, Union, Optional
+from typing import Optional
+from typing import Tuple
+from typing import Union
 
+import numpy as np
 import openslide
 import tifffile
-import numpy as np
 
 from .errors import CannotReadSpacing
-
 
 PathType = Union[str, Path]
 

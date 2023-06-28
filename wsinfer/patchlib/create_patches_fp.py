@@ -39,14 +39,13 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
+from ..errors import CannotReadSpacing
+from ..slide_utils import get_avg_mpp
 from .wsi_core.batch_process_utils import initialize_df
 
 # internal imports
 from .wsi_core.WholeSlideImage import WholeSlideImage
 from .wsi_core.wsi_utils import StitchCoords
-
-from ..errors import CannotReadSpacing
-from ..slide_utils import get_avg_mpp
 
 _script_path = pathlib.Path(__file__).resolve().parent
 

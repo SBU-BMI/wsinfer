@@ -1,12 +1,17 @@
 import dataclasses
 import warnings
-from typing import Callable, Dict, Union
+from typing import Callable
+from typing import Dict
+from typing import Union
 
 import safetensors.torch
 import timm
 import torch
 import wsinfer_zoo
-from wsinfer_zoo.client import HFModel, HFModelTorchScript, HFModelWeightsOnly, Model
+from wsinfer_zoo.client import HFModel
+from wsinfer_zoo.client import HFModelTorchScript
+from wsinfer_zoo.client import HFModelWeightsOnly
+from wsinfer_zoo.client import Model
 
 # Imported for side effects of registering model.
 from ..errors import UnknownArchitectureError
