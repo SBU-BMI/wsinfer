@@ -45,6 +45,9 @@ from .wsi_core.batch_process_utils import initialize_df
 from .wsi_core.WholeSlideImage import WholeSlideImage
 from .wsi_core.wsi_utils import StitchCoords
 
+from ..errors import CannotReadSpacing
+from ..slide_utils import get_avg_mpp
+
 _script_path = pathlib.Path(__file__).resolve().parent
 
 
@@ -278,27 +281,20 @@ def seg_and_patch(
             # particular spacing. The patching happens at the highest resolution, but
             # we want to extract patches at a particular spacing.
             if patch_spacing is not None:
-                from PIL import Image
-
-                orig_max = Image.MAX_IMAGE_PIXELS
-                import large_image
-
-                # Importing large_image changes MAX_IMAGE_PIXELS to None.
-                Image.MAX_IMAGE_PIXELS = orig_max
-                del orig_max, Image
-
-                ts = large_image.getTileSource(full_path)
-                if ts.getMetadata()["mm_x"] is None:
+                try:
+                    slide_mpp = get_avg_mpp(full_path)
+                except CannotReadSpacing:
                     print("!" * 40)
-                    print("SKIPPING this slide because I cannot find the spacing!")
-                    print(full_path)
+                    print("SKIPPINg this slide because the spacing cannot be read")
                     print("!" * 40)
                     continue
-                patch_mm = patch_spacing / 1000  # convert micrometer to millimeter.
-                patch_size = orig_patch_size * patch_mm / ts.getMetadata()["mm_x"]
+
+                patch_size = orig_patch_size * patch_spacing / slide_mpp
                 patch_size = round(patch_size)
-                del ts
+
             # Use non-overlapping patches by default.
+            # FIXME: step_size is in base pixels. But patch_size is in pixels at a
+            # particular resolution
             step_size = step_size or patch_size
             # ----------------------------------------------------------------------
 
