@@ -12,8 +12,10 @@ from .errors import CannotReadSpacing
 PathType = Union[str, Path]
 
 
-def _get_mpp_openslide(slide_path: PathType) -> Tuple[float, float]:
+def _get_mpp_openslide(slide_path: PathType) -> Tuple[Optional[float], Optional[float]]:
     slide = openslide.OpenSlide(slide_path)
+    mppx: Optional[float] = None
+    mppy: Optional[float] = None
     if (
         openslide.PROPERTY_NAME_MPP_X in slide.properties
         and openslide.PROPERTY_NAME_MPP_Y in slide.properties
@@ -45,7 +47,7 @@ def _get_biggest_series(tif: tifffile.TiffFile) -> int:
     return max_index
 
 
-def _get_mpp_tiff(slide_path: PathType) -> Tuple[float, float]:
+def _get_mpp_tiff(slide_path: PathType) -> Tuple[Optional[float], Optional[float]]:
     # Enum ResolutionUnit value to the number of micrometers in that unit.
     # 2: inch (25,400 microns in an inch)
     # 3: centimeter (10,000 microns in a cm)
@@ -70,11 +72,6 @@ def _get_mpp_tiff(slide_path: PathType) -> Tuple[float, float]:
                 * page.tags["YResolution"].value[1]
                 / page.tags["YResolution"].value[0]
             )
-    if um_x is None or um_y is None:
-        raise ValueError(
-            f"Could not read the MPP the slide, got mppx = {um_x} and mppy = {um_y}"
-        )
-
     return um_x, um_y
 
 
