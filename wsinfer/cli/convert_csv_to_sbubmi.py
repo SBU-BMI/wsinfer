@@ -2,17 +2,17 @@
 
 Output directory tree for single class outputs:
 ├── heatmap_jsons
-│   ├── heatmap-SLIDEID.json
-│   └── meta-SLIDEID.json
+│   ├── heatmap-SLIDEID.json
+│   └── meta-SLIDEID.json
 └── heatmap_txt
     ├── color-SLIDEID
     └── prediction-SLIDEID
 
 Output directory tree for multi-class outputs:
 ├── heatmap_jsons
-│   └── CLASS_LABEL
-│       ├── heatmap-SLIDEID.json
-│       └── meta-SLIDEID.json
+│   └── CLASS_LABEL
+│       ├── heatmap-SLIDEID.json
+│       └── meta-SLIDEID.json
 └── heatmap_txt
     └── CLASS_LABEL
         ├── color-SLIDEID
@@ -29,8 +29,8 @@ import typing
 from pathlib import Path
 
 import click
-import large_image
 import numpy as np
+import openslide
 import pandas as pd
 import tqdm
 
@@ -184,7 +184,7 @@ def write_heatmap_txt(input: PathType, output: PathType, class_names: typing.Lis
 def write_color_txt(
     input: PathType,
     output: PathType,
-    ts: large_image.tilesource.TileSource,
+    oslide: openslide.OpenSlide,
     num_processes: int = 6,
 ):
     def whiteness(arr):
@@ -204,15 +204,12 @@ def write_color_txt(
     global get_color  # Hack to please multiprocessing.
 
     def get_color(row: pd.Series):
-        arr, _ = ts.getRegion(
-            format=large_image.constants.TILE_FORMAT_NUMPY,
-            region=dict(
-                left=row["minx"],
-                top=row["miny"],
-                width=row["width"],
-                height=row["height"],
-            ),
+        patch_im = oslide.read_region(
+            location=(row["minx"], row["miny"]),
+            level=0,
+            size=(row["width"], row["height"]),
         )
+        arr = np.asarray(patch_im)
         white = whiteness(arr)
         black = blackness(arr)
         red = redness(arr)
@@ -356,11 +353,9 @@ def tosbu(
             click.secho(f"WSI file not found: {wsi_file}", bg="red")
             click.secho("Skipping...", bg="red")
             continue
-        ts = large_image.getTileSource(wsi_file)
-        if ts.sizeX is None or ts.sizeY is None:
-            click.secho(f"Unknown size for WSI: {wsi_file}", bg="red")
-            click.secho("Skipping...", bg="red")
-            continue
+        oslide = openslide.OpenSlide(wsi_file)
+
+        slide_width, slide_height = oslide.level_dimensions[0]
 
         for class_name in class_names:
             if len(class_names) == 1:
@@ -382,8 +377,8 @@ def tosbu(
                 input=input_csv,
                 output_heatmap=output_heatmap,
                 output_meta=output_meta,
-                slide_width=ts.sizeX,
-                slide_height=ts.sizeY,
+                slide_width=slide_width,
+                slide_height=slide_height,
                 execution_id=execution_id,
                 study_id=study_id,
                 case_id=slide_id,  # TODO: should case_id be different?
@@ -418,7 +413,7 @@ def tosbu(
                 write_color_txt(
                     input=input_csv,
                     output=output_color,
-                    ts=ts,
+                    oslide=oslide,
                     num_processes=num_processes,
                 )
             else:
@@ -429,7 +424,7 @@ def tosbu(
                 write_color_txt(
                     input=input_csv,
                     output=output_color,
-                    ts=ts,
+                    oslide=oslide,
                     num_processes=num_processes,
                 )
                 # Copy this color file to all class-specific dirs.

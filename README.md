@@ -23,15 +23,13 @@ We do not install these dependencies automatically because their installation ca
 on a user's system. Then use the command below to install this package.
 
 ```
-python -m pip install --find-links https://girder.github.io/large_image_wheels wsinfer
+python -m pip install wsinfer
 ```
 
 To use the _bleeding edge_, use
 
 ```
-python -m pip install \
-    --find-links https://girder.github.io/large_image_wheels \
-    git+https://github.com/SBU-BMI/wsinfer.git
+python -m pip install git+https://github.com/SBU-BMI/wsinfer.git
 ```
 
 ## Developers
@@ -41,7 +39,7 @@ Clone this GitHub repository and install the package (in editable mode with the 
 ```
 git clone https://github.com/SBU-BMI/wsinfer.git
 cd wsinfer
-python -m pip install --editable .[dev] --find-links https://girder.github.io/large_image_wheels
+python -m pip install --editable .[dev]
 ```
 
 # Cutting a release

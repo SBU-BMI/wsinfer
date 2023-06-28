@@ -21,11 +21,9 @@ the type of hardware a user has.
 Manual installation
 -------------------
 
-After having installed PyTorch, install releases of WSInfer from `PyPI <https://pypi.org/project/wsinfer/>`_.
-Be sure to include the line :code:`--find-links https://girder.github.io/large_image_wheels` to ensure
-dependencies are installed properly. ::
+After having installed PyTorch, install releases of WSInfer from `PyPI <https://pypi.org/project/wsinfer/>`_. ::
 
-    pip install wsinfer --find-links https://girder.github.io/large_image_wheels
+    pip install wsinfer
 
 This installs the :code:`wsinfer` Python package and the :code:`wsinfer` command line program. ::
 

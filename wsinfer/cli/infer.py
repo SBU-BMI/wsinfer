@@ -10,13 +10,15 @@ import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional
+from typing import Union
 
 import click
 import wsinfer_zoo
 import wsinfer_zoo.client
 import yaml
-from wsinfer_zoo.client import HFModel, ModelConfiguration
+from wsinfer_zoo.client import HFModel
+from wsinfer_zoo.client import ModelConfiguration
 
 from ..modellib import models
 from ..modellib.run_inference import run_inference

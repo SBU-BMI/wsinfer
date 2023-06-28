@@ -1,15 +1,17 @@
 from pathlib import Path
-from typing import Callable, Optional, Sequence, Tuple, Union
+from typing import Callable
+from typing import Optional
+from typing import Sequence
+from typing import Tuple
+from typing import Union
 
 import h5py
-import large_image
 import numpy as np
+import openslide
 import torch
 from PIL import Image
 
-# Set the maximum number of TileSource objects to cache. We use 1 to minimize how many
-# file handles we keep open.
-large_image.config.setConfig("cache_tilesource_maximum", 1)
+from ..slide_utils import get_avg_mpp
 
 PathType = Union[str, Path]
 
@@ -83,18 +85,13 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
         assert Path(wsi_path).exists(), "wsi path not found"
         assert Path(patch_path).exists(), "patch path not found"
 
-        self.tilesource: large_image.tilesource.TileSource = large_image.getTileSource(
-            self.wsi_path
-        )
-        # Disable the tile cache. We wrap this in a try-except because we are accessing
-        # a private attribute. It is possible that this attribute will change names
-        # in the future, and if that happens, we do not want to raise errors.
-        try:
-            self.tilesource.cache._Cache__maxsize = 0
-        except AttributeError:
-            pass
-
+        self.oslide = openslide.OpenSlide(self.wsi_path)
+        self.slide_mpp = get_avg_mpp(self.wsi_path)
         self.patches = _read_patch_coords(self.patch_path)
+
+        # The factor by which to resize the patches.
+        self.size_factor = self.slide_mpp / self.um_px
+
         assert self.patches.ndim == 2, "expected 2D array of patch coordinates"
         # x, y, width, height
         assert self.patches.shape[1] == 4, "expected second dimension to have len 4"
@@ -108,17 +105,17 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
         coords: Sequence[int] = self.patches[idx]
         assert len(coords) == 4, "expected 4 coords (minx, miny, width, height)"
         minx, miny, width, height = coords
-        source_region = dict(
-            left=minx, top=miny, width=width, height=height, units="base_pixels"
-        )
-        target_scale = dict(mm_x=self.um_px / 1000)
 
-        patch_im, _ = self.tilesource.getRegionAtAnotherScale(
-            sourceRegion=source_region,
-            targetScale=target_scale,
-            format=large_image.tilesource.TILE_FORMAT_PIL,
+        patch_im = self.oslide.read_region(
+            location=(minx, miny), level=0, size=(width, height)
         )
         patch_im = patch_im.convert("RGB")
+        # Resize to the expected spacing. We extract the patches at their highest
+        # resolution and resize to the prescribed MPP here.
+        patch_im = patch_im.resize(
+            (self.size_factor * width, self.size_factor * height)
+        )
+
         if self.transform is not None:
             patch_im = self.transform(patch_im)
         if not isinstance(patch_im, (Image.Image, torch.Tensor)):

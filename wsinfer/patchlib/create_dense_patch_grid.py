@@ -5,20 +5,21 @@ from pathlib import Path
 from typing import Tuple
 
 import h5py
-import large_image
 import numpy as np
+import openslide
+
+from ..slide_utils import get_avg_mpp
 
 
 def _get_dense_grid(
     slide, orig_patch_size: int, patch_spacing_um_px: float
 ) -> Tuple[np.ndarray, int]:
-    ts = large_image.getTileSource(slide)
-    patch_spacing_mm_px = patch_spacing_um_px / 1000
-    patch_size = orig_patch_size * patch_spacing_mm_px / ts.getMetadata()["mm_x"]
+    mpp = get_avg_mpp(slide)
+    patch_size = orig_patch_size * patch_spacing_um_px / mpp
     patch_size = round(patch_size)
     step_size = patch_size  # non-overlapping patches
-    cols = ts.getMetadata()["sizeX"]
-    rows = ts.getMetadata()["sizeY"]
+    oslide = openslide.OpenSlide(slide)
+    cols, rows = oslide.level_dimensions[0]
     xs = range(0, cols, step_size)
     ys = range(0, rows, step_size)
     # List of (x, y) coordinates.

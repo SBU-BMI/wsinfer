@@ -7,7 +7,9 @@ From the original paper (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7369575/):
 
 import typing
 from pathlib import Path
-from typing import List, Tuple, Union
+from typing import List
+from typing import Tuple
+from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -17,7 +19,9 @@ import wsinfer_zoo.client
 
 from .. import errors
 from .data import WholeSlideImagePatches
-from .models import LocalModel, get_pretrained_torch_module, jit_compile
+from .models import LocalModel
+from .models import get_pretrained_torch_module
+from .models import jit_compile
 from .transforms import make_compose_from_transform_config
 
 PathType = Union[str, Path]
