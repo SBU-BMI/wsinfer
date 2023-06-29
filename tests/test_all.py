@@ -216,7 +216,7 @@ def test_cli_run_args(tmp_path: Path):
         (
             "resnet34",
             "TCGA-PRAD-v1",
-            ["grade3", "grade4+5", "benign"],
+            ["grade3", "grade4or5", "benign"],
             [0.0010944147361442447, 3.371985076228157e-05, 0.9988718628883362],
             350,
             144,
@@ -818,12 +818,15 @@ def test_invalid_modeldefs(modeldef, tmp_path: Path):
 def test_valid_modeldefs(tmp_path: Path):
     from wsinfer._modellib.models import Weights
 
-    weights_file = tmp_path / "weights.pt"
+    # Put the weights in a different directory than the config to make sure that
+    # relative paths work.
+    weights_file = tmp_path / "ckpts" / "weights.pt"
+    weights_file.parent.mkdir()
     modeldef = dict(
         version="1.0",
         name="foo",
         architecture="resnet34",
-        file=str(weights_file),
+        file="ckpts/weights.pt",
         num_classes=2,
         transform=dict(resize_size=224, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
         patch_size_pixels=350,
@@ -838,7 +841,9 @@ def test_valid_modeldefs(tmp_path: Path):
         Weights.from_yaml(path)
 
     weights_file.touch()
-    assert Weights.from_yaml(path)
+    w = Weights.from_yaml(path)
+    assert w.file is not None
+    assert Path(w.file).exists()
 
 
 def test_model_registration(tmp_path: Path):
@@ -1077,3 +1082,27 @@ def test_issue_97(tmp_path: Path, tiff_image: Path):
     assert result.exit_code == 0
     metas = list(results_dir.glob("run_metadata_*.json"))
     assert len(metas) == 2
+
+
+def test_issue_125(tmp_path: Path):
+    from wsinfer.cli.infer import _get_info_for_save
+    from wsinfer._modellib.models import Weights
+    from wsinfer._modellib.transforms import PatchClassification
+
+    w = Weights(
+        name="foo",
+        architecture="resnet34",
+        # We are testing whether we can still save if file is a Path instance.
+        file=Path(__file__),
+        num_classes=1,
+        transform=PatchClassification(
+            resize_size=299, mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)
+        ),
+        patch_size_pixels=350,
+        spacing_um_px=0.25,
+        class_names=["tumor"],
+    )
+
+    info = _get_info_for_save(w)
+    with open(tmp_path / "foo.json", "w") as f:
+        json.dump(info, f)
