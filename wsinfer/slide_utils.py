@@ -47,7 +47,33 @@ def _get_biggest_series(tif: tifffile.TiffFile) -> int:
     return max_index
 
 
-def _get_mpp_tiff(slide_path: PathType) -> Tuple[Optional[float], Optional[float]]:
+def _get_mpp_tiff_openslide(
+    slide_path: PathType,
+) -> Tuple[Optional[float], Optional[float]]:
+    resunit_to_microns = {"inch": 25400, "in": 25400, "centimeter": 10000, "cm": 10000}
+    um_x: Optional[float] = None
+    um_y: Optional[float] = None
+
+    oslide = openslide.OpenSlide(slide_path)
+
+    if (
+        "tiff.ResolutionUnit" in oslide.properties
+        and "tiff.XResolution" in oslide.properties
+        and "tiff.YResolution" in oslide.properties
+    ):
+        unit = resunit_to_microns[oslide.properties["tiff.ResolutionUnit"]]
+        xres = float(oslide.properties["tiff.XResolution"])
+        yres = float(oslide.properties["tiff.YResolution"])
+        if xres >= 100:
+            um_x = unit / xres
+        if yres >= 100:
+            um_y = unit / yres
+    return um_x, um_y
+
+
+def _get_mpp_tiff_tifffile(
+    slide_path: PathType,
+) -> Tuple[Optional[float], Optional[float]]:
     # Enum ResolutionUnit value to the number of micrometers in that unit.
     # 2: inch (25,400 microns in an inch)
     # 3: centimeter (10,000 microns in a cm)
@@ -82,8 +108,13 @@ def get_avg_mpp(slide_path: PathType) -> float:
     if mppx is not None and mppy is not None:
         return (mppx + mppy) / 2
 
+    # Try openslide with tiff tags now.
+    mppx, mppy = _get_mpp_tiff_openslide(slide_path)
+    if mppx is not None and mppy is not None:
+        return (mppx + mppy) / 2
+
     # Try tifffile now.
-    mppx, mppy = _get_mpp_tiff(slide_path)
+    mppx, mppy = _get_mpp_tiff_tifffile(slide_path)
     if mppx is not None and mppy is not None:
         return (mppx + mppy) / 2
 
