@@ -296,12 +296,12 @@ def seg_and_patch(
             mask.save(mask_path)
 
         patch_time_elapsed = -1  # Default time
-        this_step_size = None
         if patch:
             # -----------------------------------------------------------------------
             # Added by Jakub Kaczmarzyk (github kaczmarj) to get patch size for a
             # particular spacing. The patching happens at the highest resolution, but
             # we want to extract patches at a particular spacing.
+            this_step_size = None
             if patch_spacing is not None:
                 try:
                     slide_mpp = get_avg_mpp(full_path)
@@ -315,7 +315,7 @@ def seg_and_patch(
                 patch_size = round(patch_size)
                 print(
                     "Scaled patch size by the patch spacing (result is patches of"
-                    f" {patch_size * patch_spacing} microns)"
+                    f" {patch_size * slide_mpp} microns)"
                 )
 
                 # We use the variable orig_step_size because
@@ -324,12 +324,12 @@ def seg_and_patch(
                     this_step_size = round(this_step_size)
                     print(
                         "Scaled step size by the patch spacing (result is steps of"
-                        f" {this_step_size * patch_spacing} microns)"
+                        f" {this_step_size * slide_mpp} microns)"
                     )
 
             step_size = this_step_size or patch_size
-            print(f"Using patch size = {patch_size} @ {patch_spacing} MPP")
-            print(f"Using step size = {step_size} @ {patch_spacing} MPP")
+            print(f"Using patch size = {patch_size} @ {slide_mpp} MPP")
+            print(f"Using step size = {step_size} @ {slide_mpp} MPP")
             # ----------------------------------------------------------------------
 
             current_patch_params.update(
