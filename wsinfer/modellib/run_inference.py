@@ -155,6 +155,7 @@ def run_inference(
                 wsi_path=wsi_path,
                 patch_path=patch_path,
                 um_px=model_info.config.spacing_um_px,
+                patch_size=model_info.config.patch_size_pixels,
                 transform=transform,
                 roi_path=roi_path,
             )

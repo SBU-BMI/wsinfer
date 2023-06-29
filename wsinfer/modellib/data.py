@@ -11,8 +11,6 @@ import openslide
 import torch
 from PIL import Image
 
-from ..slide_utils import get_avg_mpp
-
 PathType = Union[str, Path]
 
 
@@ -102,7 +100,9 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
     patch_path : str, Path
         Path to npy file with coordinates of input image.
     um_px : float
-        Scale of the resulting patches. Use 0.5 for 20x magnification.
+        Scale of the resulting patches. For example, 0.5 for ~20x magnification.
+    patch_size : int
+        The size of patches in pixels.
     transform : callable, optional
         A callable to modify a retrieved patch. The callable must accept a
         PIL.Image.Image instance and return a torch.Tensor.
@@ -116,12 +116,14 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
         wsi_path: PathType,
         patch_path: PathType,
         um_px: float,
+        patch_size: int,
         transform: Optional[Callable[[Image.Image], torch.Tensor]] = None,
         roi_path: Optional[PathType] = None,
     ):
         self.wsi_path = wsi_path
         self.patch_path = patch_path
         self.um_px = float(um_px)
+        self.patch_size = int(patch_size)
         self.transform = transform
         self.roi_path = roi_path
 
@@ -131,7 +133,6 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
             assert Path(roi_path).exists(), "roi path not found"
 
         self.oslide = openslide.OpenSlide(self.wsi_path)
-        self.slide_mpp = get_avg_mpp(self.wsi_path)
         self.patches = _read_patch_coords(self.patch_path)
 
         # If an ROI is given, keep patches that intersect it.
@@ -141,9 +142,6 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
             )
             if self.patches.shape[0] == 0:
                 raise ValueError("No patches left after taking intersection with ROI")
-
-        # The factor by which to resize the patches.
-        self.size_factor = self.slide_mpp / self.um_px
 
         assert self.patches.ndim == 2, "expected 2D array of patch coordinates"
         # x, y, width, height
@@ -163,11 +161,8 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
             location=(minx, miny), level=0, size=(width, height)
         )
         patch_im = patch_im.convert("RGB")
-        # Resize to the expected spacing. We extract the patches at their highest
-        # resolution and resize to the prescribed MPP here.
-        patch_im = patch_im.resize(
-            (self.size_factor * width, self.size_factor * height)
-        )
+        # Resize to the expected patch size (and spacing).
+        patch_im = patch_im.resize((self.patch_size, self.patch_size))
 
         if self.transform is not None:
             patch_im = self.transform(patch_im)
