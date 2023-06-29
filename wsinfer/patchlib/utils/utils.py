@@ -20,6 +20,7 @@ elif torch.backends.mps.is_available() and torch.backends.mps.is_built():
 else:
     device = torch.device("cpu")
 
+
 class SubsetSequentialSampler(Sampler):
     """Samples elements sequentially from a given list of indices, without replacement.
 
