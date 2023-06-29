@@ -305,17 +305,31 @@ def seg_and_patch(
                     slide_mpp = get_avg_mpp(full_path)
                 except CannotReadSpacing:
                     print("!" * 40)
-                    print("SKIPPINg this slide because the spacing cannot be read")
+                    print("SKIPPING this slide because the spacing cannot be read")
                     print("!" * 40)
                     continue
 
                 patch_size = orig_patch_size * patch_spacing / slide_mpp
                 patch_size = round(patch_size)
+                print(
+                    "Scaled patch size by the patch spacing (result is patches of"
+                    f" {patch_size * patch_spacing} microns)"
+                )
+
+                if step_size is not None:
+                    step_size = step_size * patch_spacing / slide_mpp
+                    step_size = round(step_size)
+                    print(
+                        "Scaled step size by the patch spacing (result is steps of"
+                        f" {step_size * patch_spacing} microns)"
+                    )
 
             # Use non-overlapping patches by default.
             # FIXME: step_size is in base pixels. But patch_size is in pixels at a
             # particular resolution
             step_size = step_size or patch_size
+            print(f"Using patch size = {patch_size} @ {patch_spacing} MPP")
+            print(f"Using step size = {step_size} @ {patch_spacing} MPP")
             # ----------------------------------------------------------------------
 
             current_patch_params.update(
