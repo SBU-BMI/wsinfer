@@ -204,7 +204,7 @@ def _get_info_for_save(model_obj: Union[models.LocalModel, HFModel]):
     "-m",
     "--model",
     "model_name",
-    type=click.Choice(sorted(wsinfer_zoo.registry.models.keys())),
+    type=click.Choice(sorted(wsinfer_zoo.client.load_registry().models.keys())),
     help="Name of the model to use from WSInfer Model Zoo. Mutually exclusive with"
     " --config.",
 )

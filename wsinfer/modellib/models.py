@@ -57,7 +57,8 @@ def _create_model(name: str, num_classes: int) -> torch.nn.Module:
 def get_registered_model(
     name: str, torchscript: bool = False, safetensors: bool = False
 ) -> HFModel:
-    model = wsinfer_zoo.registry.get_model_by_name(name=name)
+    registry = wsinfer_zoo.client.load_registry()
+    model = registry.get_model_by_name(name=name)
     if torchscript:
         return model.load_model_torchscript()
     else:
