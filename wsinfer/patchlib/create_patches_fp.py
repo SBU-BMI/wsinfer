@@ -160,6 +160,7 @@ def seg_and_patch(
     stitch_times = 0.0
 
     orig_patch_size = patch_size
+    orig_step_size = step_size
 
     for i in range(total):
         df.to_csv(os.path.join(save_dir, "process_list_autogen.csv"), index=False)
@@ -295,6 +296,7 @@ def seg_and_patch(
             mask.save(mask_path)
 
         patch_time_elapsed = -1  # Default time
+        this_step_size = None
         if patch:
             # -----------------------------------------------------------------------
             # Added by Jakub Kaczmarzyk (github kaczmarj) to get patch size for a
@@ -316,19 +318,16 @@ def seg_and_patch(
                     f" {patch_size * patch_spacing} microns)"
                 )
 
-                # if step_size is not None:
-                #     step_size = step_size * patch_spacing / slide_mpp
-                #     step_size = round(step_size)
-                #     print(
-                #         "Scaled step size by the patch spacing (result is steps of"
-                #         f" {step_size * patch_spacing} microns)"
-                #     )
+                # We use the variable orig_step_size because
+                if orig_step_size is not None:
+                    this_step_size = orig_step_size * patch_spacing / slide_mpp
+                    this_step_size = round(this_step_size)
+                    print(
+                        "Scaled step size by the patch spacing (result is steps of"
+                        f" {this_step_size * patch_spacing} microns)"
+                    )
 
-            if step_size is not None:
-                raise NotImplementedError("custom step sizes are not supported")
-
-            # Use non-overlapping patches by default.
-            step_size = patch_size
+            step_size = this_step_size or patch_size
             print(f"Using patch size = {patch_size} @ {patch_spacing} MPP")
             print(f"Using step size = {step_size} @ {patch_spacing} MPP")
             # ----------------------------------------------------------------------
