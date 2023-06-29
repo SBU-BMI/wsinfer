@@ -99,8 +99,8 @@ def seg_and_patch(
     patch_save_dir,
     mask_save_dir,
     stitch_save_dir,
-    patch_size=256,
-    step_size=256,
+    patch_size: int = 256,
+    step_size: Optional[int] = None,
     seg_params={
         "seg_level": -1,
         "sthresh": 8,
