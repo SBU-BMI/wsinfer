@@ -52,6 +52,44 @@ def _read_patch_coords(path: PathType) -> np.ndarray:
     return coords
 
 
+def _filter_patches_in_rois(
+    *, geojson_path: PathType, coords: np.ndarray
+) -> np.ndarray:
+    """Keep the patches that intersect the ROI(s).
+
+    Parameters
+    ----------
+    geojson_path : str, Path
+        Path to the GeoJSON file that encodes the points of the ROI(s).
+    coords : ndarray
+        Two-dimensional array where each row has minx, miny, width, height.
+
+    Returns
+    -------
+    ndarray of filtered coords.
+    """
+    import geojson
+    from shapely import STRtree
+    from shapely.geometry import box, shape
+
+    with open(geojson_path) as f:
+        geo = geojson.load(f)
+    if not geo.is_valid:
+        raise ValueError("GeoJSON of ROI is not valid")
+    for roi in geo["features"]:
+        assert roi.is_valid, "an ROI geometry is not valid"
+    geoms_rois = [shape(roi["geometry"]) for roi in geo["features"]]
+    coords_orig = coords.copy()
+    coords = coords.copy()
+    coords[:, 2] += coords[:, 0]  # Calculate maxx.
+    coords[:, 3] += coords[:, 1]  # Calculate maxy.
+    boxes = [box(*coords[idx]) for idx in range(coords.shape[0])]
+    tree = STRtree(boxes)
+    _, intersecting_ids = tree.query(geoms_rois, predicate="intersects")
+    intersecting_ids = np.sort(np.unique(intersecting_ids))
+    return coords_orig[intersecting_ids]
+
+
 class WholeSlideImagePatches(torch.utils.data.Dataset):
     """Dataset of one whole slide image.
 
@@ -68,6 +106,9 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
     transform : callable, optional
         A callable to modify a retrieved patch. The callable must accept a
         PIL.Image.Image instance and return a torch.Tensor.
+    roi_path : str, Path, optional
+        Path to GeoJSON file that outlines the region of interest (ROI). Only patches
+        within the ROI(s) will be used.
     """
 
     def __init__(
@@ -76,18 +117,30 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
         patch_path: PathType,
         um_px: float,
         transform: Optional[Callable[[Image.Image], torch.Tensor]] = None,
+        roi_path: Optional[PathType] = None,
     ):
         self.wsi_path = wsi_path
         self.patch_path = patch_path
         self.um_px = float(um_px)
         self.transform = transform
+        self.roi_path = roi_path
 
         assert Path(wsi_path).exists(), "wsi path not found"
         assert Path(patch_path).exists(), "patch path not found"
+        if roi_path is not None:
+            assert Path(roi_path).exists(), "roi path not found"
 
         self.oslide = openslide.OpenSlide(self.wsi_path)
         self.slide_mpp = get_avg_mpp(self.wsi_path)
         self.patches = _read_patch_coords(self.patch_path)
+
+        # If an ROI is given, keep patches that intersect it.
+        if self.roi_path is not None:
+            self.patches = _filter_patches_in_rois(
+                geojson_path=self.roi_path, coords=self.patches
+            )
+            if self.patches.shape[0] == 0:
+                raise ValueError("No patches left after taking intersection with ROI")
 
         # The factor by which to resize the patches.
         self.size_factor = self.slide_mpp / self.um_px

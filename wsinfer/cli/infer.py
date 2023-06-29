@@ -283,7 +283,7 @@ def run(
     batch_size: int,
     num_workers: int = 0,
     speedup: bool = False,
-    roi_dir: typing.Optional[PathType] = None,
+    roi_dir: Optional[PathType] = None,
     dense_grid: bool = False,
 ):
     """Run model inference on a directory of whole slide images.

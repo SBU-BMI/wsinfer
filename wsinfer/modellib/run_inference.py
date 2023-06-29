@@ -8,6 +8,7 @@ From the original paper (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7369575/):
 import typing
 from pathlib import Path
 from typing import List
+from typing import Optional
 from typing import Tuple
 from typing import Union
 
@@ -34,6 +35,7 @@ def run_inference(
     batch_size: int = 32,
     num_workers: int = 0,
     speedup: bool = False,
+    roi_dir: Optional[PathType] = None,
 ) -> Tuple[List[str], List[str]]:
     """Run model inference on a directory of whole slide images and save results to CSV.
 
@@ -91,9 +93,17 @@ def run_inference(
     model = get_pretrained_torch_module(model=model_info)
     model.eval()
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    if torch.cuda.device_count() > 1:
-        model = torch.nn.DataParallel(model)
+    # Set the device.
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+        if torch.cuda.device_count() > 1:
+            model = torch.nn.DataParallel(model)
+    elif torch.backends.mps.is_available() and torch.backends.mps.is_built():
+        device = torch.device("mps")
+    else:
+        device = torch.device("cpu")
+    print(f'Using device "{device}"')
+
     model.to(device)
 
     if speedup:
@@ -106,6 +116,12 @@ def run_inference(
 
     failed_patching = [p.stem for p in patch_paths if not p.exists()]
     failed_inference: List[str] = []
+
+    # Get paths to ROI geojson files.
+    if roi_dir is not None:
+        roi_paths = [Path(roi_dir) / p.with_suffix(".json").name for p in wsi_paths]
+    else:
+        roi_paths = None
 
     # results_for_all_slides: typing.List[pd.DataFrame] = []
     for i, (wsi_path, patch_path) in enumerate(zip(wsi_paths, patch_paths)):
@@ -124,12 +140,23 @@ def run_inference(
             print(f"Skipping because patch file not found: {patch_path}")
             continue
 
+        roi_path = None
+        if roi_paths is not None:
+            roi_path = roi_paths[i]
+            # We grab all potential names of ROI paths, but we do not require all of
+            # them to exist. We only use those that exist.
+            if not roi_path.exists():
+                roi_path = None
+            else:
+                print(f" ROI path: {roi_path}")
+
         try:
             dset = WholeSlideImagePatches(
                 wsi_path=wsi_path,
                 patch_path=patch_path,
                 um_px=model_info.config.spacing_um_px,
                 transform=transform,
+                roi_path=roi_path,
             )
         except Exception:
             failed_inference.append(wsi_dir.stem)
