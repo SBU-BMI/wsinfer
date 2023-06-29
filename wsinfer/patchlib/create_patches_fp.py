@@ -316,18 +316,19 @@ def seg_and_patch(
                     f" {patch_size * patch_spacing} microns)"
                 )
 
-                if step_size is not None:
-                    step_size = step_size * patch_spacing / slide_mpp
-                    step_size = round(step_size)
-                    print(
-                        "Scaled step size by the patch spacing (result is steps of"
-                        f" {step_size * patch_spacing} microns)"
-                    )
+                # if step_size is not None:
+                #     step_size = step_size * patch_spacing / slide_mpp
+                #     step_size = round(step_size)
+                #     print(
+                #         "Scaled step size by the patch spacing (result is steps of"
+                #         f" {step_size * patch_spacing} microns)"
+                #     )
+
+            if step_size is not None:
+                raise NotImplementedError("custom step sizes are not supported")
 
             # Use non-overlapping patches by default.
-            # FIXME: step_size is in base pixels. But patch_size is in pixels at a
-            # particular resolution
-            step_size = step_size or patch_size
+            step_size = patch_size
             print(f"Using patch size = {patch_size} @ {patch_spacing} MPP")
             print(f"Using step size = {step_size} @ {patch_spacing} MPP")
             # ----------------------------------------------------------------------
