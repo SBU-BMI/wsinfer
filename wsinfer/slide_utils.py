@@ -4,7 +4,7 @@ from typing import Tuple
 from typing import Union
 
 import numpy as np
-import openslide
+import tiffslide
 import tifffile
 
 from .errors import CannotReadSpacing
@@ -12,16 +12,16 @@ from .errors import CannotReadSpacing
 PathType = Union[str, Path]
 
 
-def _get_mpp_openslide(slide_path: PathType) -> Tuple[Optional[float], Optional[float]]:
-    slide = openslide.OpenSlide(slide_path)
+def _get_mpp_tiffslide(slide_path: PathType) -> Tuple[Optional[float], Optional[float]]:
+    slide = tiffslide.TiffSlide(slide_path)
     mppx: Optional[float] = None
     mppy: Optional[float] = None
     if (
-        openslide.PROPERTY_NAME_MPP_X in slide.properties
-        and openslide.PROPERTY_NAME_MPP_Y in slide.properties
+        tiffslide.PROPERTY_NAME_MPP_X in slide.properties
+        and tiffslide.PROPERTY_NAME_MPP_Y in slide.properties
     ):
-        mppx = slide.properties[openslide.PROPERTY_NAME_MPP_X]
-        mppy = slide.properties[openslide.PROPERTY_NAME_MPP_Y]
+        mppx = slide.properties[tiffslide.PROPERTY_NAME_MPP_X]
+        mppy = slide.properties[tiffslide.PROPERTY_NAME_MPP_Y]
         if mppx is None or mppy is None:
             raise ValueError(
                 "Cannot infer slide spacing because MPPX or MPPY is None:"
@@ -47,23 +47,23 @@ def _get_biggest_series(tif: tifffile.TiffFile) -> int:
     return max_index
 
 
-def _get_mpp_tiff_openslide(
+def _get_mpp_tiff_tiffslide(
     slide_path: PathType,
 ) -> Tuple[Optional[float], Optional[float]]:
     resunit_to_microns = {"inch": 25400, "in": 25400, "centimeter": 10000, "cm": 10000}
     um_x: Optional[float] = None
     um_y: Optional[float] = None
 
-    oslide = openslide.OpenSlide(slide_path)
+    slide = tiffslide.TiffSlide(slide_path)
 
     if (
-        "tiff.ResolutionUnit" in oslide.properties
-        and "tiff.XResolution" in oslide.properties
-        and "tiff.YResolution" in oslide.properties
+        "tiff.ResolutionUnit" in slide.properties
+        and "tiff.XResolution" in slide.properties
+        and "tiff.YResolution" in slide.properties
     ):
-        unit = resunit_to_microns[oslide.properties["tiff.ResolutionUnit"]]
-        xres = float(oslide.properties["tiff.XResolution"])
-        yres = float(oslide.properties["tiff.YResolution"])
+        unit = resunit_to_microns[slide.properties["tiff.ResolutionUnit"]]
+        xres = float(slide.properties["tiff.XResolution"])
+        yres = float(slide.properties["tiff.YResolution"])
         if xres >= 100:
             um_x = unit / xres
         if yres >= 100:
@@ -104,12 +104,12 @@ def _get_mpp_tiff_tifffile(
 def get_avg_mpp(slide_path: PathType) -> float:
     """Return the average MPP of a whole slide image."""
 
-    mppx, mppy = _get_mpp_openslide(slide_path)
+    mppx, mppy = _get_mpp_tiffslide(slide_path)
     if mppx is not None and mppy is not None:
         return (mppx + mppy) / 2
 
-    # Try openslide with tiff tags now.
-    mppx, mppy = _get_mpp_tiff_openslide(slide_path)
+    # Try tiffslide with tiff tags now.
+    mppx, mppy = _get_mpp_tiff_tiffslide(slide_path)
     if mppx is not None and mppy is not None:
         return (mppx + mppy) / 2
 

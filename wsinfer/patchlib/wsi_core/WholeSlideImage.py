@@ -5,7 +5,7 @@ from xml.dom import minidom
 
 import cv2
 import numpy as np
-import openslide
+import tiffslide
 from PIL import Image
 
 from ..utils.file_utils import load_pkl
@@ -33,7 +33,7 @@ class WholeSlideImage(object):
 
         #         self.name = ".".join(path.split("/")[-1].split('.')[:-1])
         self.name = os.path.splitext(os.path.basename(path))[0]
-        self.wsi = openslide.open_slide(path)
+        self.wsi = tiffslide.open_slide(path)
         self.level_downsamples = self._assertLevelDownsamples()
         self.level_dim = self.wsi.level_dimensions
 

@@ -7,7 +7,7 @@ from typing import Union
 
 import h5py
 import numpy as np
-import openslide
+import tiffslide
 import torch
 from PIL import Image
 
@@ -147,7 +147,7 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
         assert self.patches.shape[1] == 4, "expected second dimension to have len 4"
 
     def worker_init(self, *_):
-        self.oslide = openslide.OpenSlide(self.wsi_path)
+        self.slide = tiffslide.TiffSlide(self.wsi_path)
 
     def __len__(self):
         return self.patches.shape[0]
@@ -159,7 +159,7 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
         assert len(coords) == 4, "expected 4 coords (minx, miny, width, height)"
         minx, miny, width, height = coords
 
-        patch_im = self.oslide.read_region(
+        patch_im = self.slide.read_region(
             location=(minx, miny), level=0, size=(width, height)
         )
         patch_im = patch_im.convert("RGB")

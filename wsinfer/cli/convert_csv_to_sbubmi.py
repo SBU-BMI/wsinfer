@@ -30,7 +30,7 @@ from pathlib import Path
 
 import click
 import numpy as np
-import openslide
+import tiffslide
 import pandas as pd
 import tqdm
 
@@ -50,8 +50,8 @@ def write_heatmap_and_meta_json_lines(
     input: PathType,
     output_heatmap: PathType,
     output_meta: PathType,
-    slide_width: PathType,
-    slide_height: PathType,
+    slide_width: int,
+    slide_height: int,
     execution_id: str,
     study_id: str,
     case_id: str,
@@ -184,7 +184,7 @@ def write_heatmap_txt(input: PathType, output: PathType, class_names: typing.Lis
 def write_color_txt(
     input: PathType,
     output: PathType,
-    oslide: openslide.OpenSlide,
+    slide: tiffslide.TiffSlide,
     num_processes: int = 6,
 ):
     def whiteness(arr):
@@ -204,7 +204,7 @@ def write_color_txt(
     global get_color  # Hack to please multiprocessing.
 
     def get_color(row: pd.Series):
-        patch_im = oslide.read_region(
+        patch_im = slide.read_region(
             location=(row["minx"], row["miny"]),
             level=0,
             size=(row["width"], row["height"]),
@@ -353,9 +353,9 @@ def tosbu(
             click.secho(f"WSI file not found: {wsi_file}", bg="red")
             click.secho("Skipping...", bg="red")
             continue
-        oslide = openslide.OpenSlide(wsi_file)
+        slide = tiffslide.TiffSlide(wsi_file)
 
-        slide_width, slide_height = oslide.level_dimensions[0]
+        slide_width, slide_height = slide.level_dimensions[0]
 
         for class_name in class_names:
             if len(class_names) == 1:
@@ -413,7 +413,7 @@ def tosbu(
                 write_color_txt(
                     input=input_csv,
                     output=output_color,
-                    oslide=oslide,
+                    slide=slide,
                     num_processes=num_processes,
                 )
             else:
@@ -424,7 +424,7 @@ def tosbu(
                 write_color_txt(
                     input=input_csv,
                     output=output_color,
-                    oslide=oslide,
+                    slide=slide,
                     num_processes=num_processes,
                 )
                 # Copy this color file to all class-specific dirs.
