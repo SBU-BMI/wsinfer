@@ -1,0 +1,59 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema",
+    "type": "object",
+    "properties": {
+        "num_classes": {
+            "type": "integer",
+            "description": "The number of classes the model outputs",
+            "minimum": 1
+        },
+        "patch_size_pixels": {
+            "type": "integer",
+            "description": "The size of the patch in pixels (eg 350)",
+            "minimum": 1
+        },
+        "spacing_um_px": {
+            "type": "number",
+            "description": "The spacing of the patch in micrometers per pixel (eg 0.5)",
+            "minimum": 0
+        },
+        "class_names": {
+            "type": "array",
+            "description": "The names of the classes the model outputs. Length must be equal to 'num_classes'.",
+            "items": {
+                "type": "string"
+            },
+            "uniqueItems": true
+        },
+        "transform": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "enum": [
+                            "Resize",
+                            "ToTensor",
+                            "Normalize"
+                        ]
+                    },
+                    "arguments": {
+                        "type": "object"
+                    }
+                },
+                "additionalProperties": false,
+                "required": [
+                    "name"
+                ]
+            }
+        }
+    },
+    "required": [
+        "num_classes",
+        "patch_size_pixels",
+        "spacing_um_px",
+        "class_names",
+        "transform"
+    ]
+}
