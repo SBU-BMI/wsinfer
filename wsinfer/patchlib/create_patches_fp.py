@@ -444,10 +444,10 @@ def create_patches(
             seg_params[key] = preset_df.loc[0, key]
 
         for key in filter_params.keys():
-            filter_params[key] = preset_df.loc[0, key]
+            filter_params[key] = preset_df.loc[0, key]  # type: ignore
 
         for key in vis_params.keys():
-            vis_params[key] = preset_df.loc[0, key]
+            vis_params[key] = preset_df.loc[0, key]  # type: ignore
 
         for key in patch_params.keys():
             patch_params[key] = preset_df.loc[0, key]
