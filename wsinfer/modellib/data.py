@@ -132,7 +132,6 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
         if roi_path is not None:
             assert Path(roi_path).exists(), "roi path not found"
 
-        self.oslide = openslide.OpenSlide(self.wsi_path)
         self.patches = _read_patch_coords(self.patch_path)
 
         # If an ROI is given, keep patches that intersect it.
@@ -146,6 +145,9 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
         assert self.patches.ndim == 2, "expected 2D array of patch coordinates"
         # x, y, width, height
         assert self.patches.shape[1] == 4, "expected second dimension to have len 4"
+
+    def worker_init(self, *_):
+        self.oslide = openslide.OpenSlide(self.wsi_path)
 
     def __len__(self):
         return self.patches.shape[0]

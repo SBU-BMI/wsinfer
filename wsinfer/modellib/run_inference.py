@@ -168,6 +168,7 @@ def run_inference(
             batch_size=batch_size,
             shuffle=False,
             num_workers=num_workers,
+            worker_init_fn=dset.worker_init,
         )
 
         # Store the coordinates and model probabiltiies of each patch in this slide.
