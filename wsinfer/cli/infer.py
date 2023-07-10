@@ -215,7 +215,7 @@ def _get_info_for_save(model_obj: Union[models.LocalModel, HFModel]):
     help=(
         "Path to configuration for the trained model. Use this option if the"
         " model weights are not registered in wsinfer. Mutually exclusive with"
-        "--model-name"
+        "--model"
     ),
 )
 @click.option(
@@ -302,11 +302,11 @@ def run(
 
     if model_name is None and config is None and model_path is None:
         raise click.UsageError(
-            "one of --model-name or (--config and --model-path) is required."
+            "one of --model or (--config and --model-path) is required."
         )
     elif (config is not None or model_path is not None) and model_name is not None:
         raise click.UsageError(
-            "--config and --model-path are mutually exclusive with --model-name."
+            "--config and --model-path are mutually exclusive with --model."
         )
     elif (config is not None) ^ (model_path is not None):  # XOR
         raise click.UsageError(
@@ -353,7 +353,7 @@ def run(
         model_obj = models.LocalModel(config=model_config, model_path=str(model_path))
         del _config_dict, model_config
     else:
-        raise click.ClickException("Neither of --config and --model-name was passed")
+        raise click.ClickException("Neither of --config and --model was passed")
 
     click.secho("\nFinding patch coordinates...\n", fg="green")
     if dense_grid:
