@@ -372,6 +372,9 @@ def run(
             patch_spacing=model_obj.config.spacing_um_px,
             seg=True,
             patch=True,
+            # Stitching is a bottleneck when using tiffslide.
+            # TODO: figure out why this is...
+            stitch=False,
             # FIXME: allow customization of this preset
             preset="tcga.csv",
         )
