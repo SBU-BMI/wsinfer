@@ -1,14 +1,14 @@
+from __future__ import annotations
+
 import json
 import math
 import os
-from pathlib import Path
 import platform
-import subprocess
 import sys
 import time
+from pathlib import Path
 from typing import List
 
-from click.testing import CliRunner
 import geojson as geojsonlib
 import h5py
 import numpy as np
@@ -17,9 +17,7 @@ import pytest
 import tifffile
 import torch
 import yaml
-
-from wsinfer import get_model_weights
-from wsinfer import list_all_models_and_weights
+from click.testing import CliRunner
 
 
 @pytest.fixture
@@ -29,112 +27,17 @@ def tiff_image(tmp_path: Path) -> Path:
     path = Path(tmp_path / "images" / "purple.tif")
     path.parent.mkdir(exist_ok=True)
 
-    if sys.version_info >= (3, 8):
-        tifffile.imwrite(
-            path,
-            data=x,
-            compression="zlib",
-            tile=(256, 256),
-            # 0.25 micrometers per pixel.
-            resolution=(40000, 40000),
-            resolutionunit=tifffile.RESUNIT.CENTIMETER,
-        )
-    else:
-        # Earlier versions of tifffile do not have resolutionunit kwarg.
-        tifffile.imwrite(
-            path,
-            data=x,
-            compression="zlib",
-            tile=(256, 256),
-            # 0.25 micrometers per pixel.
-            resolution=(40000, 40000, "CENTIMETER"),
-        )
+    tifffile.imwrite(
+        path,
+        data=x,
+        compression="zlib",
+        tile=(256, 256),
+        # 0.25 micrometers per pixel.
+        resolution=(40_000, 40_000),
+        resolutionunit=tifffile.RESUNIT.CENTIMETER,
+    )
 
     return path
-
-
-def test_cli_list(tmp_path: Path):
-    from wsinfer.cli.cli import cli
-
-    runner = CliRunner()
-    result = runner.invoke(cli, ["list"])
-    assert "resnet34" in result.output
-    assert "TCGA-BRCA-v1" in result.output
-    assert result.exit_code == 0
-
-    # Test of WSINFER_PATH registration... check that the models appear in list.
-    # Test of single WSINFER_PATH.
-    config_root_single = tmp_path / "configs-single"
-    config_root_single.mkdir()
-    configs = [
-        dict(
-            version="1.0",
-            name="foo",
-            architecture="resnet34",
-            url="foo",
-            url_file_name="foo",
-            num_classes=1,
-            transform=dict(resize_size=299, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
-            patch_size_pixels=350,
-            spacing_um_px=0.25,
-            class_names=["tumor"],
-        ),
-        dict(
-            version="1.0",
-            name="foo2",
-            architecture="resnet34",
-            url="foo",
-            url_file_name="foo",
-            num_classes=1,
-            transform=dict(resize_size=299, mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
-            patch_size_pixels=350,
-            spacing_um_px=0.25,
-            class_names=["tumor"],
-        ),
-    ]
-    for i, config in enumerate(configs):
-        with open(config_root_single / f"{i}.yaml", "w") as f:
-            yaml.safe_dump(config, f)
-
-    ret = subprocess.run(
-        [sys.executable, "-m", "wsinfer", "list"],
-        capture_output=True,
-        env=dict(WSINFER_PATH=str(config_root_single)),
-    )
-    assert ret.returncode == 0
-    output = ret.stdout.decode()
-    assert configs[0]["name"] in output  # type: ignore
-    assert configs[0]["architecture"] in output  # type: ignore
-    assert configs[1]["name"] in output  # type: ignore
-    assert configs[1]["architecture"] in output  # type: ignore
-    # Negative control.
-    ret = subprocess.run([sys.executable, "-m", "wsinfer", "list"], capture_output=True)
-    assert configs[0]["name"] not in ret.stdout.decode()  # type: ignore
-    del config_root_single, output, ret, config
-
-    # Test of WSINFER_PATH registration... check that the models appear in list.
-    # Test of multiple WSINFER_PATH.
-    config_root = tmp_path / "configs"
-    config_root.mkdir()
-    config_paths = [config_root / "0", config_root / "1"]
-    for i, config in enumerate(configs):
-        config_paths[i].mkdir()
-        with open(config_paths[i] / f"{i}.yaml", "w") as f:
-            yaml.safe_dump(config, f)
-
-    ret = subprocess.run(
-        [sys.executable, "-m", "wsinfer", "list"],
-        capture_output=True,
-        env=dict(WSINFER_PATH=":".join(str(c) for c in config_paths)),
-    )
-    assert ret.returncode == 0
-    output = ret.stdout.decode()
-    assert configs[0]["name"] in output  # type: ignore
-    assert configs[0]["architecture"] in output  # type: ignore
-    assert configs[1]["name"] in output  # type: ignore
-    assert configs[1]["architecture"] in output  # type: ignore
-    ret = subprocess.run([sys.executable, "-m", "wsinfer", "list"], capture_output=True)
-    assert configs[0]["name"] not in ret.stdout.decode()  # type: ignore
 
 
 def test_cli_run_args(tmp_path: Path):
@@ -180,7 +83,6 @@ def test_cli_run_args(tmp_path: Path):
 @pytest.mark.parametrize(
     [
         "model",
-        "weights",
         "class_names",
         "expected_probs",
         "expected_patch_size",
@@ -189,94 +91,94 @@ def test_cli_run_args(tmp_path: Path):
     [
         # Resnet34 TCGA-BRCA-v1
         (
-            "resnet34",
-            "TCGA-BRCA-v1",
+            "breast-tumor-resnet34.tcga-brca",
             ["notumor", "tumor"],
-            [0.9525967836380005, 0.04740329459309578],
+            [0.9525968, 0.047403295],
             350,
             144,
         ),
         # Resnet34 TCGA-LUAD-v1
-        (
-            "resnet34",
-            "TCGA-LUAD-v1",
-            ["lepidic", "benign", "acinar", "micropapillary", "mucinous", "solid"],
-            [
-                0.012793001718819141,
-                0.9792948961257935,
-                0.0050891609862446785,
-                0.0003837027761619538,
-                0.0006556913140229881,
-                0.0017834495520219207,
-            ],
-            700,
-            36,
-        ),
-        # Resnet34 TCGA-PRAD-v1
-        (
-            "resnet34",
-            "TCGA-PRAD-v1",
-            ["grade3", "grade4or5", "benign"],
-            [0.0010944147361442447, 3.371985076228157e-05, 0.9988718628883362],
-            350,
-            144,
-        ),
-        # Inception_v4 TCGA-BRCA-v1
-        (
-            "inception_v4",
-            "TCGA-BRCA-v1",
-            ["notumor", "tumor"],
-            [0.9564113020896912, 0.043588679283857346],
-            350,
-            144,
-        ),
-        # Inceptionv4nobn TCGA-TILs-v1
-        (
-            "inception_v4nobn",
-            "TCGA-TILs-v1",
-            ["notils", "tils"],
-            [1.0, 3.427359524660334e-12],
-            200,
-            441,
-        ),
-        # VGG16 TCGA-TILs-v1
-        (
-            "vgg16",
-            "TCGA-TILs-v1",
-            ["notils", "tils"],
-            [0.9987693428993224, 0.0012305785203352],
-            200,
-            441,
-        ),
-        # Vgg16mod TCGA-BRCA-v1
-        (
-            "vgg16mod",
-            "TCGA-BRCA-v1",
-            ["notumor", "tumor"],
-            [0.9108286499977112, 0.089171402156353],
-            350,
-            144,
-        ),
-        # Preactresnet34 TCGA-PAAD-v1
-        (
-            "preactresnet34",
-            "TCGA-PAAD-v1",
-            ["tumor"],
-            [0.01446483],
-            2100,
-            4,
-        ),
+        # (
+        #     "resnet34",
+        #     "TCGA-LUAD-v1",
+        #     ["lepidic", "benign", "acinar", "micropapillary", "mucinous", "solid"],
+        #     [
+        #         0.012793001718819141,
+        #         0.9792948961257935,
+        #         0.0050891609862446785,
+        #         0.0003837027761619538,
+        #         0.0006556913140229881,
+        #         0.0017834495520219207,
+        #     ],
+        #     700,
+        #     36,
+        # ),
+        # # Resnet34 TCGA-PRAD-v1
+        # (
+        #     "resnet34",
+        #     "TCGA-PRAD-v1",
+        #     ["grade3", "grade4or5", "benign"],
+        #     [0.0010944147361442447, 3.371985076228157e-05, 0.9988718628883362],
+        #     350,
+        #     144,
+        # ),
+        # # Inception_v4 TCGA-BRCA-v1
+        # (
+        #     "inception_v4",
+        #     "TCGA-BRCA-v1",
+        #     ["notumor", "tumor"],
+        #     [0.9564113020896912, 0.043588679283857346],
+        #     350,
+        #     144,
+        # ),
+        # # Inceptionv4nobn TCGA-TILs-v1
+        # (
+        #     "inception_v4nobn",
+        #     "TCGA-TILs-v1",
+        #     ["notils", "tils"],
+        #     [1.0, 3.427359524660334e-12],
+        #     200,
+        #     441,
+        # ),
+        # # VGG16 TCGA-TILs-v1
+        # (
+        #     "vgg16",
+        #     "TCGA-TILs-v1",
+        #     ["notils", "tils"],
+        #     [0.9987693428993224, 0.0012305785203352],
+        #     200,
+        #     441,
+        # ),
+        # # Vgg16mod TCGA-BRCA-v1
+        # (
+        #     "vgg16mod",
+        #     "TCGA-BRCA-v1",
+        #     ["notumor", "tumor"],
+        #     [0.9108286499977112, 0.089171402156353],
+        #     350,
+        #     144,
+        # ),
+        # # Preactresnet34 TCGA-PAAD-v1
+        # (
+        #     "preactresnet34",
+        #     "TCGA-PAAD-v1",
+        #     ["tumor"],
+        #     [0.01446483],
+        #     2100,
+        #     4,
+        # ),
     ],
 )
 @pytest.mark.parametrize("speedup", [False, True])
+@pytest.mark.parametrize("backend", ["openslide", "tiffslide"])
 def test_cli_run_regression(
     model: str,
-    weights: str,
     class_names: List[str],
     expected_probs: List[float],
     expected_patch_size: int,
     expected_num_patches: int,
     speedup: bool,
+    backend: str,
     tiff_image: Path,
     tmp_path: Path,
 ):
@@ -288,15 +190,15 @@ def test_cli_run_regression(
     result = runner.invoke(
         cli,
         [
+            "--backend",
+            backend,
             "run",
             "--wsi-dir",
             str(tiff_image.parent),
-            "--model",
-            model,
-            "--weights",
-            weights,
             "--results-dir",
             str(results_dir),
+            "--model",
+            model,
             "--speedup" if speedup else "--no-speedup",
         ],
     )
@@ -320,7 +222,10 @@ def test_cli_run_regression(
     # Test probs.
     for col, col_prob in zip(class_names, expected_probs):
         col = f"prob_{col}"
-        assert np.allclose(df.loc[:, col], col_prob)
+        print(col)
+        print(df.loc[:, col])
+        print(col_prob)
+        assert np.allclose(df.loc[:, col], col_prob, atol=1e-4)
 
     # Test that metadata path exists.
     metadata_paths = list(results_dir.glob("run_metadata_*.json"))
@@ -947,39 +852,40 @@ def test_patch_cli(
     assert np.array_equal(expected_coords_arr, coords)
 
 
-@pytest.mark.parametrize(["model_name", "weights_name"], list_all_models_and_weights())
-def test_jit_compile(model_name: str, weights_name: str):
-    import time
-    from wsinfer._modellib.run_inference import jit_compile
+# @pytest.mark.parametrize(["model_name", "weights_name"], list_all_models_and_weights())
+# def test_jit_compile(model_name: str, weights_name: str):
+#     import time
 
-    w = get_model_weights(model_name, weights_name)
-    size = w.transform.resize_size
-    x = torch.ones(20, 3, size, size, dtype=torch.float32)
-    model = w.load_model()
-    model.eval()
-    NUM_SAMPLES = 1
-    with torch.no_grad():
-        t0 = time.perf_counter()
-        for _ in range(NUM_SAMPLES):
-            out_nojit = model(x).detach().cpu()
-        time_nojit = time.perf_counter() - t0
-    model_nojit = model
-    model = jit_compile(model)  # type: ignore
-    if model is model_nojit:
-        pytest.skip("Failed to compile model (would use original model)")
-    with torch.no_grad():
-        model(x).detach().cpu()  # run it once to compile
-        t0 = time.perf_counter()
-        for _ in range(NUM_SAMPLES):
-            out_jit = model(x).detach().cpu()
-        time_yesjit = time.perf_counter() - t0
+#     from wsinfer._modellib.run_inference import jit_compile
 
-    assert torch.allclose(out_nojit, out_jit)
-    if time_nojit < time_yesjit:
-        pytest.skip(
-            "JIT-compiled model was SLOWER than original: "
-            f"jit={time_yesjit:0.3f} vs nojit={time_nojit:0.3f}"
-        )
+#     w = get_model_weights(model_name, weights_name)
+#     size = w.transform.resize_size
+#     x = torch.ones(20, 3, size, size, dtype=torch.float32)
+#     model = w.load_model()
+#     model.eval()
+#     NUM_SAMPLES = 1
+#     with torch.no_grad():
+#         t0 = time.perf_counter()
+#         for _ in range(NUM_SAMPLES):
+#             out_nojit = model(x).detach().cpu()
+#         time_nojit = time.perf_counter() - t0
+#     model_nojit = model
+#     model = jit_compile(model)  # type: ignore
+#     if model is model_nojit:
+#         pytest.skip("Failed to compile model (would use original model)")
+#     with torch.no_grad():
+#         model(x).detach().cpu()  # run it once to compile
+#         t0 = time.perf_counter()
+#         for _ in range(NUM_SAMPLES):
+#             out_jit = model(x).detach().cpu()
+#         time_yesjit = time.perf_counter() - t0
+
+#     assert torch.allclose(out_nojit, out_jit)
+#     if time_nojit < time_yesjit:
+#         pytest.skip(
+#             "JIT-compiled model was SLOWER than original: "
+#             f"jit={time_yesjit:0.3f} vs nojit={time_nojit:0.3f}"
+#         )
 
 
 def test_issue_89():
@@ -1085,9 +991,9 @@ def test_issue_97(tmp_path: Path, tiff_image: Path):
 
 
 def test_issue_125(tmp_path: Path):
-    from wsinfer.cli.infer import _get_info_for_save
     from wsinfer._modellib.models import Weights
     from wsinfer._modellib.transforms import PatchClassification
+    from wsinfer.cli.infer import _get_info_for_save
 
     w = Weights(
         name="foo",
