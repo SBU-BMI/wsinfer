@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import math
 import multiprocessing as mp
 import os
@@ -5,8 +7,9 @@ from xml.dom import minidom
 
 import cv2
 import numpy as np
-import openslide
 from PIL import Image
+
+from wsinfer.wsi import WSI
 
 from ..utils.file_utils import load_pkl
 from ..utils.file_utils import save_pkl
@@ -33,7 +36,7 @@ class WholeSlideImage(object):
 
         #         self.name = ".".join(path.split("/")[-1].split('.')[:-1])
         self.name = os.path.splitext(os.path.basename(path))[0]
-        self.wsi = openslide.open_slide(path)
+        self.wsi = WSI(path)
         self.level_downsamples = self._assertLevelDownsamples()
         self.level_dim = self.wsi.level_dimensions
 
@@ -339,7 +342,7 @@ class WholeSlideImage(object):
         patch_size=256,
         step_size=256,
         save_coord=True,
-        **kwargs
+        **kwargs,
     ):
         contours = self.contours_tissue
 
@@ -564,7 +567,7 @@ class WholeSlideImage(object):
                 save_path,
                 patch_size,
                 step_size,
-                **kwargs
+                **kwargs,
             )
             if len(asset_dict) > 0:
                 if init:

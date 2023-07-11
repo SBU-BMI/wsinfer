@@ -31,6 +31,8 @@ the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 """
 
+from __future__ import annotations
+
 # other imports
 import os
 import pathlib
@@ -40,13 +42,13 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
-from ..errors import CannotReadSpacing
-from ..slide_utils import get_avg_mpp
-from .wsi_core.batch_process_utils import initialize_df
+from wsinfer.errors import CannotReadSpacing
+from wsinfer.patchlib.wsi_core.batch_process_utils import initialize_df
 
 # internal imports
-from .wsi_core.WholeSlideImage import WholeSlideImage
-from .wsi_core.wsi_utils import StitchCoords
+from wsinfer.patchlib.wsi_core.WholeSlideImage import WholeSlideImage
+from wsinfer.patchlib.wsi_core.wsi_utils import StitchCoords
+from wsinfer.wsi import get_avg_mpp
 
 _script_path = pathlib.Path(__file__).resolve().parent
 
@@ -444,10 +446,10 @@ def create_patches(
             seg_params[key] = preset_df.loc[0, key]
 
         for key in filter_params.keys():
-            filter_params[key] = preset_df.loc[0, key]
+            filter_params[key] = preset_df.loc[0, key]  # type: ignore
 
         for key in vis_params.keys():
-            vis_params[key] = preset_df.loc[0, key]
+            vis_params[key] = preset_df.loc[0, key]  # type: ignore
 
         for key in patch_params.keys():
             patch_params[key] = preset_df.loc[0, key]

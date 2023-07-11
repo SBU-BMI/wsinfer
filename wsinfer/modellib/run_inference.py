@@ -4,6 +4,7 @@ From the original paper (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7369575/):
 > In the prediction (test) phase, no data augmentation was applied except for the
 > normalization of the color channels.
 """
+from __future__ import annotations
 
 import typing
 from pathlib import Path
@@ -25,17 +26,15 @@ from .models import get_pretrained_torch_module
 from .models import jit_compile
 from .transforms import make_compose_from_transform_config
 
-PathType = Union[str, Path]
-
 
 def run_inference(
-    wsi_dir: PathType,
-    results_dir: PathType,
+    wsi_dir: str | Path,
+    results_dir: str | Path,
     model_info: Union[wsinfer_zoo.client.HFModel, LocalModel],
     batch_size: int = 32,
     num_workers: int = 0,
     speedup: bool = False,
-    roi_dir: Optional[PathType] = None,
+    roi_dir: Optional[str | Path] = None,
 ) -> Tuple[List[str], List[str]]:
     """Run model inference on a directory of whole slide images and save results to CSV.
 

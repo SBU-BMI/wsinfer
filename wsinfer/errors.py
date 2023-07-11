@@ -1,5 +1,7 @@
 """Exceptions used in WSInfer."""
 
+from __future__ import annotations
+
 
 class WsinferException(Exception):
     """Base class for wsinfer exceptions."""
@@ -26,4 +28,8 @@ class PatchDirectoryNotFound(WsinferException, FileNotFoundError):
 
 
 class CannotReadSpacing(WsinferException):
+    ...
+
+
+class NoBackendException(WsinferException):
     ...

@@ -1,5 +1,7 @@
 """Implementation of VGG16 in https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7369575."""
 
+from __future__ import annotations
+
 import torch
 import torchvision
 
