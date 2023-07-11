@@ -68,7 +68,8 @@ def _filter_patches_in_rois(
     """
     import geojson
     from shapely import STRtree
-    from shapely.geometry import box, shape
+    from shapely.geometry import box
+    from shapely.geometry import shape
 
     with open(geojson_path) as f:
         geo = geojson.load(f)

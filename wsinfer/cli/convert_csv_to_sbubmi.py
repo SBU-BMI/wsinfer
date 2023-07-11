@@ -30,8 +30,8 @@ from pathlib import Path
 
 import click
 import numpy as np
-import tiffslide
 import pandas as pd
+import tiffslide
 import tqdm
 
 PathType = typing.Union[str, Path]
