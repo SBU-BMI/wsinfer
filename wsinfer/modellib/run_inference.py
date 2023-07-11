@@ -162,6 +162,11 @@ def run_inference(
             failed_inference.append(wsi_dir.stem)
             continue
 
+        # The worker_init_fn does not seem to be used when num_workers=0
+        # so we call it manually to finish setting up the dataset.
+        if num_workers == 0:
+            dset.worker_init()
+
         loader = torch.utils.data.DataLoader(
             dset,
             batch_size=batch_size,
