@@ -40,13 +40,13 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
-from ..errors import CannotReadSpacing
-from ..slide_utils import get_avg_mpp
-from .wsi_core.batch_process_utils import initialize_df
+from wsinfer.errors import CannotReadSpacing
+from wsinfer.wsi import get_avg_mpp
+from wsinfer.patchlib.wsi_core.batch_process_utils import initialize_df
 
 # internal imports
-from .wsi_core.WholeSlideImage import WholeSlideImage
-from .wsi_core.wsi_utils import StitchCoords
+from wsinfer.patchlib.wsi_core.WholeSlideImage import WholeSlideImage
+from wsinfer.patchlib.wsi_core.wsi_utils import StitchCoords
 
 _script_path = pathlib.Path(__file__).resolve().parent
 

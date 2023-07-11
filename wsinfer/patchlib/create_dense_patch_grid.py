@@ -8,7 +8,7 @@ import h5py
 import numpy as np
 import tiffslide
 
-from ..slide_utils import get_avg_mpp
+from wsinfer.wsi import get_avg_mpp
 
 
 def _get_dense_grid(
