@@ -1,4 +1,3 @@
-# https://raw.githubusercontent.com/rwightman/pytorch-image-models/e9aac412de82310e6905992e802b1ee4dc52b5d1/timm/models/inception_v4.py
 """
 Pytorch Inception-V4 implementation
 Sourced from https://github.com/Cadene/tensorflow-model-zoo.torch (MIT License) which is
@@ -8,6 +7,8 @@ based upon Google's Tensorflow implementation and pretrained weights
 This source was copied into the wsinfer source code and modified to remove batchnorm.
 Bias terms are added wherever batchnorm is removed.
 """
+
+from __future__ import annotations
 
 import torch
 import torch.nn as nn
@@ -357,7 +358,7 @@ def _create_inception_v4(variant, pretrained=False, **kwargs):
         variant,
         pretrained,
         feature_cfg=dict(flatten_sequential=True),
-        **kwargs
+        **kwargs,
     )
 
 

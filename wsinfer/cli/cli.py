@@ -5,12 +5,11 @@ from typing import Literal
 
 import click
 
+from ..wsi import set_backend
 from .convert_csv_to_geojson import togeojson
 from .convert_csv_to_sbubmi import tosbu
 from .infer import run
 from .patch import patch
-
-from ..wsi import set_backend
 
 _logging_levels = ["debug", "info", "warning", "error", "critical"]
 

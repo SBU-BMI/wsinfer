@@ -1,5 +1,7 @@
 """Pre-activation ResNet."""
 
+from __future__ import annotations
+
 import torch  # noqa
 import torch.nn as nn
 import torch.nn.functional as F

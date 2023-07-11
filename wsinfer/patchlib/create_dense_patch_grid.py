@@ -1,5 +1,7 @@
 """Create a dense grid of patch coordinates. This does *not* create a tissue mask."""
 
+from __future__ import annotations
+
 import itertools
 from pathlib import Path
 from typing import Tuple
@@ -7,7 +9,8 @@ from typing import Tuple
 import h5py
 import numpy as np
 
-from wsinfer.wsi import get_avg_mpp, WSI
+from wsinfer.wsi import WSI
+from wsinfer.wsi import get_avg_mpp
 
 
 def _get_dense_grid(

@@ -43,12 +43,12 @@ import numpy as np
 import pandas as pd
 
 from wsinfer.errors import CannotReadSpacing
-from wsinfer.wsi import get_avg_mpp
 from wsinfer.patchlib.wsi_core.batch_process_utils import initialize_df
 
 # internal imports
 from wsinfer.patchlib.wsi_core.WholeSlideImage import WholeSlideImage
 from wsinfer.patchlib.wsi_core.wsi_utils import StitchCoords
+from wsinfer.wsi import get_avg_mpp
 
 _script_path = pathlib.Path(__file__).resolve().parent
 

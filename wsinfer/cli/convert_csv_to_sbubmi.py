@@ -19,6 +19,8 @@ Output directory tree for multi-class outputs:
         └── prediction-SLIDEID
 """
 
+from __future__ import annotations
+
 import json
 import multiprocessing
 import pprint
@@ -33,7 +35,8 @@ import numpy as np
 import pandas as pd
 import tqdm
 
-from wsinfer.wsi import WSI, WSIType
+from wsinfer.wsi import WSI
+from wsinfer.wsi import WSIType
 
 
 def _box_to_polygon(

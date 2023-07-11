@@ -18,3 +18,5 @@
 # - add --patch_spacing command line arg to request a patch size at a particular
 #   spacing. The patch coordinates are calculated at the base (highest) resolution.
 # - format code with black
+
+from __future__ import annotations

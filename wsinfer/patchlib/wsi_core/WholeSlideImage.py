@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import math
 import multiprocessing as mp
 import os
@@ -6,6 +8,8 @@ from xml.dom import minidom
 import cv2
 import numpy as np
 from PIL import Image
+
+from wsinfer.wsi import WSI
 
 from ..utils.file_utils import load_pkl
 from ..utils.file_utils import save_pkl
@@ -19,8 +23,6 @@ from .wsi_utils import isBlackPatch
 from .wsi_utils import isWhitePatch
 from .wsi_utils import save_hdf5
 from .wsi_utils import savePatchIter_bag_hdf5
-
-from wsinfer.wsi import WSI
 
 Image.MAX_IMAGE_PIXELS = 933120000
 
@@ -340,7 +342,7 @@ class WholeSlideImage(object):
         patch_size=256,
         step_size=256,
         save_coord=True,
-        **kwargs
+        **kwargs,
     ):
         contours = self.contours_tissue
 
@@ -565,7 +567,7 @@ class WholeSlideImage(object):
                 save_path,
                 patch_size,
                 step_size,
-                **kwargs
+                **kwargs,
             )
             if len(asset_dict) > 0:
                 if init:

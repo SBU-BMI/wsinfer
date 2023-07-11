@@ -3,6 +3,8 @@
 GeoJSON files can be loaded into whole slide image viewers like QuPath.
 """
 
+from __future__ import annotations
+
 import json
 import typing
 from pathlib import Path

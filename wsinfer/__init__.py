@@ -1,5 +1,7 @@
 """WSInfer is a toolkit for fast patch-based inference on whole slide images."""
 
+from __future__ import annotations
+
 from . import _version
 from .modellib.run_inference import WholeSlideImagePatches  # noqa
 from .modellib.run_inference import run_inference  # noqa
