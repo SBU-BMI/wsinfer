@@ -5,7 +5,6 @@ from xml.dom import minidom
 
 import cv2
 import numpy as np
-import tiffslide
 from PIL import Image
 
 from ..utils.file_utils import load_pkl
@@ -21,6 +20,8 @@ from .wsi_utils import isWhitePatch
 from .wsi_utils import save_hdf5
 from .wsi_utils import savePatchIter_bag_hdf5
 
+from wsinfer.wsi import WSI
+
 Image.MAX_IMAGE_PIXELS = 933120000
 
 
@@ -33,7 +34,7 @@ class WholeSlideImage(object):
 
         #         self.name = ".".join(path.split("/")[-1].split('.')[:-1])
         self.name = os.path.splitext(os.path.basename(path))[0]
-        self.wsi = tiffslide.open_slide(path)
+        self.wsi = WSI(path)
         self.level_downsamples = self._assertLevelDownsamples()
         self.level_dim = self.wsi.level_dimensions
 

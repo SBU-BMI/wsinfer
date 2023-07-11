@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pathlib import Path
 from typing import Callable
 from typing import Optional
@@ -7,14 +9,13 @@ from typing import Union
 
 import h5py
 import numpy as np
-import tiffslide
 import torch
 from PIL import Image
 
-PathType = Union[str, Path]
+from wsinfer.wsi import WSI
 
 
-def _read_patch_coords(path: PathType) -> np.ndarray:
+def _read_patch_coords(path: str | Path) -> np.ndarray:
     """Read HDF5 file of patch coordinates are return numpy array.
 
     Returned array has shape (num_patches, 4). Each row has values
@@ -51,7 +52,7 @@ def _read_patch_coords(path: PathType) -> np.ndarray:
 
 
 def _filter_patches_in_rois(
-    *, geojson_path: PathType, coords: np.ndarray
+    *, geojson_path: str | Path, coords: np.ndarray
 ) -> np.ndarray:
     """Keep the patches that intersect the ROI(s).
 
@@ -114,12 +115,12 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
 
     def __init__(
         self,
-        wsi_path: PathType,
-        patch_path: PathType,
+        wsi_path: str | Path,
+        patch_path: str | Path,
         um_px: float,
         patch_size: int,
         transform: Optional[Callable[[Image.Image], torch.Tensor]] = None,
-        roi_path: Optional[PathType] = None,
+        roi_path: Optional[str | Path] = None,
     ):
         self.wsi_path = wsi_path
         self.patch_path = patch_path
@@ -148,7 +149,7 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
         assert self.patches.shape[1] == 4, "expected second dimension to have len 4"
 
     def worker_init(self, *_):
-        self.slide = tiffslide.TiffSlide(self.wsi_path)
+        self.slide = WSI(self.wsi_path)
 
     def __len__(self):
         return self.patches.shape[0]

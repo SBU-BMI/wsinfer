@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 import logging
 from fractions import Fraction
 from pathlib import Path
 from typing import Literal
+from typing import overload
 
 import tifffile
 
@@ -29,10 +32,20 @@ except Exception as err:
     HAS_TIFFSLIDE = False
     logger.debug(f"Unable to import tiffslide due to error: {err}")
 
-WSI = None
+
+@overload
+def set_backend(name: Literal["openslide"]) -> type[openslide.OpenSlide]:
+    ...
 
 
-def set_backend(name: Literal["openslide"] | Literal["tiffslide"]):
+@overload
+def set_backend(name: Literal["tiffslide"]) -> type[tiffslide.TiffSlide]:
+    ...
+
+
+def set_backend(
+    name: Literal["openslide"] | Literal["tiffslide"],
+) -> type[tiffslide.TiffSlide] | type[openslide.OpenSlide]:
     global WSI
     if name not in ["openslide", "tiffslide"]:
         raise ValueError(f"Unknown backend: {name}")
@@ -47,12 +60,22 @@ def set_backend(name: Literal["openslide"] | Literal["tiffslide"]):
 
 
 # Set the slide backend based on the environment.
+WSI: type[openslide.OpenSlide] | type[tifffile.TiffFile]
 if HAS_OPENSLIDE:
     WSI = set_backend("openslide")
 elif HAS_TIFFSLIDE:
     WSI = set_backend("tiffslide")
 else:
     raise NoBackendException("No backend found! Please install openslide or tiffslide")
+
+WSIType = openslide.OpenSlide | tiffslide.TiffSlide
+
+# if HAS_OPENSLIDE and HAS_TIFFSLIDE:
+#     WSIType = openslide.OpenSlide | tiffslide.TiffSlide
+# elif HAS_OPENSLIDE and not HAS_TIFFSLIDE:
+#     WSIType = openslide.OpenSlide
+# elif not HAS_OPENSLIDE and HAS_TIFFSLIDE:
+#     WSIType = tiffslide.TiffSlide
 
 
 def _get_mpp_openslide(slide_path: str | Path):

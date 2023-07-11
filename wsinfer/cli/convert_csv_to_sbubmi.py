@@ -31,8 +31,9 @@ from pathlib import Path
 import click
 import numpy as np
 import pandas as pd
-import tiffslide
 import tqdm
+
+from wsinfer.wsi import WSI, WSIType
 
 PathType = typing.Union[str, Path]
 
@@ -184,7 +185,7 @@ def write_heatmap_txt(input: PathType, output: PathType, class_names: typing.Lis
 def write_color_txt(
     input: PathType,
     output: PathType,
-    slide: tiffslide.TiffSlide,
+    slide: WSIType,
     num_processes: int = 6,
 ):
     def whiteness(arr):
@@ -353,7 +354,7 @@ def tosbu(
             click.secho(f"WSI file not found: {wsi_file}", bg="red")
             click.secho("Skipping...", bg="red")
             continue
-        slide = tiffslide.TiffSlide(wsi_file)
+        slide = WSI(wsi_file)
 
         slide_width, slide_height = slide.level_dimensions[0]
 
