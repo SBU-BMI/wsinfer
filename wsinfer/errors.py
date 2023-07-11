@@ -27,3 +27,7 @@ class PatchDirectoryNotFound(WsinferException, FileNotFoundError):
 
 class CannotReadSpacing(WsinferException):
     ...
+
+
+class NoBackendException(WsinferException):
+    ...
