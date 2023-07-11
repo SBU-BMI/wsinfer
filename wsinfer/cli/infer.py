@@ -1,5 +1,7 @@
 """Detect cancerous regions in a whole slide image."""
 
+from __future__ import annotations
+
 import dataclasses
 import getpass
 import json
@@ -24,8 +26,6 @@ from ..modellib import models
 from ..modellib.run_inference import run_inference
 from ..patchlib.create_dense_patch_grid import create_grid_and_save_multi_slides
 from ..patchlib.create_patches_fp import create_patches
-
-PathType = Union[str, Path]
 
 
 def _num_cpus() -> int:
@@ -283,7 +283,7 @@ def run(
     batch_size: int,
     num_workers: int = 0,
     speedup: bool = False,
-    roi_dir: Optional[PathType] = None,
+    roi_dir: Optional[str | Path] = None,
     dense_grid: bool = False,
 ):
     """Run model inference on a directory of whole slide images.

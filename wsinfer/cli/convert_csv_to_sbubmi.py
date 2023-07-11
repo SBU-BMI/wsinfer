@@ -35,8 +35,6 @@ import tqdm
 
 from wsinfer.wsi import WSI, WSIType
 
-PathType = typing.Union[str, Path]
-
 
 def _box_to_polygon(
     *, minx: float, miny: float, width: float, height: float
@@ -48,9 +46,9 @@ def _box_to_polygon(
 
 
 def write_heatmap_and_meta_json_lines(
-    input: PathType,
-    output_heatmap: PathType,
-    output_meta: PathType,
+    input: str | Path,
+    output_heatmap: str | Path,
+    output_meta: str | Path,
     slide_width: int,
     slide_height: int,
     execution_id: str,
@@ -169,7 +167,9 @@ def write_heatmap_and_meta_json_lines(
         json.dump(meta_dict, f)
 
 
-def write_heatmap_txt(input: PathType, output: PathType, class_names: typing.List[str]):
+def write_heatmap_txt(
+    input: str | Path, output: str | Path, class_names: typing.List[str]
+):
     df = pd.read_csv(input)
     # TODO: should we round and cast to int here?
     df.loc[:, "x_loc"] = (df.minx + (df.width / 2)).round().astype(int)
@@ -183,8 +183,8 @@ def write_heatmap_txt(input: PathType, output: PathType, class_names: typing.Lis
 
 
 def write_color_txt(
-    input: PathType,
-    output: PathType,
+    input: str | Path,
+    output: str | Path,
     slide: WSIType,
     num_processes: int = 6,
 ):
