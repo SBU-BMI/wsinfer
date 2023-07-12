@@ -68,15 +68,6 @@ elif HAS_TIFFSLIDE:
 else:
     raise NoBackendException("No backend found! Please install openslide or tiffslide")
 
-WSIType = openslide.OpenSlide | tiffslide.TiffSlide
-
-# if HAS_OPENSLIDE and HAS_TIFFSLIDE:
-#     WSIType = openslide.OpenSlide | tiffslide.TiffSlide
-# elif HAS_OPENSLIDE and not HAS_TIFFSLIDE:
-#     WSIType = openslide.OpenSlide
-# elif not HAS_OPENSLIDE and HAS_TIFFSLIDE:
-#     WSIType = tiffslide.TiffSlide
-
 
 def _get_mpp_openslide(slide_path: str | Path):
     """Read MPP using OpenSlide."""

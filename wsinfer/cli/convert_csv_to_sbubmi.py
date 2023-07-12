@@ -36,7 +36,6 @@ import pandas as pd
 import tqdm
 
 from wsinfer.wsi import WSI
-from wsinfer.wsi import WSIType
 
 
 def _box_to_polygon(
@@ -188,7 +187,7 @@ def write_heatmap_txt(
 def write_color_txt(
     input: str | Path,
     output: str | Path,
-    slide: WSIType,
+    slide,
     num_processes: int = 6,
 ):
     def whiteness(arr):
