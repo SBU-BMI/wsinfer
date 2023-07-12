@@ -6,7 +6,7 @@ Installing and getting started
 Prerequisites
 -------------
 
-WSInfer supports Python 3.7+ and has been tested on Linux.
+WSInfer supports Python 3.8+ and has been tested on Linux.
 
 Install PyTorch before installing WSInfer. Please see
 `PyTorch's installation instructions <https://pytorch.org/get-started/locally/>`_.
