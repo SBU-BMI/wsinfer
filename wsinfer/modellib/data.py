@@ -165,13 +165,8 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
             location=(minx, miny), level=0, size=(width, height)
         )
         patch_im = patch_im.convert("RGB")
-        # Resize to the expected patch size (and spacing).
-        patch_im = patch_im.resize((self.patch_size, self.patch_size))
 
         if self.transform is not None:
             patch_im = self.transform(patch_im)
-        if not isinstance(patch_im, (Image.Image, torch.Tensor)):
-            raise TypeError(
-                f"patch image must be an Image of Tensor, but got {type(patch_im)}"
-            )
+
         return patch_im, torch.as_tensor([minx, miny, width, height])

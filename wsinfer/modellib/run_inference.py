@@ -194,8 +194,6 @@ def run_inference(
         slide_coords_arr = np.concatenate(slide_coords, axis=0)
         slide_df = pd.DataFrame(
             dict(
-                # FIXME: should we include the slide path in the CSV? Probably not.
-                slide=wsi_path,
                 minx=slide_coords_arr[:, 0],
                 miny=slide_coords_arr[:, 1],
                 width=slide_coords_arr[:, 2],
