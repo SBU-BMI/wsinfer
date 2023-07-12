@@ -7,8 +7,6 @@ import platform
 import sys
 import time
 from pathlib import Path
-from typing import List
-import warnings
 
 import geojson as geojsonlib
 import h5py
@@ -16,8 +14,6 @@ import numpy as np
 import pandas as pd
 import pytest
 import tifffile
-import torch
-import yaml
 from click.testing import CliRunner
 
 
@@ -209,49 +205,6 @@ def test_convert_to_sbu():
     assert False
 
 
-# def test_cli_run_from_config(tiff_image: Path, tmp_path: Path):
-#     """This is a form of a regression test."""
-#     import wsinfer
-#     from wsinfer.cli.cli import cli
-
-#     # Use config for resnet34 TCGA-BRCA-v1 weights.
-#     config = Path(wsinfer.__file__).parent / "modeldefs" / "resnet34_tcga-brca-v1.yaml"
-#     assert config.exists()
-
-#     runner = CliRunner()
-#     results_dir = tmp_path / "inference"
-#     result = runner.invoke(
-#         cli,
-#         [
-#             "run",
-#             "--wsi-dir",
-#             str(tiff_image.parent),
-#             "--config",
-#             str(config),
-#             "--results-dir",
-#             str(results_dir),
-#         ],
-#     )
-#     assert result.exit_code == 0
-#     assert (results_dir / "model-outputs").exists()
-#     df = pd.read_csv(results_dir / "model-outputs" / "purple.csv")
-#     assert df.columns.tolist() == [
-#         "slide",
-#         "minx",
-#         "miny",
-#         "width",
-#         "height",
-#         "prob_notumor",
-#         "prob_tumor",
-#     ]
-#     assert (df.loc[:, "slide"] == str(tiff_image)).all()
-#     assert (df.loc[:, "width"] == 350).all()
-#     assert (df.loc[:, "height"] == 350).all()
-#     assert (df.loc[:, "width"] == 350).all()
-#     assert np.allclose(df.loc[:, "prob_notumor"], 0.9525967836380005)
-#     assert np.allclose(df.loc[:, "prob_tumor"], 0.04740329459309578)
-
-
 @pytest.mark.parametrize(
     ["patch_size", "patch_spacing"],
     [(256, 0.25), (256, 0.50), (350, 0.25), (100, 0.3)],
@@ -303,40 +256,42 @@ def test_patch_cli(
     assert np.array_equal(expected_coords_arr, coords)
 
 
-# @pytest.mark.parametrize(["model_name", "weights_name"], list_all_models_and_weights())
-# def test_jit_compile(model_name: str, weights_name: str):
-#     import time
+@pytest.mark.skip
+def test_jit_compile(model_name: str, weights_name: str):
+    import time
 
-#     from wsinfer._modellib.run_inference import jit_compile
+    import torch
 
-#     w = get_model_weights(model_name, weights_name)
-#     size = w.transform.resize_size
-#     x = torch.ones(20, 3, size, size, dtype=torch.float32)
-#     model = w.load_model()
-#     model.eval()
-#     NUM_SAMPLES = 1
-#     with torch.no_grad():
-#         t0 = time.perf_counter()
-#         for _ in range(NUM_SAMPLES):
-#             out_nojit = model(x).detach().cpu()
-#         time_nojit = time.perf_counter() - t0
-#     model_nojit = model
-#     model = jit_compile(model)  # type: ignore
-#     if model is model_nojit:
-#         pytest.skip("Failed to compile model (would use original model)")
-#     with torch.no_grad():
-#         model(x).detach().cpu()  # run it once to compile
-#         t0 = time.perf_counter()
-#         for _ in range(NUM_SAMPLES):
-#             out_jit = model(x).detach().cpu()
-#         time_yesjit = time.perf_counter() - t0
+    from wsinfer.modellib.run_inference import jit_compile
 
-#     assert torch.allclose(out_nojit, out_jit)
-#     if time_nojit < time_yesjit:
-#         pytest.skip(
-#             "JIT-compiled model was SLOWER than original: "
-#             f"jit={time_yesjit:0.3f} vs nojit={time_nojit:0.3f}"
-#         )
+    w = get_model_weights(model_name, weights_name)
+    size = w.transform.resize_size
+    x = torch.ones(20, 3, size, size, dtype=torch.float32)
+    model = w.load_model()
+    model.eval()
+    NUM_SAMPLES = 1
+    with torch.no_grad():
+        t0 = time.perf_counter()
+        for _ in range(NUM_SAMPLES):
+            out_nojit = model(x).detach().cpu()
+        time_nojit = time.perf_counter() - t0
+    model_nojit = model
+    model = jit_compile(model)  # type: ignore
+    if model is model_nojit:
+        pytest.skip("Failed to compile model (would use original model)")
+    with torch.no_grad():
+        model(x).detach().cpu()  # run it once to compile
+        t0 = time.perf_counter()
+        for _ in range(NUM_SAMPLES):
+            out_jit = model(x).detach().cpu()
+        time_yesjit = time.perf_counter() - t0
+
+    assert torch.allclose(out_nojit, out_jit)
+    if time_nojit < time_yesjit:
+        pytest.skip(
+            "JIT-compiled model was SLOWER than original: "
+            f"jit={time_yesjit:0.3f} vs nojit={time_nojit:0.3f}"
+        )
 
 
 def test_issue_89():
