@@ -164,7 +164,7 @@ def _get_info_for_save(model_obj: Union[models.LocalModel, HFModel]):
         "model": {
             "config": dataclasses.asdict(model_obj.config),
             "huggingface_location": hf_info,
-            "path": model_obj.model_path,
+            "path": str(model_obj.model_path),
         },
         "runtime": {
             "version": __version__,
