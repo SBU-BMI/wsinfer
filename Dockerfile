@@ -15,7 +15,7 @@ RUN apt-get update \
 # Install wsinfer.
 WORKDIR /opt/wsinfer
 COPY . .
-RUN python -m pip install --no-cache-dir --editable .
+RUN python -m pip install --no-cache-dir --editable . openslide-python tiffslide
 
 # Use a writable directory for downloading model weights. Default is ~/.cache, which is
 # not guaranteed to be writable in a Docker container.

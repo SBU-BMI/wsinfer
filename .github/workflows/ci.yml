@@ -20,8 +20,10 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install the package
         run: |
+          sudo apt update
+          sudo apt install -y libopenslide0
           python -m pip install --upgrade pip setuptools wheel
-          python -m pip install torch torchvision --extra-index-url https://download.pytorch.org/whl/cpu
+          python -m pip install torch torchvision --extra-index-url https://download.pytorch.org/whl/cpu openslide-python tiffslide
           python -m pip install --editable .[dev]
       - name: Run tests
         run: python -m pytest --verbose tests/
@@ -35,8 +37,10 @@ jobs:
           python-version: "3.10"
       - name: Install the package
         run: |
+          sudo apt update
+          sudo apt install -y libopenslide0
           python -m pip install --upgrade pip setuptools wheel
-          python -m pip install --pre torch torchvision --extra-index-url https://download.pytorch.org/whl/nightly/cpu
+          python -m pip install --pre torch torchvision --extra-index-url https://download.pytorch.org/whl/nightly/cpu openslide-python tiffslide
           python -m pip install --editable .[dev]
       - name: Check types
         run: python -m mypy --install-types --non-interactive wsinfer/
@@ -75,8 +79,10 @@ jobs:
           python-version: "3.10"
       - name: Install the package
         run: |
+          sudo apt update
+          sudo apt install -y libopenslide0
           python -m pip install --upgrade pip setuptools wheel
-          python -m pip install torch torchvision --extra-index-url https://download.pytorch.org/whl/cpu
+          python -m pip install torch torchvision --extra-index-url https://download.pytorch.org/whl/cpu openslide-python tiffslide
           python -m pip install .
       - name: Run the wsinfer command in a new directory
         run: |
@@ -99,8 +105,10 @@ jobs:
           python-version: "3.10"
       - name: Install the package
         run: |
+          sudo apt update
+          sudo apt install -y libopenslide0
           python -m pip install --upgrade pip setuptools wheel
-          python -m pip install torch torchvision --extra-index-url https://download.pytorch.org/whl/cpu
+          python -m pip install torch torchvision --extra-index-url https://download.pytorch.org/whl/cpu openslide-python tiffslide
           python -m pip install .[dev]
       - name: Check style (flake8)
         run: python -m flake8 wsinfer/
@@ -118,8 +126,10 @@ jobs:
           python-version: "3.10"
       - name: Install the package
         run: |
+          sudo apt update
+          sudo apt install -y libopenslide0
           python -m pip install --upgrade pip setuptools wheel
-          python -m pip install torch torchvision --extra-index-url https://download.pytorch.org/whl/cpu
+          python -m pip install torch torchvision --extra-index-url https://download.pytorch.org/whl/cpu openslide-python tiffslide
           python -m pip install .[docs]
       - name: Build docs
         run: |
