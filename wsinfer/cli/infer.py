@@ -109,7 +109,7 @@ def _print_system_info() -> None:
         click.secho("*******************************************", fg="yellow")
 
 
-def _get_info_for_save(model_obj: Union[models.LocalModel, HFModel]):
+def _get_info_for_save(model_obj: Union[models.LocalModelTorchScript, HFModel]):
     """Get dictionary with information about the run. To save as JSON in output dir."""
 
     import torch
@@ -329,9 +329,9 @@ def run(
 
     # Get weights object before running the patching script because we need to get the
     # necessary spacing and patch size.
-    model_obj: Union[HFModel, models.LocalModel]
+    model_obj: HFModel | models.LocalModelTorchScript
     if model_name is not None:
-        model_obj = models.get_registered_model(name=model_name, torchscript=True)
+        model_obj = models.get_registered_model(name=model_name)
     elif config is not None:
         assert config.suffix in {".json", ".yaml", ".yml"}, "Unknown file type"
         if config.suffix in {".yaml", ".yml"}:
@@ -341,7 +341,9 @@ def run(
             with open(config) as f:
                 _config_dict = json.load(f)
         model_config = ModelConfiguration.from_dict(_config_dict)
-        model_obj = models.LocalModel(config=model_config, model_path=str(model_path))
+        model_obj = models.LocalModelTorchScript(
+            config=model_config, model_path=str(model_path)
+        )
         del _config_dict, model_config
     else:
         raise click.ClickException("Neither of --config and --model was passed")

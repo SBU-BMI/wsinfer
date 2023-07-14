@@ -11,7 +11,6 @@ from pathlib import Path
 from typing import List
 from typing import Optional
 from typing import Tuple
-from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -21,7 +20,7 @@ import wsinfer_zoo.client
 
 from .. import errors
 from .data import WholeSlideImagePatches
-from .models import LocalModel
+from .models import LocalModelTorchScript
 from .models import get_pretrained_torch_module
 from .models import jit_compile
 from .transforms import make_compose_from_transform_config
@@ -30,7 +29,7 @@ from .transforms import make_compose_from_transform_config
 def run_inference(
     wsi_dir: str | Path,
     results_dir: str | Path,
-    model_info: Union[wsinfer_zoo.client.HFModel, LocalModel],
+    model_info: wsinfer_zoo.client.HFModelTorchScript | LocalModelTorchScript,
     batch_size: int = 32,
     num_workers: int = 0,
     speedup: bool = False,
