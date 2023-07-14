@@ -256,18 +256,22 @@ def test_patch_cli(
     assert np.array_equal(expected_coords_arr, coords)
 
 
-@pytest.mark.skip
-def test_jit_compile(model_name: str, weights_name: str):
+# FIXME: parametrize thie test across our models.
+def test_jit_compile():
     import time
 
     import torch
 
     from wsinfer.modellib.run_inference import jit_compile
+    from wsinfer.modellib.models import (
+        get_registered_model,
+        get_pretrained_torch_module,
+    )
 
-    w = get_model_weights(model_name, weights_name)
-    size = w.transform.resize_size
-    x = torch.ones(20, 3, size, size, dtype=torch.float32)
-    model = w.load_model()
+    w = get_registered_model("breast-tumor-resnet34.tcga-brca")
+    model = get_pretrained_torch_module(w)
+
+    x = torch.ones(20, 3, 224, 224, dtype=torch.float32)
     model.eval()
     NUM_SAMPLES = 1
     with torch.no_grad():
@@ -394,7 +398,7 @@ def test_issue_125(tmp_path: Path):
     from wsinfer.cli.infer import _get_info_for_save
     from wsinfer.modellib.models import get_registered_model
 
-    w = get_registered_model("breast-tumor-resnet34.tcga-brca", torchscript=True)
+    w = get_registered_model("breast-tumor-resnet34.tcga-brca")
     w.model_path = Path(w.model_path)  # type: ignore
     info = _get_info_for_save(w)
     with open(tmp_path / "foo.json", "w") as f:
