@@ -3,28 +3,13 @@ from __future__ import annotations
 import dataclasses
 import warnings
 from typing import Callable
-from typing import Dict
 from typing import Union
 
-import safetensors.torch
-import timm
+
 import torch
 import wsinfer_zoo
-from wsinfer_zoo.client import HFModel
 from wsinfer_zoo.client import HFModelTorchScript
-from wsinfer_zoo.client import HFModelWeightsOnly
 from wsinfer_zoo.client import Model
-
-# Imported for side effects of registering model.
-from ..errors import UnknownArchitectureError
-from .custom_models import inceptionv4_no_batchnorm as _  # noqa
-from .custom_models.resnet_preact import resnet34_preact as _resnet34_preact
-from .custom_models.vgg16mod import vgg16mod as _vgg16mod
-
-
-@dataclasses.dataclass
-class LocalModel(Model):
-    ...
 
 
 @dataclasses.dataclass
@@ -32,63 +17,17 @@ class LocalModelTorchScript(Model):
     ...
 
 
-@dataclasses.dataclass
-class LocalModelWeightsOnly(Model):
-    ...
-
-
-# Container for all architectures we can use that are not in timm.
-# The values are functions, which are expected to accept one integer
-# argument for the number of classes the model outputs.
-_architecture_registry: Dict[str, Callable[[int], torch.nn.Module]] = {
-    "preactresnet34": _resnet34_preact,
-    "vgg16mod": _vgg16mod,
-}
-
-
-def _create_model(name: str, num_classes: int) -> torch.nn.Module:
-    """Return a torch model architecture."""
-    if name in _architecture_registry.keys():
-        return _architecture_registry[name](num_classes)
-    else:
-        if name not in timm.list_models():
-            raise UnknownArchitectureError(f"unknown architecture: '{name}'")
-        return timm.create_model(name, num_classes=num_classes)
-
-
-def get_registered_model(
-    name: str, torchscript: bool = False, safetensors: bool = False
-) -> HFModel:
+def get_registered_model(name: str) -> HFModelTorchScript:
     registry = wsinfer_zoo.client.load_registry()
     model = registry.get_model_by_name(name=name)
-    if torchscript:
-        return model.load_model_torchscript()
-    else:
-        return model.load_model_weights(safetensors=safetensors)
+    return model.load_model_torchscript()
 
 
-def get_pretrained_torch_module(model: Union[LocalModel, HFModel]) -> torch.nn.Module:
+def get_pretrained_torch_module(
+    model: HFModelTorchScript | LocalModelTorchScript,
+) -> torch.nn.Module:
     """Get a PyTorch Module with weights loaded."""
-
-    if isinstance(model, (HFModelTorchScript, LocalModelTorchScript)):
-        return torch.jit.load(model.model_path, map_location="cpu")
-
-    elif isinstance(model, (HFModelWeightsOnly, LocalModelWeightsOnly)):
-        arch = _create_model(
-            name=model.config.architecture, num_classes=model.config.num_classes
-        )
-        # FIXME: this might cause problems for us down the line. Is it this
-        # specific enough?
-        if model.model_path.endswith(".safetensors"):
-            state_dict = safetensors.torch.load_file(model.model_path)
-        else:
-            state_dict = torch.load(model.model_path, map_location="cpu")
-        arch.load_state_dict(state_dict)
-        return arch
-    else:
-        raise ValueError(
-            f"expected Model or ModelWeightsOnly instance but got {type(model)}"
-        )
+    return torch.jit.load(model.model_path, map_location="cpu")
 
 
 def jit_compile(
