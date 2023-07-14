@@ -24,7 +24,6 @@ from wsinfer_zoo.client import ModelConfiguration
 
 from ..modellib import models
 from ..modellib.run_inference import run_inference
-from ..patchlib.create_dense_patch_grid import create_grid_and_save_multi_slides
 from ..patchlib.create_patches_fp import create_patches
 
 
@@ -265,13 +264,6 @@ def _get_info_for_save(model_obj: Union[models.LocalModel, HFModel]):
     ),
     default=None,
 )
-@click.option(
-    "--dense-grid/--no-dense-grid",
-    default=False,
-    show_default=True,
-    help="Use a dense grid of patch coordinates. Patches will be present even if no"
-    " tissue is present",
-)
 def run(
     ctx: click.Context,
     *,
@@ -284,7 +276,6 @@ def run(
     num_workers: int = 0,
     speedup: bool = False,
     roi_dir: Optional[str | Path] = None,
-    dense_grid: bool = False,
 ):
     """Run model inference on a directory of whole slide images.
 
@@ -356,28 +347,20 @@ def run(
         raise click.ClickException("Neither of --config and --model was passed")
 
     click.secho("\nFinding patch coordinates...\n", fg="green")
-    if dense_grid:
-        click.echo("Not using a tissue mask.")
-        create_grid_and_save_multi_slides(
-            wsi_dir=wsi_dir,
-            results_dir=results_dir,
-            orig_patch_size=model_obj.config.patch_size_pixels,
-            patch_spacing_um_px=model_obj.config.spacing_um_px,
-        )
-    else:
-        create_patches(
-            source=str(wsi_dir),
-            save_dir=str(results_dir),
-            patch_size=model_obj.config.patch_size_pixels,
-            patch_spacing=model_obj.config.spacing_um_px,
-            seg=True,
-            patch=True,
-            # Stitching is a bottleneck when using tiffslide.
-            # TODO: figure out why this is...
-            stitch=False,
-            # FIXME: allow customization of this preset
-            preset="tcga.csv",
-        )
+
+    create_patches(
+        source=str(wsi_dir),
+        save_dir=str(results_dir),
+        patch_size=model_obj.config.patch_size_pixels,
+        patch_spacing=model_obj.config.spacing_um_px,
+        seg=True,
+        patch=True,
+        # Stitching is a bottleneck when using tiffslide.
+        # TODO: figure out why this is...
+        stitch=False,
+        # FIXME: allow customization of this preset
+        preset="tcga.csv",
+    )
 
     click.secho("\nRunning model inference.\n", fg="green")
     failed_patching, failed_inference = run_inference(
