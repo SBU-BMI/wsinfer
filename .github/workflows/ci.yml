@@ -87,7 +87,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: sudo apt update && sudo apt install -y libopenslide0
       - name: Install OpenSlide on macOS
-        if: matrix.os == 'windows-latest'
+        if: matrix.os == 'macos-latest'
         run: brew install openslide
       - name: Install the wsinfer python package
         run: |
