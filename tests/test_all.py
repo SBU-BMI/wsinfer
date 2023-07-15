@@ -16,6 +16,9 @@ import pytest
 import tifffile
 from click.testing import CliRunner
 
+from wsinfer.cli.infer import _get_info_for_save
+from wsinfer.modellib.models import get_registered_model
+
 
 @pytest.fixture
 def tiff_image(tmp_path: Path) -> Path:
@@ -300,9 +303,8 @@ def test_jit_compile():
 
 def test_issue_89():
     """Do not fail if 'git' is not installed."""
-    from wsinfer.cli.infer import _get_info_for_save
-
-    d = _get_info_for_save()
+    model_obj = get_registered_model("breast-tumor-resnet34.tcga-brca")
+    d = _get_info_for_save(model_obj)
     assert d
     assert "git" in d["runtime"]
     assert d["runtime"]["git"]
@@ -313,7 +315,7 @@ def test_issue_89():
     orig_path = os.environ["PATH"]
     try:
         os.environ["PATH"] = ""
-        d = _get_info_for_save()
+        d = _get_info_for_save(model_obj)
         assert d
         assert "git" in d["runtime"]
         assert d["runtime"]["git"] is None
