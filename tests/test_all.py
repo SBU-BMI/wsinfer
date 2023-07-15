@@ -14,10 +14,14 @@ import numpy as np
 import pandas as pd
 import pytest
 import tifffile
+import torch
 from click.testing import CliRunner
 
+from wsinfer.cli.cli import cli
 from wsinfer.cli.infer import _get_info_for_save
+from wsinfer.modellib.models import get_pretrained_torch_module
 from wsinfer.modellib.models import get_registered_model
+from wsinfer.modellib.run_inference import jit_compile
 
 
 @pytest.fixture
@@ -66,7 +70,6 @@ def test_cli_run_with_registered_models(
     tmp_path: Path,
 ):
     """A regression test of the command 'wsinfer run'."""
-    from wsinfer.cli.cli import cli
 
     reference_csv = Path(__file__).parent / "reference" / model / "purple.csv"
     if not reference_csv.exists():
@@ -164,8 +167,6 @@ def test_cli_run_with_registered_models(
 
 def test_cli_run_args(tmp_path: Path):
     """Test that (model and weights) or config is required."""
-    from wsinfer.cli.cli import cli
-
     wsi_dir = tmp_path / "slides"
     wsi_dir.mkdir()
 
@@ -215,8 +216,7 @@ def test_convert_to_sbu():
 def test_patch_cli(
     patch_size: int, patch_spacing: float, tmp_path: Path, tiff_image: Path
 ):
-    from wsinfer.cli.cli import cli
-
+    """Test of 'wsinfer patch'."""
     orig_slide_width = 4096
     orig_slide_height = 4096
     orig_slide_spacing = 0.25
@@ -261,16 +261,6 @@ def test_patch_cli(
 
 # FIXME: parametrize thie test across our models.
 def test_jit_compile():
-    import time
-
-    import torch
-
-    from wsinfer.modellib.run_inference import jit_compile
-    from wsinfer.modellib.models import (
-        get_registered_model,
-        get_pretrained_torch_module,
-    )
-
     w = get_registered_model("breast-tumor-resnet34.tcga-brca")
     model = get_pretrained_torch_module(w)
 
@@ -326,8 +316,6 @@ def test_issue_89():
 def test_issue_94(tmp_path: Path, tiff_image: Path):
     """Gracefully handle unreadable slides."""
 
-    from wsinfer.cli.cli import cli
-
     # We have a valid tiff in 'tiff_image.parent'. We put in an unreadable file too.
     badpath = tiff_image.parent / "bad.svs"
     badpath.touch()
@@ -355,7 +343,6 @@ def test_issue_94(tmp_path: Path, tiff_image: Path):
 
 def test_issue_97(tmp_path: Path, tiff_image: Path):
     """Write a run_metadata file per run."""
-    from wsinfer.cli.cli import cli
 
     runner = CliRunner()
     results_dir = tmp_path / "inference"
@@ -397,8 +384,6 @@ def test_issue_97(tmp_path: Path, tiff_image: Path):
 
 def test_issue_125(tmp_path: Path):
     """Test that path in model config can be saved when a pathlib.Path object."""
-    from wsinfer.cli.infer import _get_info_for_save
-    from wsinfer.modellib.models import get_registered_model
 
     w = get_registered_model("breast-tumor-resnet34.tcga-brca")
     w.model_path = Path(w.model_path)  # type: ignore
