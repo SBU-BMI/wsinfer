@@ -27,6 +27,7 @@ jobs:
           python -m pip install --editable .[dev]
       - name: Run tests
         run: python -m pytest --verbose tests/
+
   test-pytorch-nightly:
     runs-on: ubuntu-latest
     steps:
@@ -46,6 +47,7 @@ jobs:
         run: python -m mypy --install-types --non-interactive wsinfer/
       - name: Run tests
         run: python -m pytest --verbose tests/
+
   test-docker:
     runs-on: ubuntu-latest
     steps:
@@ -68,8 +70,13 @@ jobs:
           test -f results/patches/JP2K-33003-1.h5
           test -f results/model-outputs/JP2K-33003-1.csv
           test $(wc -l < results/model-outputs/JP2K-33003-1.csv) -eq 653
+
+  # This is run on multiple operating systems.
   test-package:
-    runs-on: ubuntu-latest
+    strategy:
+        matrix:
+            os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python 3.10
@@ -94,6 +101,7 @@ jobs:
           test -f results/patches/JP2K-33003-1.h5
           test -f results/model-outputs/JP2K-33003-1.csv
           test $(wc -l < results/model-outputs/JP2K-33003-1.csv) -eq 653
+
   style-and-types:
     runs-on: ubuntu-latest
     steps:
@@ -115,11 +123,12 @@ jobs:
         run: python -m black --check wsinfer/
       - name: Check types
         run: python -m mypy --install-types --non-interactive wsinfer/
+
   docs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python 3.10
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
