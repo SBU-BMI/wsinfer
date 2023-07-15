@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import math
 import os
 import platform
 import sys
@@ -230,8 +229,7 @@ def test_patch_cli(
     patch_size: int, patch_spacing: float, tmp_path: Path, tiff_image: Path
 ):
     """Test of 'wsinfer patch'."""
-    orig_slide_width = 4096
-    orig_slide_height = 4096
+    orig_slide_size = 4096
     orig_slide_spacing = 0.25
 
     runner = CliRunner()
@@ -258,18 +256,24 @@ def test_patch_cli(
     assert (savedir / "stitches" / f"{stem}.jpg").exists()
 
     expected_patch_size = round(patch_size * patch_spacing / orig_slide_spacing)
-    expected_num_patches = math.ceil(4096 / expected_patch_size) ** 2
-    expected_coords = []
-    for x in range(0, orig_slide_width, expected_patch_size):
-        for y in range(0, orig_slide_height, expected_patch_size):
-            expected_coords.append([x, y])
-    expected_coords_arr = np.array(expected_coords)
+    sqrt_expected_num_patches = round(orig_slide_size / expected_patch_size)
+    expected_num_patches = sqrt_expected_num_patches**2
 
+    expected_coords = []
+    for x in range(0, orig_slide_size, expected_patch_size):
+        for y in range(0, orig_slide_size, expected_patch_size):
+            # Patch is kept if centroid is inside.
+            if (
+                x + expected_patch_size // 2 <= orig_slide_size
+                and y + expected_patch_size // 2 <= orig_slide_size
+            ):
+                expected_coords.append([x, y])
+    assert len(expected_coords) == expected_num_patches
     with h5py.File(savedir / "patches" / f"{stem}.h5") as f:
         assert f["/coords"].attrs["patch_size"] == expected_patch_size
         coords = f["/coords"][()]
     assert coords.shape == (expected_num_patches, 2)
-    assert np.array_equal(expected_coords_arr, coords)
+    assert np.array_equal(expected_coords, coords)
 
 
 # FIXME: parametrize thie test across our models.
