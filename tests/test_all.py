@@ -165,8 +165,8 @@ def test_cli_run_with_registered_models(
         assert [df_coords] == geojson_row["geometry"]["coordinates"]
 
 
-def test_cli_run_args(tmp_path: Path):
-    """Test that (model and weights) or config is required."""
+def test_cli_run_no_model_or_config(tmp_path: Path):
+    """Test that --model or (--config and --model-path) is required."""
     wsi_dir = tmp_path / "slides"
     wsi_dir.mkdir()
 
@@ -181,26 +181,39 @@ def test_cli_run_args(tmp_path: Path):
     # No model, weights, or config.
     result = runner.invoke(cli, args)
     assert result.exit_code != 0
-    assert "one of (model and weights) or config is required." in result.output
+    assert "one of --model or (--config and --model-path) is required" in result.output
 
-    # Only one of model and weights.
-    result = runner.invoke(cli, [*args, "--model", "resnet34"])
-    assert result.exit_code != 0
-    assert "model and weights must both be set if one is set." in result.output
-    result = runner.invoke(cli, [*args, "--weights", "TCGA-BRCA-v1"])
-    assert result.exit_code != 0
-    assert "model and weights must both be set if one is set." in result.output
 
-    # config and model
-    result = runner.invoke(cli, [*args, "--config", __file__, "--model", "resnet34"])
+def test_cli_run_model_and_config(tmp_path: Path):
+    """Test that (model and weights) or config is required."""
+    wsi_dir = tmp_path / "slides"
+    wsi_dir.mkdir()
+
+    fake_config = tmp_path / "foobar.json"
+    fake_config.touch()
+    fake_model_path = tmp_path / "foobar.pt"
+    fake_model_path.touch()
+
+    runner = CliRunner()
+    args = [
+        "run",
+        "--wsi-dir",
+        str(wsi_dir),
+        "--results-dir",
+        str(tmp_path / "results"),
+        "--model",
+        "colorectal-tiatoolbox-resnet50.kather100k",
+        "--model-path",
+        str(fake_model_path),
+        "--config",
+        str(fake_config),
+    ]
+    # No model, weights, or config.
+    result = runner.invoke(cli, args)
     assert result.exit_code != 0
-    assert "model and weights are mutually exclusive with config." in result.output
-    # config and weights
-    result = runner.invoke(
-        cli, [*args, "--config", __file__, "--weights", "TCGA-BRCA-v1"]
+    assert (
+        "--config and --model-path are mutually exclusive with --model" in result.output
     )
-    assert result.exit_code != 0
-    assert "model and weights are mutually exclusive with config." in result.output
 
 
 @pytest.mark.xfail
