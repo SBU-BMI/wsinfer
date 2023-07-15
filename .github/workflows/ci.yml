@@ -108,18 +108,18 @@ jobs:
           test $(wc -l < results/model-outputs/JP2K-33003-1.csv) -eq 653
       # FIXME: tissue segmentation has different outputs on Windows. The patch sizes
       # are the same but the coordinates found are different.
-      # - name: Run 'wsinfer run' on Windows
-      #   if: matrix.os == 'windows-latest'
-      #   run: |
-      #     mkdir newdir && cd newdir
-      #     mkdir slides && cd slides
-      #     Invoke-WebRequest -URI https://openslide.cs.cmu.edu/download/openslide-testdata/Aperio/JP2K-33003-1.svs -OutFile JP2K-33003-1.svs
-      #     cd ..
-      #     wsinfer run --wsi-dir slides/ --results-dir results/ --model breast-tumor-resnet34.tcga-brca
-      #     Test-Path -Path results/run_metadata_*.json -PathType Leaf
-      #     Test-Path -Path results/patches/JP2K-33003-1.h5 -PathType Leaf
-      #     Test-Path -Path results/model-outputs/JP2K-33003-1.csv -PathType Leaf
-      #     # test $(python -c "print(sum(1 for _ in open('results/model-outputs/JP2K-33003-1.csv')))") -eq 653
+      - name: Run 'wsinfer run' on Windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          mkdir newdir && cd newdir
+          mkdir slides && cd slides
+          Invoke-WebRequest -URI https://openslide.cs.cmu.edu/download/openslide-testdata/Aperio/JP2K-33003-1.svs -OutFile JP2K-33003-1.svs
+          cd ..
+          wsinfer run --wsi-dir slides/ --results-dir results/ --model breast-tumor-resnet34.tcga-brca
+          Test-Path -Path results/run_metadata_*.json -PathType Leaf
+          Test-Path -Path results/patches/JP2K-33003-1.h5 -PathType Leaf
+          Test-Path -Path results/model-outputs/JP2K-33003-1.csv -PathType Leaf
+          # test $(python -c "print(sum(1 for _ in open('results/model-outputs/JP2K-33003-1.csv')))") -eq 653
 
   style-and-types:
     runs-on: ubuntu-latest
