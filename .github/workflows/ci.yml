@@ -117,7 +117,7 @@ jobs:
           Test-Path -Path results/run_metadata_*.json -PathType Leaf
           Test-Path -Path results/patches/JP2K-33003-1.h5 -PathType Leaf
           Test-Path -Path results/model-outputs/JP2K-33003-1.csv -PathType Leaf
-          test $(python -c "print(sum(1 for _ in open('JP2K-33003-1.csv')))") -eq 653
+          test $(python -c "print(sum(1 for _ in open('results/model-outputs/JP2K-33003-1.csv')))") -eq 653
 
   style-and-types:
     runs-on: ubuntu-latest
