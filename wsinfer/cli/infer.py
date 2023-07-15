@@ -218,7 +218,7 @@ def _get_info_for_save(model_obj: Union[models.LocalModelTorchScript, HFModel]):
     ),
 )
 @click.option(
-    "-c",
+    "-p",
     "--model-path",
     type=click.Path(exists=True, dir_okay=False, path_type=Path, resolve_path=True),
     help=(
