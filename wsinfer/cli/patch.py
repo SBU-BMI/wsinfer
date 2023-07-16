@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 from typing import Optional
 
 import click
 
-from .._patchlib.create_patches_fp import create_patches as _create_patches
+from ..patchlib.create_patches_fp import create_patches as _create_patches
 
 
 @click.command()

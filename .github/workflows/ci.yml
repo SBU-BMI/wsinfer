@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
@@ -20,11 +20,14 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install the package
         run: |
+          sudo apt update
+          sudo apt install -y libopenslide0
           python -m pip install --upgrade pip setuptools wheel
-          python -m pip install torch torchvision --extra-index-url https://download.pytorch.org/whl/cpu
-          python -m pip install --editable .[dev] --find-links https://girder.github.io/large_image_wheels
+          python -m pip install torch torchvision --extra-index-url https://download.pytorch.org/whl/cpu openslide-python tiffslide
+          python -m pip install --editable .[dev]
       - name: Run tests
         run: python -m pytest --verbose tests/
+
   test-pytorch-nightly:
     runs-on: ubuntu-latest
     steps:
@@ -35,14 +38,16 @@ jobs:
           python-version: "3.10"
       - name: Install the package
         run: |
+          sudo apt update
+          sudo apt install -y libopenslide0
           python -m pip install --upgrade pip setuptools wheel
-          python -m pip install --pre torch torchvision --extra-index-url https://download.pytorch.org/whl/nightly/cpu
-          python -m pip install --editable .[dev] --find-links https://girder.github.io/large_image_wheels
+          python -m pip install --pre torch torchvision --extra-index-url https://download.pytorch.org/whl/nightly/cpu openslide-python tiffslide
+          python -m pip install --editable .[dev]
       - name: Check types
         run: python -m mypy --install-types --non-interactive wsinfer/
       - name: Run tests
-        continue-on-error: true
         run: python -m pytest --verbose tests/
+
   test-docker:
     runs-on: ubuntu-latest
     steps:
@@ -60,35 +65,62 @@ jobs:
           wget -q https://openslide.cs.cmu.edu/download/openslide-testdata/Aperio/JP2K-33003-1.svs
           cd ..
           docker run --rm --shm-size=512m --volume $(pwd):/work --workdir /work wsinferimage run \
-            --wsi-dir slides/ --results-dir results/ --model resnet34 --weights TCGA-BRCA-v1
+            --wsi-dir slides/ --results-dir results/ --model breast-tumor-resnet34.tcga-brca
           test -f results/run_metadata_*.json
           test -f results/patches/JP2K-33003-1.h5
           test -f results/model-outputs/JP2K-33003-1.csv
           test $(wc -l < results/model-outputs/JP2K-33003-1.csv) -eq 653
+
+  # This is run on multiple operating systems.
   test-package:
-    runs-on: ubuntu-latest
+    strategy:
+        matrix:
+            os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python 3.10
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
-      - name: Install the package
+      - name: Install OpenSlide on Ubuntu
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt update && sudo apt install -y libopenslide0
+      - name: Install OpenSlide on macOS
+        if: matrix.os == 'macos-latest'
+        run: brew install openslide
+      - name: Install the wsinfer python package
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          python -m pip install torch torchvision --extra-index-url https://download.pytorch.org/whl/cpu
-          python -m pip install . --find-links https://girder.github.io/large_image_wheels
-      - name: Run the wsinfer command in a new directory
+          python -m pip install torch torchvision --extra-index-url https://download.pytorch.org/whl/cpu openslide-python tiffslide
+          python -m pip install .
+      - name: Run 'wsinfer run' on Unix
+        if: matrix.os != 'windows-latest'
         run: |
           mkdir newdir && cd newdir
           mkdir slides && cd slides
           wget -q https://openslide.cs.cmu.edu/download/openslide-testdata/Aperio/JP2K-33003-1.svs
           cd ..
-          wsinfer run --wsi-dir slides/ --results-dir results/ --model resnet34 --weights TCGA-BRCA-v1
+          wsinfer run --wsi-dir slides/ --results-dir results/ --model breast-tumor-resnet34.tcga-brca
           test -f results/run_metadata_*.json
           test -f results/patches/JP2K-33003-1.h5
           test -f results/model-outputs/JP2K-33003-1.csv
           test $(wc -l < results/model-outputs/JP2K-33003-1.csv) -eq 653
+      # FIXME: tissue segmentation has different outputs on Windows. The patch sizes
+      # are the same but the coordinates found are different.
+      - name: Run 'wsinfer run' on Windows
+        if: matrix.os == 'windows-latest'
+        run: |
+          mkdir newdir && cd newdir
+          mkdir slides && cd slides
+          Invoke-WebRequest -URI https://openslide.cs.cmu.edu/download/openslide-testdata/Aperio/JP2K-33003-1.svs -OutFile JP2K-33003-1.svs
+          cd ..
+          wsinfer run --wsi-dir slides/ --results-dir results/ --model breast-tumor-resnet34.tcga-brca
+          Test-Path -Path results/run_metadata_*.json -PathType Leaf
+          Test-Path -Path results/patches/JP2K-33003-1.h5 -PathType Leaf
+          Test-Path -Path results/model-outputs/JP2K-33003-1.csv -PathType Leaf
+          # test $(python -c "print(sum(1 for _ in open('results/model-outputs/JP2K-33003-1.csv')))") -eq 653
+
   style-and-types:
     runs-on: ubuntu-latest
     steps:
@@ -99,28 +131,33 @@ jobs:
           python-version: "3.10"
       - name: Install the package
         run: |
+          sudo apt update
+          sudo apt install -y libopenslide0
           python -m pip install --upgrade pip setuptools wheel
-          python -m pip install torch torchvision --extra-index-url https://download.pytorch.org/whl/cpu
-          python -m pip install .[dev] --find-links https://girder.github.io/large_image_wheels
+          python -m pip install torch torchvision --extra-index-url https://download.pytorch.org/whl/cpu openslide-python tiffslide
+          python -m pip install .[dev]
       - name: Check style (flake8)
         run: python -m flake8 wsinfer/
       - name: Check style (black)
         run: python -m black --check wsinfer/
       - name: Check types
         run: python -m mypy --install-types --non-interactive wsinfer/
+
   docs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python 3.10
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
       - name: Install the package
         run: |
+          sudo apt update
+          sudo apt install -y libopenslide0
           python -m pip install --upgrade pip setuptools wheel
-          python -m pip install torch torchvision --extra-index-url https://download.pytorch.org/whl/cpu
-          python -m pip install .[docs] --find-links https://girder.github.io/large_image_wheels
+          python -m pip install torch torchvision --extra-index-url https://download.pytorch.org/whl/cpu openslide-python tiffslide
+          python -m pip install .[docs]
       - name: Build docs
         run: |
           cd docs

@@ -9,13 +9,16 @@
 
 """Git implementation of _version.py."""
 
+from __future__ import annotations
+
 import errno
+import functools
 import os
 import re
 import subprocess
 import sys
-from typing import Callable, Dict
-import functools
+from typing import Callable
+from typing import Dict
 
 
 def get_keywords():

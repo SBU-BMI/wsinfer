@@ -2,40 +2,40 @@
 
 Output directory tree for single class outputs:
 ├── heatmap_jsons
-│   ├── heatmap-SLIDEID.json
-│   └── meta-SLIDEID.json
+│   ├── heatmap-SLIDEID.json
+│   └── meta-SLIDEID.json
 └── heatmap_txt
     ├── color-SLIDEID
     └── prediction-SLIDEID
 
 Output directory tree for multi-class outputs:
 ├── heatmap_jsons
-│   └── CLASS_LABEL
-│       ├── heatmap-SLIDEID.json
-│       └── meta-SLIDEID.json
+│   └── CLASS_LABEL
+│       ├── heatmap-SLIDEID.json
+│       └── meta-SLIDEID.json
 └── heatmap_txt
     └── CLASS_LABEL
         ├── color-SLIDEID
         └── prediction-SLIDEID
 """
 
+from __future__ import annotations
+
 import json
 import multiprocessing
-from pathlib import Path
 import pprint
 import random
 import shutil
 import time
 import typing
+from pathlib import Path
 
 import click
-import large_image
 import numpy as np
 import pandas as pd
 import tqdm
 
-
-PathType = typing.Union[str, Path]
+from wsinfer.wsi import WSI
 
 
 def _box_to_polygon(
@@ -48,11 +48,11 @@ def _box_to_polygon(
 
 
 def write_heatmap_and_meta_json_lines(
-    input: PathType,
-    output_heatmap: PathType,
-    output_meta: PathType,
-    slide_width: PathType,
-    slide_height: PathType,
+    input: str | Path,
+    output_heatmap: str | Path,
+    output_meta: str | Path,
+    slide_width: int,
+    slide_height: int,
     execution_id: str,
     study_id: str,
     case_id: str,
@@ -169,7 +169,9 @@ def write_heatmap_and_meta_json_lines(
         json.dump(meta_dict, f)
 
 
-def write_heatmap_txt(input: PathType, output: PathType, class_names: typing.List[str]):
+def write_heatmap_txt(
+    input: str | Path, output: str | Path, class_names: typing.List[str]
+):
     df = pd.read_csv(input)
     # TODO: should we round and cast to int here?
     df.loc[:, "x_loc"] = (df.minx + (df.width / 2)).round().astype(int)
@@ -183,9 +185,9 @@ def write_heatmap_txt(input: PathType, output: PathType, class_names: typing.Lis
 
 
 def write_color_txt(
-    input: PathType,
-    output: PathType,
-    ts: large_image.tilesource.TileSource,
+    input: str | Path,
+    output: str | Path,
+    slide,
     num_processes: int = 6,
 ):
     def whiteness(arr):
@@ -205,15 +207,12 @@ def write_color_txt(
     global get_color  # Hack to please multiprocessing.
 
     def get_color(row: pd.Series):
-        arr, _ = ts.getRegion(
-            format=large_image.constants.TILE_FORMAT_NUMPY,
-            region=dict(
-                left=row["minx"],
-                top=row["miny"],
-                width=row["width"],
-                height=row["height"],
-            ),
+        patch_im = slide.read_region(
+            location=(row["minx"], row["miny"]),
+            level=0,
+            size=(row["width"], row["height"]),
         )
+        arr = np.asarray(patch_im)
         white = whiteness(arr)
         black = blackness(arr)
         red = redness(arr)
@@ -357,11 +356,9 @@ def tosbu(
             click.secho(f"WSI file not found: {wsi_file}", bg="red")
             click.secho("Skipping...", bg="red")
             continue
-        ts = large_image.getTileSource(wsi_file)
-        if ts.sizeX is None or ts.sizeY is None:
-            click.secho(f"Unknown size for WSI: {wsi_file}", bg="red")
-            click.secho("Skipping...", bg="red")
-            continue
+        slide = WSI(wsi_file)
+
+        slide_width, slide_height = slide.level_dimensions[0]
 
         for class_name in class_names:
             if len(class_names) == 1:
@@ -383,8 +380,8 @@ def tosbu(
                 input=input_csv,
                 output_heatmap=output_heatmap,
                 output_meta=output_meta,
-                slide_width=ts.sizeX,
-                slide_height=ts.sizeY,
+                slide_width=slide_width,
+                slide_height=slide_height,
                 execution_id=execution_id,
                 study_id=study_id,
                 case_id=slide_id,  # TODO: should case_id be different?
@@ -419,7 +416,7 @@ def tosbu(
                 write_color_txt(
                     input=input_csv,
                     output=output_color,
-                    ts=ts,
+                    slide=slide,
                     num_processes=num_processes,
                 )
             else:
@@ -430,7 +427,7 @@ def tosbu(
                 write_color_txt(
                     input=input_csv,
                     output=output_color,
-                    ts=ts,
+                    slide=slide,
                     num_processes=num_processes,
                 )
                 # Copy this color file to all class-specific dirs.

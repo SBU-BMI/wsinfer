@@ -1,24 +1,30 @@
 """Detect cancerous regions in a whole slide image."""
 
-from datetime import datetime
+from __future__ import annotations
+
+import dataclasses
 import getpass
 import json
 import os
-from pathlib import Path
 import platform
 import shutil
 import subprocess
 import sys
-import typing
+from datetime import datetime
+from pathlib import Path
+from typing import Optional
+from typing import Union
 
 import click
+import wsinfer_zoo
+import wsinfer_zoo.client
+import yaml
+from wsinfer_zoo.client import HFModel
+from wsinfer_zoo.client import ModelConfiguration
 
-from .._modellib.run_inference import run_inference
-from .._modellib import models
-from .._patchlib.create_dense_patch_grid import create_grid_and_save_multi_slides
-from .._patchlib.create_patches_fp import create_patches
-
-PathType = typing.Union[str, Path]
+from ..modellib import models
+from ..modellib.run_inference import run_inference
+from ..patchlib.create_patches_fp import create_patches
 
 
 def _num_cpus() -> int:
@@ -54,6 +60,7 @@ def _print_system_info() -> None:
     """Print information about the system."""
     import torch
     import torchvision
+
     from .. import __version__
 
     click.secho(f"\nRunning wsinfer version {__version__}", fg="green")
@@ -102,10 +109,11 @@ def _print_system_info() -> None:
         click.secho("*******************************************", fg="yellow")
 
 
-def _get_info_for_save(weights: models.Weights):
+def _get_info_for_save(model_obj: Union[models.LocalModelTorchScript, HFModel]):
     """Get dictionary with information about the run. To save as JSON in output dir."""
 
     import torch
+
     from .. import __version__
 
     here = Path(__file__).parent.resolve()
@@ -147,35 +155,15 @@ def _get_info_for_save(weights: models.Weights):
     if git_installed and is_git_repo:
         git_info = get_git_info()
 
-    weights_file = weights.file
-    if weights_file is None:
-        if weights.url_file_name is None:
-            raise TypeError("url_file_name must not be None if file is None.")
-        weights_file = str(
-            Path(torch.hub.get_dir()) / "checkpoints" / weights.url_file_name
-        )
-    else:
-        # Weights file could have been a pathlib.Path object.
-        weights_file = str(weights_file)
+    hf_info = None
+    if hasattr(model_obj, "hf_info"):
+        hf_info = dataclasses.asdict(model_obj.hf_info)
 
     return {
-        "model_weights": {
-            "name": weights.name,
-            "architecture": weights.architecture,
-            "weights_url": weights.url,
-            "weights_url_file_name": weights.url_file_name,
-            "weights_file": weights_file,
-            "weights_sha256": weights.get_sha256_of_weights(),
-            "class_names": weights.class_names,
-            "num_classes": weights.num_classes,
-            "patch_size_pixels": weights.patch_size_pixels,
-            "spacing_um_px": weights.spacing_um_px,
-            "transform": {
-                "resize_size": weights.transform.resize_size,
-                "mean": weights.transform.mean,
-                "std": weights.transform.std,
-            },
-            "metadata": weights.metadata or None,
+        "model": {
+            "config": dataclasses.asdict(model_obj.config),
+            "huggingface_location": hf_info,
+            "path": str(model_obj.model_path),
         },
         "runtime": {
             "version": __version__,
@@ -187,6 +175,7 @@ def _get_info_for_save(weights: models.Weights):
             "pytorch_version": torch.__version__,
             "cuda_version": torch.version.cuda,
             "git": git_info,
+            "wsinfer_zoo_version": wsinfer_zoo.__version__,
         },
         "timestamp": _get_timestamp(),
     }
@@ -195,6 +184,7 @@ def _get_info_for_save(weights: models.Weights):
 @click.command(context_settings=dict(auto_envvar_prefix="WSINFER"))
 @click.pass_context
 @click.option(
+    "-i",
     "--wsi-dir",
     type=click.Path(exists=True, file_okay=False, path_type=Path, resolve_path=True),
     required=True,
@@ -202,6 +192,7 @@ def _get_info_for_save(weights: models.Weights):
     " whole slide images.",
 )
 @click.option(
+    "-o",
     "--results-dir",
     type=click.Path(file_okay=False, path_type=Path, resolve_path=True),
     required=True,
@@ -209,25 +200,34 @@ def _get_info_for_save(weights: models.Weights):
     " whole slides for which outputs exist.",
 )
 @click.option(
+    "-m",
     "--model",
-    type=click.Choice(sorted({a for a, _ in models.list_all_models_and_weights()})),
-    help="Model architecture to use. Not required if 'config' is used.",
+    "model_name",
+    type=click.Choice(sorted(wsinfer_zoo.client.load_registry().models.keys())),
+    help="Name of the model to use from WSInfer Model Zoo. Mutually exclusive with"
+    " --config.",
 )
 @click.option(
-    "--weights",
-    type=click.Choice(sorted({w for _, w in models.list_all_models_and_weights()})),
-    help="Name of weights to use for the model. Not required if 'config' is used.",
-)
-@click.option(
+    "-c",
     "--config",
     type=click.Path(exists=True, dir_okay=False, path_type=Path, resolve_path=True),
     help=(
-        "Path to configuration for architecture and weights. Use this option if the"
+        "Path to configuration for the trained model. Use this option if the"
         " model weights are not registered in wsinfer. Mutually exclusive with"
-        " 'model' and 'weights'."
+        "--model"
     ),
 )
 @click.option(
+    "-p",
+    "--model-path",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path, resolve_path=True),
+    help=(
+        "Path to the pretrained model. Use only when --config is passed. Mutually "
+        "exclusive with --model."
+    ),
+)
+@click.option(
+    "-b",
     "--batch-size",
     type=click.IntRange(min=1),
     default=32,
@@ -236,6 +236,7 @@ def _get_info_for_save(weights: models.Weights):
     " batch size.",
 )
 @click.option(
+    "-n",
     "--num-workers",
     default=min(_num_cpus(), 8),  # Use at most 8 workers by default.
     show_default=True,
@@ -247,7 +248,8 @@ def _get_info_for_save(weights: models.Weights):
     "--speedup/--no-speedup",
     default=False,
     show_default=True,
-    help="JIT-compile the model for potential speedups.",
+    help="JIT-compile the model and apply inference optimizations. This imposes a"
+    " startup cost but may improve performance overall.",
 )
 @click.option(
     "--roi-dir",
@@ -262,26 +264,18 @@ def _get_info_for_save(weights: models.Weights):
     ),
     default=None,
 )
-@click.option(
-    "--dense-grid/--no-dense-grid",
-    default=False,
-    show_default=True,
-    help="Use a dense grid of patch coordinates. Patches will be present even if no"
-    " tissue is present",
-)
 def run(
     ctx: click.Context,
     *,
     wsi_dir: Path,
     results_dir: Path,
-    model: typing.Optional[str],
-    weights: typing.Optional[str],
-    config: typing.Optional[Path],
+    model_name: Optional[str],
+    config: Optional[Path],
+    model_path: Optional[Path],
     batch_size: int,
     num_workers: int = 0,
     speedup: bool = False,
-    roi_dir: typing.Optional[PathType] = None,
-    dense_grid: bool = False,
+    roi_dir: Optional[str | Path] = None,
 ):
     """Run model inference on a directory of whole slide images.
 
@@ -291,17 +285,24 @@ def run(
 
     Example:
 
-    CUDA_VISIBLE_DEVICES=0 wsinfer run --wsi_dir slides/ --results_dir results
-    --model resnet34 --weights TCGA-BRCA-v1 --batch_size 32 --num_workers 4
+    CUDA_VISIBLE_DEVICES=0 wsinfer run --wsi-dir slides/ --results-dir results
+    --model breast-tumor-resnet34.tcga-brca --batch-size 32 --num-workers 4
 
-    To list all available models and weights, use `wsinfer list`.
+    To list all available models and weights, use `wsinfer ls`.
     """
-    if model is None and weights is None and config is None:
-        raise click.UsageError("one of (model and weights) or config is required.")
-    elif (model is not None or weights is not None) and config is not None:
-        raise click.UsageError("model and weights are mutually exclusive with config.")
-    elif (model is not None) ^ (weights is not None):  # XOR
-        raise click.UsageError("model and weights must both be set if one is set.")
+
+    if model_name is None and config is None and model_path is None:
+        raise click.UsageError(
+            "one of --model or (--config and --model-path) is required."
+        )
+    elif (config is not None or model_path is not None) and model_name is not None:
+        raise click.UsageError(
+            "--config and --model-path are mutually exclusive with --model."
+        )
+    elif (config is not None) ^ (model_path is not None):  # XOR
+        raise click.UsageError(
+            "--config and --model-path must both be set if one is set."
+        )
 
     wsi_dir = wsi_dir.resolve()
     results_dir = results_dir.resolve()
@@ -328,36 +329,46 @@ def run(
 
     # Get weights object before running the patching script because we need to get the
     # necessary spacing and patch size.
-    if model is not None and weights is not None:
-        weights_obj = models.get_model_weights(model, name=weights)
+    model_obj: HFModel | models.LocalModelTorchScript
+    if model_name is not None:
+        model_obj = models.get_registered_model(name=model_name)
     elif config is not None:
-        weights_obj = models.Weights.from_yaml(config)
+        assert config.suffix in {".json", ".yaml", ".yml"}, "Unknown file type"
+        if config.suffix in {".yaml", ".yml"}:
+            with open(config) as f:
+                _config_dict = yaml.safe_load(f)
+        else:
+            with open(config) as f:
+                _config_dict = json.load(f)
+        model_config = ModelConfiguration.from_dict(_config_dict)
+        model_obj = models.LocalModelTorchScript(
+            config=model_config, model_path=str(model_path)
+        )
+        del _config_dict, model_config
+    else:
+        raise click.ClickException("Neither of --config and --model was passed")
 
     click.secho("\nFinding patch coordinates...\n", fg="green")
-    if dense_grid:
-        click.echo("Not using a tissue mask.")
-        create_grid_and_save_multi_slides(
-            wsi_dir=wsi_dir,
-            results_dir=results_dir,
-            orig_patch_size=weights_obj.patch_size_pixels,
-            patch_spacing_um_px=weights_obj.spacing_um_px,
-        )
-    else:
-        create_patches(
-            source=str(wsi_dir),
-            save_dir=str(results_dir),
-            patch_size=weights_obj.patch_size_pixels,
-            patch_spacing=weights_obj.spacing_um_px,
-            seg=True,
-            patch=True,
-            preset="tcga.csv",
-        )
+
+    create_patches(
+        source=str(wsi_dir),
+        save_dir=str(results_dir),
+        patch_size=model_obj.config.patch_size_pixels,
+        patch_spacing=model_obj.config.spacing_um_px,
+        seg=True,
+        patch=True,
+        # Stitching is a bottleneck when using tiffslide.
+        # TODO: figure out why this is...
+        stitch=False,
+        # FIXME: allow customization of this preset
+        preset="tcga.csv",
+    )
 
     click.secho("\nRunning model inference.\n", fg="green")
     failed_patching, failed_inference = run_inference(
         wsi_dir=wsi_dir,
         results_dir=results_dir,
-        weights=weights_obj,
+        model_info=model_obj,
         batch_size=batch_size,
         num_workers=num_workers,
         speedup=speedup,
@@ -376,7 +387,7 @@ def run(
     timestamp = datetime.now().astimezone().strftime("%Y%m%dT%H%M%S")
     run_metadata_outpath = results_dir / f"run_metadata_{timestamp}.json"
     click.echo(f"Saving metadata about run to {run_metadata_outpath}")
-    run_metadata = _get_info_for_save(weights_obj)
+    run_metadata = _get_info_for_save(model_obj)
     with open(run_metadata_outpath, "w") as f:
         json.dump(run_metadata, f, indent=2)
 
