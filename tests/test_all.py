@@ -164,6 +164,74 @@ def test_cli_run_with_registered_models(
         assert [df_coords] == geojson_row["geometry"]["coordinates"]
 
 
+def test_cli_run_with_local_model(tmp_path: Path, tiff_image: Path):
+    model = "breast-tumor-resnet34.tcga-brca"
+    reference_csv = Path(__file__).parent / "reference" / model / "purple.csv"
+    if not reference_csv.exists():
+        raise FileNotFoundError(f"reference CSV not found: {reference_csv}")
+    w = get_registered_model(model)
+
+    config = {
+        "spec_version": "1.0",
+        "architecture": "resnet34",
+        "num_classes": 2,
+        "class_names": ["notumor", "tumor"],
+        "patch_size_pixels": 350,
+        "spacing_um_px": 0.25,
+        "transform": [
+            {"name": "Resize", "arguments": {"size": 224}},
+            {"name": "ToTensor"},
+            {
+                "name": "Normalize",
+                "arguments": {
+                    "mean": [0.7238, 0.5716, 0.6779],
+                    "std": [0.112, 0.1459, 0.1089],
+                },
+            },
+        ],
+    }
+
+    config_path = tmp_path / "config.json"
+    with open(config_path, "w") as f:
+        json.dump(config, f)
+
+    runner = CliRunner()
+    results_dir = tmp_path / "inference"
+    result = runner.invoke(
+        cli,
+        [
+            "--backend",
+            "openslide",
+            "run",
+            "--wsi-dir",
+            str(tiff_image.parent),
+            "--results-dir",
+            str(results_dir),
+            "--model-path",
+            w.model_path,
+            "--config",
+            str(config_path),
+        ],
+    )
+    assert result.exit_code == 0
+    assert (results_dir / "model-outputs").exists()
+    df = pd.read_csv(results_dir / "model-outputs" / "purple.csv")
+    df_ref = pd.read_csv(reference_csv)
+
+    assert set(df.columns) == set(df_ref.columns)
+    assert df.shape == df_ref.shape
+    assert np.array_equal(df["minx"], df_ref["minx"])
+    assert np.array_equal(df["miny"], df_ref["miny"])
+    assert np.array_equal(df["width"], df_ref["width"])
+    assert np.array_equal(df["height"], df_ref["height"])
+
+    prob_cols = df_ref.filter(like="prob_").columns.tolist()
+    for prob_col in prob_cols:
+        assert np.allclose(
+            df[prob_col], df_ref[prob_col], atol=1e-07
+        ), f"Column {prob_col} not allclose at atol=1e-07"
+
+
 def test_cli_run_no_model_or_config(tmp_path: Path):
     """Test that --model or (--config and --model-path) is required."""
     wsi_dir = tmp_path / "slides"
