@@ -306,13 +306,13 @@ def test_patch_cli(
         cli,
         [
             "patch",
-            "--source",
+            "--wsi-dir",
             str(tiff_image.parent),
-            "--save-dir",
+            "--results-dir",
             str(savedir),
-            "--patch-size",
+            "--patch-size-px",
             str(patch_size),
-            "--patch-spacing",
+            "--patch-spacing-um-px",
             str(patch_spacing),
         ],
     )
@@ -320,8 +320,6 @@ def test_patch_cli(
     stem = tiff_image.stem
     assert (savedir / "masks" / f"{stem}.jpg").exists()
     assert (savedir / "patches" / f"{stem}.h5").exists()
-    assert (savedir / "process_list_autogen.csv").exists()
-    assert (savedir / "stitches" / f"{stem}.jpg").exists()
 
     expected_patch_size = round(patch_size * patch_spacing / orig_slide_spacing)
     sqrt_expected_num_patches = round(orig_slide_size / expected_patch_size)
