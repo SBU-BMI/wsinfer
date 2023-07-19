@@ -1,5 +1,7 @@
 """Segment thumbnail of a whole slide image."""
 
+from __future__ import annotations
+
 import cv2 as cv
 import numpy as np
 import numpy.typing as npt
@@ -13,8 +15,8 @@ def segment_tissue(
     im_arr: npt.NDArray[np.int_],
     median_filter_size: int = 7,
     closing_kernel_size: int = 6,
-    min_hole_size: int = 1024,
-    min_object_size: int = 512,
+    min_object_size_px: int = 512,
+    min_hole_size_px: int = 1024,
 ) -> npt.NDArray[np.bool_]:
     """Create a binary tissue mask from an image.
 
@@ -44,7 +46,7 @@ def segment_tissue(
 
     # Threshold.
     threshold: int = threshold_otsu(im_arr)
-    im_arr_binary = im_arr <= threshold
+    im_arr_binary = im_arr > threshold
 
     # Closing.
     im_arr_binary = binary_closing(
@@ -52,9 +54,9 @@ def segment_tissue(
     )
 
     # Remove small objects.
-    im_arr_binary = remove_small_objects(im_arr_binary, min_size=min_object_size)
+    im_arr_binary = remove_small_objects(im_arr_binary, min_size=min_object_size_px)
 
     # Remove small holes.
-    im_arr_binary = remove_small_holes(im_arr_binary, area_threshold=min_hole_size)
+    im_arr_binary = remove_small_holes(im_arr_binary, area_threshold=min_hole_size_px)
 
     return im_arr_binary

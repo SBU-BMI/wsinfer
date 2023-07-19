@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import itertools
+import logging
 from typing import Sequence
 
 import cv2 as cv
@@ -11,25 +12,32 @@ from shapely import Point
 from shapely import Polygon
 from shapely import STRtree
 
+logger = logging.getLogger(__name__)
+
 
 def get_multipolygon_from_binary_arr(
     arr: npt.NDArray[np.int_], scale: tuple[float, float] | None = None
-) -> MultiPolygon:
+) -> tuple[MultiPolygon, Sequence[npt.NDArray[np.int_]], npt.NDArray[np.int_]]:
     """Create a Shapely Polygon from a binary array."""
     # Find contours and hierarchy
-    contours: Sequence[npt.NDArray[np.int_]]
+    contours: Sequence[npt.NDArray]
     hierarchy: npt.NDArray[np.int_]
-    contours, hierarchy = cv.findContours(arr, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
+    contours, hierarchy = cv.findContours(arr, cv.RETR_CCOMP, cv.CHAIN_APPROX_SIMPLE)
     hierarchy = hierarchy.squeeze(0)
 
+    logger.info(f"Detected {len(contours)} contours")
     contours_unscaled = contours
     if scale is not None:
-        # To broadcast with contour coordinates.
-        scale_arr = np.array(scale).reshape(1, 1, 2)
+        logger.info(
+            "Scaling contours to slide-level (level=0) coordinate space by multiplying"
+            f" by {scale}"
+        )
+        # Reshape to broadcast with contour coordinates.
+        scale_arr: npt.NDArray[np.float_] = np.array(scale).reshape(1, 1, 2)
         contours = tuple(c * scale_arr for c in contours_unscaled)
         del scale_arr
 
-    # https://stackoverflow.com/a/75510437/5666087
+    # From https://stackoverflow.com/a/75510437/5666087
     def merge_polygons(polygon: MultiPolygon, idx: int, add: bool) -> MultiPolygon:
         """
         polygon: Main polygon to which a new polygon is added
@@ -72,7 +80,9 @@ def get_multipolygon_from_binary_arr(
 
     # Call the function with an initial empty polygon and start from contour 0
     polygon = merge_polygons(MultiPolygon(), 0, True)
-    return polygon
+
+    # Add back the axis in hierarchy because we squeezed it before.
+    return polygon, contours_unscaled, hierarchy[np.newaxis]
 
 
 def get_nonoverlapping_patch_coordinates_within_polygon(
@@ -100,7 +110,6 @@ def get_nonoverlapping_patch_coordinates_within_polygon(
         )
     )
 
-    # NOTE: this line seems to be the bottleneck of the functions.
     tile_centroids_poly = [Point(c) for c in tile_centroids_arr]
 
     # Query which centroids are inside the polygon.
