@@ -251,19 +251,6 @@ def _get_info_for_save(model_obj: Union[models.LocalModelTorchScript, HFModel]):
     help="JIT-compile the model and apply inference optimizations. This imposes a"
     " startup cost but may improve performance overall.",
 )
-@click.option(
-    "--roi-dir",
-    type=click.Path(
-        exists=True, dir_okay=True, file_okay=False, path_type=Path, resolve_path=True
-    ),
-    help=(
-        "Directory of regions of interest (ROIs) encoded as GeoJSON files. Files must"
-        " be named with SLIDE_ID.json, where SLIDE_ID is the name of the whole slide"
-        " image without its suffix. The ROI will be used only if the file exists. If"
-        " an ROI file is not found, then all patches within tissue will be used."
-    ),
-    default=None,
-)
 def run(
     ctx: click.Context,
     *,
@@ -275,7 +262,6 @@ def run(
     batch_size: int,
     num_workers: int = 0,
     speedup: bool = False,
-    roi_dir: Optional[str | Path] = None,
 ):
     """Run model inference on a directory of whole slide images.
 
@@ -374,7 +360,6 @@ def run(
         batch_size=batch_size,
         num_workers=num_workers,
         speedup=speedup,
-        roi_dir=roi_dir,
     )
 
     if failed_patching:
