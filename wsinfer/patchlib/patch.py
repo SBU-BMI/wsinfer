@@ -104,8 +104,8 @@ def get_nonoverlapping_patch_coordinates_within_polygon(
     tile_centroids_arr: npt.NDArray[np.int_] = np.array(
         list(
             itertools.product(
-                range(0 + half_patch_size, slide_width - half_patch_size, patch_size),
-                range(0 + half_patch_size, slide_height - half_patch_size, patch_size),
+                range(0 + half_patch_size, slide_width, patch_size),
+                range(0 + half_patch_size, slide_height, patch_size),
             )
         )
     )
@@ -115,6 +115,9 @@ def get_nonoverlapping_patch_coordinates_within_polygon(
     # Query which centroids are inside the polygon.
     tree = STRtree(tile_centroids_poly)
     centroid_indexes_in_polygon = tree.query(polygon, predicate="contains")
+
+    # Sort so x and y are in ascending order (and y changes most rapidly).
+    centroid_indexes_in_polygon.sort()
     tile_centroids_in_polygon = tile_centroids_arr[centroid_indexes_in_polygon]
 
     # Transform the centroids to the upper-left point (x, y).
