@@ -24,7 +24,7 @@ from wsinfer_zoo.client import ModelConfiguration
 
 from ..modellib import models
 from ..modellib.run_inference import run_inference
-from ..patchlib.create_patches_fp import create_patches
+from ..patchlib import segment_and_patch_directory_of_slides
 
 
 def _num_cpus() -> int:
@@ -350,18 +350,18 @@ def run(
 
     click.secho("\nFinding patch coordinates...\n", fg="green")
 
-    create_patches(
-        source=str(wsi_dir),
-        save_dir=str(results_dir),
-        patch_size=model_obj.config.patch_size_pixels,
-        patch_spacing=model_obj.config.spacing_um_px,
-        seg=True,
-        patch=True,
-        # Stitching is a bottleneck when using tiffslide.
-        # TODO: figure out why this is...
-        stitch=False,
-        # FIXME: allow customization of this preset
-        preset="tcga.csv",
+    # FIXME: add presets for different tissue types?
+
+    segment_and_patch_directory_of_slides(
+        wsi_dir=wsi_dir,
+        save_dir=results_dir,
+        patch_size_px=model_obj.config.patch_size_pixels,
+        patch_spacing_um_px=model_obj.config.spacing_um_px,
+        thumbsize=(2048, 2048),
+        median_filter_size=7,
+        closing_kernel_size=6,
+        min_object_size_um2=200**2,
+        min_hole_size_um2=190**2,
     )
 
     click.secho("\nRunning model inference.\n", fg="green")
