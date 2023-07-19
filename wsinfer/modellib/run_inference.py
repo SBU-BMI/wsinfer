@@ -113,7 +113,6 @@ def run_inference(
     failed_patching = [p.stem for p in patch_paths if not p.exists()]
     failed_inference: list[str] = []
 
-    # results_for_all_slides: typing.List[pd.DataFrame] = []
     for i, (wsi_path, patch_path) in enumerate(zip(wsi_paths, patch_paths)):
         print(f"Slide {i+1} of {len(wsi_paths)}")
         print(f" Slide path: {wsi_path}")
