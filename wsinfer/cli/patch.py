@@ -1,76 +1,92 @@
 from __future__ import annotations
 
-from typing import Optional
+from pathlib import Path
 
 import click
 
-from ..patchlib.create_patches_fp import create_patches as _create_patches
+from ..patchlib import segment_and_patch_directory_of_slides
 
 
 @click.command()
 @click.option(
-    "--source",
+    "-i",
+    "--wsi-dir",
+    type=click.Path(exists=True, file_okay=False, path_type=Path, resolve_path=True),
     required=True,
-    type=click.Path(exists=True),
-    help="patch to directory containing whole slide image files",
+    help="Directory containing whole slide images. This directory can *only* contain"
+    " whole slide images.",
 )
-@click.option("--step-size", default=None, type=int, help="Step size for patching.")
-@click.option("--patch-size", required=True, type=int, help="Patch size in pixels.")
-@click.option("--auto-skip/--no-auto-skip", default=True, help="Skip existing outputs.")
 @click.option(
-    "--save-dir",
+    "-o",
+    "--results-dir",
+    type=click.Path(file_okay=False, path_type=Path, resolve_path=True),
     required=True,
-    type=click.Path(),
-    help="Directory to save processed data",
+    help="Directory to store patch results. If directory exists, will skip"
+    " whole slides for which outputs exist.",
 )
+@click.option("--patch-size-px", required=True, type=int, help="Patch size in pixels.")
 @click.option(
-    "--preset",
-    default="tcga.csv",
-    help="Predefined profile of default segmentation and filter parameters (.csv)",
-)
-@click.option(
-    "--process-list", help="Name of list of images to process with parameters (.csv)"
-)
-@click.option(
-    "--patch-spacing",
+    "--patch-spacing-um-px",
     required=True,
     type=float,
-    help="Patch spacing in micrometers per pixel.",
+    help="Physical spacing of the patch in micrometers per pixel.",
 )
 @click.option(
-    "--segmentation-dir",
-    type=click.Path(),
-    help="Directory containing .pkl files with tissue segmentations",
+    "--thumbsize",
+    default=(2048, 2048),
+    type=(int, int),
+    help="The size of the slide thumbnail (in pixels) used for tissue segmentation."
+    " The aspect ratio is preserved, and the longest side will have length"
+    " max(thumbsize).",
+)
+@click.option(
+    "--median-filter-size",
+    default=7,
+    type=click.IntRange(min=3),
+    help="The kernel size for median filtering. Must be greater than 1 and odd.",
+)
+@click.option(
+    "--closing-kernel-size",
+    default=6,
+    type=click.IntRange(min=1),
+    help="The kernel size for binary closing (morphological operation).",
+)
+@click.option(
+    "--min-object-size-um2",
+    default=200**2,
+    type=click.FloatRange(min=0),
+    help="The minimum size of an object to keep during tissue detection. If a"
+    " contiguous object is smaller than this area, it replaced with background."
+    " The default is 200um x 200um. The units of this argument are microns squared.",
+)
+@click.option(
+    "--min-hole-size-um2",
+    default=190**2,
+    type=click.FloatRange(min=0),
+    help="The minimum size of a hole to keep as a hole. If a hole is smaller than this"
+    " area, it is filled with foreground. The default is 190um x 190um. The units of"
+    " this argument are microns squared.",
 )
 def patch(
-    source: str,
-    step_size: Optional[int],
-    patch_size: int,
-    auto_skip: bool,
-    save_dir: str,
-    preset: Optional[str],
-    process_list: Optional[str],
-    patch_spacing: float,
-    segmentation_dir: Optional[str],
+    wsi_dir: str,
+    results_dir: str,
+    patch_size_px: int,
+    patch_spacing_um_px: float,
+    thumbsize: tuple[int, int],
+    median_filter_size: int,
+    closing_kernel_size: int,
+    min_object_size_um2: float,
+    min_hole_size_um2: float,
 ):
-    """Patchify a directory of whole slide images."""
-
-    print("create_patches_fp.py  Copyright (C) 2022  Mahmood Lab")
-    print("This program comes with ABSOLUTELY NO WARRANTY.")
-    print("This is free software, and you are welcome to redistribute it")
-    print("under certain conditions.")
-
-    _create_patches(
-        source=source,
-        step_size=step_size,
-        patch_size=patch_size,
-        patch_spacing=patch_spacing,
-        save_dir=save_dir,
-        patch=True,
-        seg=True,
-        stitch=True,
-        auto_skip=auto_skip,
-        preset=preset,
-        process_list=process_list,
-        segmentation_dir=segmentation_dir,
+    """Patch a directory of whole slide iamges."""
+    segment_and_patch_directory_of_slides(
+        wsi_dir=wsi_dir,
+        save_dir=results_dir,
+        patch_size_px=patch_size_px,
+        patch_spacing_um_px=patch_spacing_um_px,
+        thumbsize=thumbsize,
+        median_filter_size=median_filter_size,
+        closing_kernel_size=closing_kernel_size,
+        min_object_size_um2=min_object_size_um2,
+        min_hole_size_um2=min_hole_size_um2,
     )
