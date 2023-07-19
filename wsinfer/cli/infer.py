@@ -181,7 +181,7 @@ def _get_info_for_save(model_obj: Union[models.LocalModelTorchScript, HFModel]):
     }
 
 
-@click.command(context_settings=dict(auto_envvar_prefix="WSINFER"))
+@click.command()
 @click.pass_context
 @click.option(
     "-i",
