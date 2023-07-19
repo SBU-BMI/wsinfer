@@ -46,7 +46,7 @@ def segment_tissue(
 
     # Threshold.
     threshold: int = threshold_otsu(im_arr)
-    im_arr_binary = im_arr > threshold
+    im_arr_binary = im_arr >= threshold
 
     # Closing.
     im_arr_binary = binary_closing(
