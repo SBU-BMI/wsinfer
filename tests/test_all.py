@@ -291,7 +291,7 @@ def test_convert_to_sbu():
 
 @pytest.mark.parametrize(
     ["patch_size", "patch_spacing"],
-    [(256, 0.25), (256, 0.50), (350, 0.25), (100, 0.3)],
+    [(256, 0.25), (256, 0.50), (350, 0.25), (100, 0.3), (100, 0.5)],
 )
 def test_patch_cli(
     patch_size: int, patch_spacing: float, tmp_path: Path, tiff_image: Path
