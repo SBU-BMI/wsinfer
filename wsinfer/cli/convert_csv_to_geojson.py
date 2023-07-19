@@ -6,7 +6,6 @@ GeoJSON files can be loaded into whole slide image viewers like QuPath.
 from __future__ import annotations
 
 import json
-import typing
 from pathlib import Path
 
 import click
@@ -16,14 +15,14 @@ import tqdm
 
 def _box_to_polygon(
     *, minx: int, miny: int, width: int, height: int
-) -> typing.List[typing.Tuple[int, int]]:
+) -> list[tuple[int, int]]:
     """Get coordinates of a box polygon."""
     maxx = minx + width
     maxy = miny + height
     return [(maxx, miny), (maxx, maxy), (minx, maxy), (minx, miny), (maxx, miny)]
 
 
-def _row_to_geojson(row: pd.Series, prob_cols: typing.List[str]) -> typing.Dict:
+def _row_to_geojson(row: pd.Series, prob_cols: list[str]) -> dict:
     """Convert information about one tile to a single GeoJSON feature."""
     minx, miny, width, height = row["minx"], row["miny"], row["width"], row["height"]
     coords = _box_to_polygon(minx=minx, miny=miny, width=width, height=height)
@@ -50,7 +49,7 @@ def _row_to_geojson(row: pd.Series, prob_cols: typing.List[str]) -> typing.Dict:
     }
 
 
-def _dataframe_to_geojson(df: pd.DataFrame, prob_cols: typing.List[str]) -> typing.Dict:
+def _dataframe_to_geojson(df: pd.DataFrame, prob_cols: list[str]) -> dict:
     """Convert a dataframe of tiles to GeoJSON format."""
     features = df.apply(_row_to_geojson, axis=1, prob_cols=prob_cols)
     return {
