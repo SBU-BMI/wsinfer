@@ -358,7 +358,9 @@ def run(
         patch_size_px=model_obj.config.patch_size_pixels,
         patch_spacing_um_px=model_obj.config.spacing_um_px,
         thumbsize=(2048, 2048),
+        # TODO: these can be made arguments to the CLI.
         median_filter_size=7,
+        binary_threshold=7,
         closing_kernel_size=6,
         min_object_size_um2=200**2,
         min_hole_size_um2=190**2,

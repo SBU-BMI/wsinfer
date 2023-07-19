@@ -46,6 +46,12 @@ from ..patchlib import segment_and_patch_directory_of_slides
     help="The kernel size for median filtering. Must be greater than 1 and odd.",
 )
 @click.option(
+    "--binary-threshold",
+    default=7,
+    type=click.IntRange(min=1),
+    help="The threshold for image binarization.",
+)
+@click.option(
     "--closing-kernel-size",
     default=6,
     type=click.IntRange(min=1),
@@ -74,6 +80,7 @@ def patch(
     patch_spacing_um_px: float,
     thumbsize: tuple[int, int],
     median_filter_size: int,
+    binary_threshold: int,
     closing_kernel_size: int,
     min_object_size_um2: float,
     min_hole_size_um2: float,
@@ -86,6 +93,7 @@ def patch(
         patch_spacing_um_px=patch_spacing_um_px,
         thumbsize=thumbsize,
         median_filter_size=median_filter_size,
+        binary_threshold=binary_threshold,
         closing_kernel_size=closing_kernel_size,
         min_object_size_um2=min_object_size_um2,
         min_hole_size_um2=min_hole_size_um2,
