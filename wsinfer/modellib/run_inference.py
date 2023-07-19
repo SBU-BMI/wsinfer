@@ -6,11 +6,9 @@ From the original paper (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7369575/):
 """
 from __future__ import annotations
 
-import typing
 from pathlib import Path
-from typing import List
-from typing import Optional
-from typing import Tuple
+from typing import TYPE_CHECKING
+from typing import cast as type_cast
 
 import numpy as np
 import pandas as pd
@@ -33,8 +31,8 @@ def run_inference(
     batch_size: int = 32,
     num_workers: int = 0,
     speedup: bool = False,
-    roi_dir: Optional[str | Path] = None,
-) -> Tuple[List[str], List[str]]:
+    roi_dir: str | Path | None = None,
+) -> tuple[list[str], list[str]]:
     """Run model inference on a directory of whole slide images and save results to CSV.
 
     This assumes the patching has already been done and the results are stored in
@@ -105,15 +103,15 @@ def run_inference(
     model.to(device)
 
     if speedup:
-        if typing.TYPE_CHECKING:
-            model = typing.cast(torch.nn.Module, jit_compile(model))
+        if TYPE_CHECKING:
+            model = type_cast(torch.nn.Module, jit_compile(model))
         else:
             model = jit_compile(model)
 
     transform = make_compose_from_transform_config(model_info.config.transform)
 
     failed_patching = [p.stem for p in patch_paths if not p.exists()]
-    failed_inference: List[str] = []
+    failed_inference: list[str] = []
 
     # Get paths to ROI geojson files.
     if roi_dir is not None:

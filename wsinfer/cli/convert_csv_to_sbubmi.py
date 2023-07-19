@@ -27,7 +27,6 @@ import pprint
 import random
 import shutil
 import time
-import typing
 from pathlib import Path
 
 import click
@@ -40,7 +39,7 @@ from wsinfer.wsi import WSI
 
 def _box_to_polygon(
     *, minx: float, miny: float, width: float, height: float
-) -> typing.List[typing.Tuple[float, float]]:
+) -> list[tuple[float, float]]:
     """Get coordinates of a box polygon."""
     maxx = minx + width
     maxy = miny + height
@@ -58,7 +57,7 @@ def write_heatmap_and_meta_json_lines(
     case_id: str,
     subject_id: str,
     class_name: str,
-    run_metadata: typing.Dict,
+    run_metadata: dict,
 ) -> None:
     """Write JSON-lines files for one slide."""
 
@@ -66,7 +65,7 @@ def write_heatmap_and_meta_json_lines(
     # execution time value.
     date = int(time.time())
 
-    version_dict: typing.Dict = run_metadata["runtime"]["git"] or {}
+    version_dict: dict = run_metadata["runtime"]["git"] or {}
     version_dict["model_path"] = run_metadata["model_weights"]["weights_file"]
     version_dict["model_hash"] = run_metadata["model_weights"]["weights_sha256"]
     version_dict["model_url"] = run_metadata["model_weights"]["weights_url"]
@@ -169,9 +168,7 @@ def write_heatmap_and_meta_json_lines(
         json.dump(meta_dict, f)
 
 
-def write_heatmap_txt(
-    input: str | Path, output: str | Path, class_names: typing.List[str]
-):
+def write_heatmap_txt(input: str | Path, output: str | Path, class_names: list[str]):
     df = pd.read_csv(input)
     # TODO: should we round and cast to int here?
     df.loc[:, "x_loc"] = (df.minx + (df.width / 2)).round().astype(int)
@@ -327,7 +324,7 @@ def tosbu(
     output.mkdir(exist_ok=False)
 
     with open(results_dir / "run_metadata.json") as f:
-        run_metadata: typing.Dict = json.load(f)
+        run_metadata: dict = json.load(f)
 
     print("-" * 40)
     print("Run metadata")
@@ -337,7 +334,7 @@ def tosbu(
     # Get the output classes of the model. We will create separate directories for each
     # label name. But by default, we do not include labels that start with "no", like
     # "notils" and "notumor".
-    class_names: typing.List[str] = run_metadata["model_weights"]["class_names"]
+    class_names: list[str] = run_metadata["model_weights"]["class_names"]
     ignore_names = {"notils", "notumor"}
     class_names = [n for n in class_names if n not in ignore_names]
 

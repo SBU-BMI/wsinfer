@@ -12,8 +12,6 @@ import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
-from typing import Union
 
 import click
 import wsinfer_zoo
@@ -109,7 +107,7 @@ def _print_system_info() -> None:
         click.secho("*******************************************", fg="yellow")
 
 
-def _get_info_for_save(model_obj: Union[models.LocalModelTorchScript, HFModel]):
+def _get_info_for_save(model_obj: models.LocalModelTorchScript | HFModel):
     """Get dictionary with information about the run. To save as JSON in output dir."""
 
     import torch
@@ -269,9 +267,9 @@ def run(
     *,
     wsi_dir: Path,
     results_dir: Path,
-    model_name: Optional[str],
-    config: Optional[Path],
-    model_path: Optional[Path],
+    model_name: str | None,
+    config: str | Path | None,
+    model_path: str | Path | None,
     batch_size: int,
     num_workers: int = 0,
     speedup: bool = False,
