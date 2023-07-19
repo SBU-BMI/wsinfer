@@ -5,15 +5,15 @@ from __future__ import annotations
 import cv2 as cv
 import numpy as np
 import numpy.typing as npt
-from skimage.filters import threshold_otsu
 from skimage.morphology import binary_closing
 from skimage.morphology import remove_small_holes
 from skimage.morphology import remove_small_objects
 
 
 def segment_tissue(
-    im_arr: npt.NDArray[np.int_],
+    im_arr: npt.NDArray[np.uint8],
     median_filter_size: int = 7,
+    binary_threshold: int = 7,
     closing_kernel_size: int = 6,
     min_object_size_px: int = 512,
     min_hole_size_px: int = 1024,
@@ -23,9 +23,8 @@ def segment_tissue(
     Parameters
     ----------
     im_arr : array-like
-        RGB image array.
+        RGB image array (uint8).
     """
-
     im_arr = np.asarray(im_arr)
     assert im_arr.ndim == 3
     assert im_arr.shape[2] == 3
@@ -41,14 +40,22 @@ def segment_tissue(
             f" {median_filter_size}"
         )
 
-    # We use opencv here instead of PIL because opencv is _much_ faster.
+    # We use opencv here instead of PIL because opencv is _much_ faster. We use skimage
+    # further down for artifact removal (hole filling, object removal) because skimage
+    # provides easy to use methods for those.
     im_arr = cv.medianBlur(im_arr, median_filter_size)
 
-    # Threshold.
-    threshold: int = threshold_otsu(im_arr)
-    im_arr_binary = im_arr >= threshold
+    # Binarize image.
+    _, im_arr = cv.threshold(
+        im_arr, thresh=binary_threshold, maxval=255, type=cv.THRESH_BINARY
+    )
 
-    # Closing.
+    # Convert to boolean dtype. This helps with static type analysis because at this
+    # point, im_arr is a uint8 array.
+    im_arr_binary = im_arr > 0
+
+    # Closing. This removes small holes. It might not be entirely necessary because
+    # we have hole removal below.
     im_arr_binary = binary_closing(
         im_arr_binary, footprint=np.ones((closing_kernel_size, closing_kernel_size))
     )
