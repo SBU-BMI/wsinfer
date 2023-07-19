@@ -5,7 +5,6 @@ import warnings
 from typing import Callable
 from typing import Union
 
-
 import torch
 import wsinfer_zoo
 from wsinfer_zoo.client import HFModelTorchScript
