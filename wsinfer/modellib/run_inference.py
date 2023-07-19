@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 from typing import cast as type_cast
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 import torch
 import tqdm
@@ -31,7 +32,6 @@ def run_inference(
     batch_size: int = 32,
     num_workers: int = 0,
     speedup: bool = False,
-    roi_dir: str | Path | None = None,
 ) -> tuple[list[str], list[str]]:
     """Run model inference on a directory of whole slide images and save results to CSV.
 
@@ -113,12 +113,6 @@ def run_inference(
     failed_patching = [p.stem for p in patch_paths if not p.exists()]
     failed_inference: list[str] = []
 
-    # Get paths to ROI geojson files.
-    if roi_dir is not None:
-        roi_paths = [Path(roi_dir) / p.with_suffix(".json").name for p in wsi_paths]
-    else:
-        roi_paths = None
-
     # results_for_all_slides: typing.List[pd.DataFrame] = []
     for i, (wsi_path, patch_path) in enumerate(zip(wsi_paths, patch_paths)):
         print(f"Slide {i+1} of {len(wsi_paths)}")
@@ -136,16 +130,6 @@ def run_inference(
             print(f"Skipping because patch file not found: {patch_path}")
             continue
 
-        roi_path = None
-        if roi_paths is not None:
-            roi_path = roi_paths[i]
-            # We grab all potential names of ROI paths, but we do not require all of
-            # them to exist. We only use those that exist.
-            if not roi_path.exists():
-                roi_path = None
-            else:
-                print(f" ROI path: {roi_path}")
-
         try:
             dset = WholeSlideImagePatches(
                 wsi_path=wsi_path,
@@ -153,7 +137,6 @@ def run_inference(
                 um_px=model_info.config.spacing_um_px,
                 patch_size=model_info.config.patch_size_pixels,
                 transform=transform,
-                roi_path=roi_path,
             )
         except Exception:
             failed_inference.append(wsi_dir.stem)
@@ -174,8 +157,8 @@ def run_inference(
 
         # Store the coordinates and model probabiltiies of each patch in this slide.
         # This lets us know where the probabiltiies map to in the slide.
-        slide_coords: List[np.ndarray] = []
-        slide_probs: List[np.ndarray] = []
+        slide_coords: list[npt.NDArray[np.int_]] = []
+        slide_probs: list[npt.NDArray[np.float_]] = []
         for batch_imgs, batch_coords in tqdm.tqdm(loader):
             assert batch_imgs.shape[0] == batch_coords.shape[0], "length mismatch"
             with torch.no_grad():
