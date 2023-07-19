@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import List
-
 from torchvision import transforms
 from wsinfer_zoo.client import TransformConfigurationItem
 
@@ -17,10 +15,10 @@ _name_to_tv_cls = {
 
 
 def make_compose_from_transform_config(
-    list_of_transforms: List[TransformConfigurationItem],
+    list_of_transforms: list[TransformConfigurationItem],
 ) -> transforms.Compose:
     """Create a torchvision Compose instance from configuration of transforms."""
-    all_t: List = []
+    all_t: list = []
     for t in list_of_transforms:
         cls = _name_to_tv_cls[t.name]
         kwargs = t.arguments or {}
