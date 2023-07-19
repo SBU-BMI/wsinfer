@@ -3,7 +3,6 @@ from __future__ import annotations
 import dataclasses
 import warnings
 from typing import Callable
-from typing import Union
 
 import torch
 import wsinfer_zoo
@@ -31,7 +30,7 @@ def get_pretrained_torch_module(
 
 def jit_compile(
     model: torch.nn.Module,
-) -> Union[torch.jit.ScriptModule, torch.nn.Module, Callable]:
+) -> torch.jit.ScriptModule | torch.nn.Module | Callable:
     """JIT-compile a model for inference.
 
     A torchscript model may be JIT compiled here as well.

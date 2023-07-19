@@ -2,10 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Callable
-from typing import Optional
 from typing import Sequence
-from typing import Tuple
-from typing import Union
 
 import h5py
 import numpy as np
@@ -77,7 +74,7 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
         patch_path: str | Path,
         um_px: float,
         patch_size: int,
-        transform: Optional[Callable[[Image.Image], torch.Tensor]] = None,
+        transform: Callable[[Image.Image], torch.Tensor] | None = None,
     ):
         self.wsi_path = wsi_path
         self.patch_path = patch_path
@@ -100,9 +97,7 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
     def __len__(self):
         return self.patches.shape[0]
 
-    def __getitem__(
-        self, idx: int
-    ) -> Tuple[Union[Image.Image, torch.Tensor], torch.Tensor]:
+    def __getitem__(self, idx: int) -> tuple[Image.Image | torch.Tensor, torch.Tensor]:
         coords: Sequence[int] = self.patches[idx]
         assert len(coords) == 4, "expected 4 coords (minx, miny, width, height)"
         minx, miny, width, height = coords

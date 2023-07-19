@@ -6,8 +6,9 @@ From the original paper (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7369575/):
 """
 from __future__ import annotations
 
-import typing
 from pathlib import Path
+from typing import TYPE_CHECKING
+from typing import cast as type_cast
 
 import numpy as np
 import numpy.typing as npt
@@ -102,8 +103,8 @@ def run_inference(
     model.to(device)
 
     if speedup:
-        if typing.TYPE_CHECKING:
-            model = typing.cast(torch.nn.Module, jit_compile(model))
+        if TYPE_CHECKING:
+            model = type_cast(torch.nn.Module, jit_compile(model))
         else:
             model = jit_compile(model)
 
@@ -112,7 +113,6 @@ def run_inference(
     failed_patching = [p.stem for p in patch_paths if not p.exists()]
     failed_inference: list[str] = []
 
-    # results_for_all_slides: typing.List[pd.DataFrame] = []
     for i, (wsi_path, patch_path) in enumerate(zip(wsi_paths, patch_paths)):
         print(f"Slide {i+1} of {len(wsi_paths)}")
         print(f" Slide path: {wsi_path}")
