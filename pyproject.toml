@@ -1,5 +1,6 @@
 [build-system]
 requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "wsinfer"
@@ -55,6 +56,7 @@ dependencies = [
     "tqdm",
     "wsinfer-zoo"
 ]
+dynamic =["version"]
 
 [project.optional-dependencies]
 dev = [
@@ -109,13 +111,8 @@ module = [
 ]
 ignore_missing_imports = "True"
 
-[tool.versioneer]
-VCS = "git"
-style = "pep440"
-versionfile_source = "wsinfer/_version.py"
-versionfile_build = "wsinfer/_version.py"
-tag_prefix = "v"
-parentdir_prefix = "wsinfer"
+[tool.setuptools_scm]
+# write_to = "wsinfer/__init__.py"
 
 [tool.isort]
 profile = "black"
