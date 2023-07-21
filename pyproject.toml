@@ -112,7 +112,7 @@ module = [
 ignore_missing_imports = "True"
 
 [tool.setuptools_scm]
-# write_to = "wsinfer/__init__.py"
+write_to = "wsinfer/_version.py"
 
 [tool.isort]
 profile = "black"
