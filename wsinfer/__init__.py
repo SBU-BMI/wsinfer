@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from importlib.metadata import PackageNotFoundError
-from importlib.metadata import version
 
 from .modellib.run_inference import WholeSlideImagePatches  # noqa
 from .modellib.run_inference import run_inference  # noqa
