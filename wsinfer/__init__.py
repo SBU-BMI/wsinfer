@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
-from . import _version
 from .modellib.run_inference import WholeSlideImagePatches  # noqa
 from .modellib.run_inference import run_inference  # noqa
 
-__version__ = _version.get_versions()["version"]
+from importlib.metadata import version, PackageNotFoundError
 
-del _version
+try:
+    __version__ = version("package-name")
+except PackageNotFoundError:
+    # package is not installed
+    __version__ = "unknown version, package not installed"
 
 
 # Patch Zarr. See:
