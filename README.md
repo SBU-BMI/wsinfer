@@ -17,10 +17,10 @@ See https://wsinfer.readthedocs.io for documentation.
 
 ## Pip
 
-Pip install this package from GitHub. First install `torch` and `torchvision`
-(please see [the PyTorch documentation](https://pytorch.org/get-started/locally/)).
-We do not install these dependencies automatically because their installation can vary based
-on a user's system. Then use the command below to install this package.
+WSInfer will install PyTorch automatically if it is not installed, but this may not
+install GPU-enabled PyTorch even if a GPU is available. For this reason, install PyTorch
+before installing WSInfer. Please see [PyTorch's installation instructions](https://pytorch.org/get-started/locally/)
+for help install PyTorch.
 
 ```
 python -m pip install wsinfer
