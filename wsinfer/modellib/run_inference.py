@@ -18,12 +18,12 @@ import tqdm
 import wsinfer_zoo.client
 
 from .. import errors
+from ..wsi import _validate_wsi_directory
 from .data import WholeSlideImagePatches
 from .models import LocalModelTorchScript
 from .models import get_pretrained_torch_module
 from .models import jit_compile
 from .transforms import make_compose_from_transform_config
-from ..wsi import _validate_wsi_directory
 
 
 def run_inference(

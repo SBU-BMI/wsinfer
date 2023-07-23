@@ -4,15 +4,15 @@ import logging
 from fractions import Fraction
 from pathlib import Path
 from typing import Literal
-from typing import overload
 from typing import Protocol
+from typing import overload
 
 import tifffile
 from PIL import Image
 
 from .errors import CannotReadSpacing
-from .errors import NoBackendException
 from .errors import DuplicateFilePrefixesFound
+from .errors import NoBackendException
 
 logger = logging.getLogger(__name__)
 

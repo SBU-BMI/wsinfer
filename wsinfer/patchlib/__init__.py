@@ -10,7 +10,8 @@ import numpy as np
 import numpy.typing as npt
 from PIL import Image
 
-from ..wsi import WSI, _validate_wsi_directory
+from ..wsi import WSI
+from ..wsi import _validate_wsi_directory
 from ..wsi import get_avg_mpp
 from .patch import get_multipolygon_from_binary_arr
 from .patch import get_nonoverlapping_patch_coordinates_within_polygon

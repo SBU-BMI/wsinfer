@@ -36,7 +36,8 @@ import numpy.typing as npt
 import pandas as pd
 import tqdm
 
-from ..wsi import WSI, CanReadRegion
+from ..wsi import WSI
+from ..wsi import CanReadRegion
 
 
 def _box_to_polygon(

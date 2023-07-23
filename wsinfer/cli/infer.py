@@ -9,10 +9,10 @@ import os
 import platform
 import shutil
 import subprocess
-from typing import Any
 import sys
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 import click
 import wsinfer_zoo
