@@ -6,22 +6,23 @@ Installing and getting started
 Prerequisites
 -------------
 
-WSInfer supports Python 3.8+ and has been tested on Linux.
+WSInfer supports Python 3.8+ and has been tested on Windows, macOS, and Linux.
 
-Install PyTorch before installing WSInfer. Please see
+WSInfer will install PyTorch automatically if it is not installed, but this may not
+install GPU-enabled PyTorch even if a GPU is available. For this reason, install PyTorch
+before installing WSInfer. Please see
 `PyTorch's installation instructions <https://pytorch.org/get-started/locally/>`_.
-WSInfer does not install PyTorch automatically because the installation depends on
-the type of hardware a user has.
+
 
 .. note::
 
     Install PyTorch before installing WSInfer.
 
 
-Manual installation
--------------------
+Install with pip
+----------------
 
-After having installed PyTorch, install releases of WSInfer from `PyPI <https://pypi.org/project/wsinfer/>`_. ::
+After having installed PyTorch, install the latest release of WSInfer from `PyPI <https://pypi.org/project/wsinfer/>`_. ::
 
     pip install wsinfer
 
@@ -29,26 +30,43 @@ This installs the :code:`wsinfer` Python package and the :code:`wsinfer` command
 
     wsinfer --help
 
+To install the latest unstable version of WSInfer, use ::
+
+    pip install git+https://github.com/SBU-BMI/wsinfer
+
 Containers
 ----------
 
-See https://hub.docker.com/u/kaczmarj/wsinfer/ for available Docker images. ::
+See https://hub.docker.com/u/kaczmarj/wsinfer/ for available Docker images. These Docker images
+can be used with Docker, Apptainer, or Singularity.
+
+Docker:
+
+::
 
     docker pull kaczmarj/wsinfer
 
-The main wsinfer container includes all dependencies and can run all models. There are also model-specific
-Docker images that are more suitable for inference because those include pre-downloaded model weights. If using
-the "base" WSInfer Docker image, model weights need to be downloaded every time the container
-is used for inference, and the downloaded weights do not persist after the container is stopped.
+Apptainer:
+
+::
+
+    apptainer pull docker://kaczmarj/wsinfer
+
+Singularity:
+
+::
+
+    singularity pull docker://kaczmarj/wsinfer
+
 
 Developers
 ----------
 
-Clone the repository from https://github.com/kaczmarj/wsinfer and install it in editable mode. ::
+Clone the repository from https://github.com/SBU-BMI/wsinfer and install it in editable mode. ::
 
-    git clone https://github.com/kaczmarj/wsinfer.git
+    git clone https://github.com/SBU-BMI/wsinfer.git
     cd wsinfer
-    pip install --editable .[dev]
+    python -m pip install --editable .[dev]
     wsinfer --help
 
 Getting started
@@ -61,11 +79,11 @@ flag to show more information. ::
 
 To list the available trained models: ::
 
-    wsinfer list
+    wsinfer-zoo ls
 
 To run inference on whole slide images: ::
 
-    wsinfer run --wsi-dir slides/ --results-dir results/ --model resnet34 --weights TCGA-BRCA-v1
+    wsinfer run --wsi-dir slides/ --results-dir results/ --model breast-tumor-resnet34.tcga-brca
 
 To convert model outputs to GeoJSON, for example to view in QuPath: ::
 
