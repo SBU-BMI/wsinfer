@@ -57,7 +57,7 @@ dependencies = [
     "tqdm",
     "wsinfer-zoo"
 ]
-dynamic =["version"]
+dynamic = ["version"]
 
 [project.optional-dependencies]
 dev = [
@@ -78,6 +78,9 @@ docs = [
     "sphinx<6.0.0",
     "sphinx-autoapi",
     "sphinx-click"
+]
+openslide = [
+    "openslide-python",
 ]
 
 [project.urls]
