@@ -1,0 +1,119 @@
+[build-system]
+requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wsinfer"
+description = "Run patch-based classification on pathology whole slide images."
+readme = "README.md"
+requires-python = ">= 3.8"
+license = {file = "LICENSE"}
+authors = [
+  {email = "jakub.kaczmarzyk@stonybrookmedicine.edu"},
+  {name = "Jakub Kaczmarzyk"}
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Healthcare Industry",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Image Recognition",
+    "Topic :: Scientific/Engineering :: Medical Science Apps"
+]
+dependencies = [
+    "click>=8.0,<9,!=8.1.4,!=8.1.5",
+    "h5py",
+    "numpy",
+    "opencv-python-headless>=4.0.0",
+    "pandas",
+    "pillow",
+    "pyyaml",
+    "scikit-image>=0.20.0",
+    "shapely",
+    "tifffile>=2023.1.23", # https://github.com/Bayer-Group/tiffslide/issues/72#issuecomment-1631015274
+    "tiffslide>=2.2.0",
+    "imagecodecs >= 2022.7.27 ;python_version<'3.9'",
+    # https://github.com/Bayer-Group/tiffslide/issues/72#issuecomment-1630091390
+
+    "imagecodecs >= 2023.7.10 ; python_version>='3.9'",
+    # https://github.com/Bayer-Group/tiffslide/issues/72#issuecomment-1630091390
+
+    # The installation fo torch and torchvision can differ by hardware. Users are
+    # advised to install torch and torchvision for their given hardware and then install
+    # wsinfer. See https://pytorch.org/get-started/locally/.
+    "torch>=1.7",
+    "torchvision",
+    "tqdm",
+    "wsinfer-zoo"
+]
+dynamic =["version"]
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "flake8",
+    "geojson",
+    "isort",
+    "mypy",
+    "pytest",
+    "tiffslide",
+    "types-Pillow",
+    "types-PyYAML",
+    "types-tqdm",
+    "Flake8-pyproject"
+]
+docs = [
+    "pydata-sphinx-theme",
+    "sphinx<6.0.0",
+    "sphinx-autoapi",
+    "sphinx-click"
+]
+
+[project.urls]
+repository = "https://github.com/SBU-BMI/wsinfer"
+
+[project.scripts]
+wsinfer = "wsinfer.cli.cli:cli"
+
+[tool.setuptools.package-data]
+wsinfer = ["py.typed", "patchlib/presets/*.csv", "schemas/*.json"]
+
+# Flake8-pyproject (https://pypi.org/project/Flake8-pyproject/)
+[tool.flake8]
+max-line-length = 88
+extend-ignore = ['E203']
+exclude = "wsinfer/_version.py"
+
+[[tool.mypy.overrides]]
+module = [
+    "h5py",
+    "cv2",
+    "geojson",
+    "torchvision.*",
+    "openslide",
+    "pandas",
+    "safetensors.*",
+    "scipy.stats",
+    "shapely.*",
+    "skimage.morphology",
+    "tifffile",
+    "zarr.storage",
+]
+ignore_missing_imports = "True"
+
+[tool.setuptools_scm]
+write_to = "wsinfer/_version.py"
+
+[tool.isort]
+profile = "black"
+force_single_line = "True"
