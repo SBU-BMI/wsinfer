@@ -272,7 +272,7 @@ def run(
     CUDA_VISIBLE_DEVICES=0 wsinfer run --wsi-dir slides/ --results-dir results
     --model breast-tumor-resnet34.tcga-brca --batch-size 32 --num-workers 4
 
-    To list all available models and weights, use `wsinfer ls`.
+    To list all available models and weights, use `wsinfer-zoo ls`.
     """
 
     if model_name is None and config is None and model_path is None:
