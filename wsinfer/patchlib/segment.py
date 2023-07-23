@@ -23,7 +23,24 @@ def segment_tissue(
     Parameters
     ----------
     im_arr : array-like
-        RGB image array (uint8).
+        RGB image array (uint8) with shape (rows, cols, 3).
+    median_filter_size : int
+        The kernel size for median filtering. Must be odd and greater than one.
+    binary_threshold : int
+        The pixel threshold for image binarization.
+    closing_kernel_size : int
+        The kernel size for morphological closing (in pixel units).
+    min_object_size_px : int
+        The minimum area of an object in pixels. If an object is smaller than this area,
+        it is removed and is made into background.
+    min_hole_size_px : int
+        The minimum area of a hole in pixels. If a hole is smaller than this area, it is
+        filled and is made into foreground.
+
+    Returns
+    -------
+    mask
+        Boolean array, where True values indicate presence of tissue.
     """
     im_arr = np.asarray(im_arr)
     assert im_arr.ndim == 3
