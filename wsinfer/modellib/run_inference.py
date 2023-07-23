@@ -23,6 +23,7 @@ from .models import LocalModelTorchScript
 from .models import get_pretrained_torch_module
 from .models import jit_compile
 from .transforms import make_compose_from_transform_config
+from ..wsi import _validate_wsi_directory
 
 
 def run_inference(
@@ -74,6 +75,8 @@ def run_inference(
     results_dir = Path(results_dir)
     if not results_dir.exists():
         raise errors.ResultsDirectoryNotFound(results_dir)
+
+    _validate_wsi_directory(wsi_dir)
 
     # Check patches directory.
     patch_dir = results_dir / "patches"

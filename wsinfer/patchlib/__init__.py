@@ -10,7 +10,7 @@ import numpy as np
 import numpy.typing as npt
 from PIL import Image
 
-from ..wsi import WSI
+from ..wsi import WSI, _validate_wsi_directory
 from ..wsi import get_avg_mpp
 from .patch import get_multipolygon_from_binary_arr
 from .patch import get_nonoverlapping_patch_coordinates_within_polygon
@@ -343,6 +343,9 @@ def segment_and_patch_directory_of_slides(
     """
 
     wsi_dir = Path(wsi_dir)
+
+    _validate_wsi_directory(wsi_dir)
+
     slide_paths = sorted(wsi_dir.glob("*"))
 
     # NOTE: we could use multi-processing here but then the logs would get
