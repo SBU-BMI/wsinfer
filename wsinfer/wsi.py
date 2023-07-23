@@ -62,7 +62,7 @@ def set_backend(
 
 
 # Set the slide backend based on the environment.
-WSI: type[openslide.OpenSlide] | type[tifffile.TiffFile]
+WSI: type[openslide.OpenSlide] | type[tiffslide.TiffSlide]
 if HAS_OPENSLIDE:
     WSI = set_backend("openslide")
 elif HAS_TIFFSLIDE:
