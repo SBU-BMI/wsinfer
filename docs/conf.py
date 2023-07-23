@@ -31,7 +31,7 @@ autoapi_options = [
     "special-members",
     "imported-members",
 ]
-autoapi_ignore = ["*cli*"]
+autoapi_ignore = ["*cli*", "*__main__.py"]
 
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
@@ -39,10 +39,11 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),
     "torch": ("https://pytorch.org/docs/stable", None),
+    "PIL": ("https://pillow.readthedocs.io/en/stable/", None),
+    "openslide": ("https://openslide.org/api/python/", None),
 }
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "pydata_sphinx_theme"
-html_static_path = ["_static"]
