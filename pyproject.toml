@@ -97,6 +97,15 @@ max-line-length = 88
 extend-ignore = ['E203']
 exclude = "wsinfer/_version.py"
 
+[tool.mypy]
+disallow_untyped_defs = true
+disallow_any_unimported = false
+no_implicit_optional = true
+check_untyped_defs = true
+warn_return_any = true
+warn_unused_ignores = true
+show_error_codes = true
+
 [[tool.mypy.overrides]]
 module = [
     "h5py",
