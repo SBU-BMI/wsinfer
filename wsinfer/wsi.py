@@ -5,11 +5,13 @@ from fractions import Fraction
 from pathlib import Path
 from typing import Literal
 from typing import overload
+from typing import Protocol
 
 import tifffile
+from PIL import Image
 
-from wsinfer.errors import CannotReadSpacing
-from wsinfer.errors import NoBackendException
+from .errors import CannotReadSpacing
+from .errors import NoBackendException
 
 logger = logging.getLogger(__name__)
 
@@ -69,8 +71,33 @@ else:
     raise NoBackendException("No backend found! Please install openslide or tiffslide")
 
 
-def _get_mpp_openslide(slide_path: str | Path):
-    """Read MPP using OpenSlide."""
+# For typing an object that has a method `read_region`.
+
+
+class CanReadRegion(Protocol):
+    def read_region(
+        self, location: tuple[int, int], level: int, size: tuple[int, int]
+    ) -> Image.Image:
+        pass
+
+
+def _get_mpp_openslide(slide_path: str | Path) -> tuple[float, float]:
+    """Read MPP using OpenSlide.
+
+    Parameters
+    ----------
+    slide_path : str or Path
+        The path to the whole slide image.
+
+    Returns
+    -------
+    mppx, mppy
+        Two floats representing the micrometers per pixel in x and y dimensions.
+
+    Raises
+    ------
+    CannotReadSpacing if spacing cannot be read from the whole slide iamge.
+    """
     logger.debug("Attempting to read MPP using OpenSlide")
     slide = openslide.OpenSlide(slide_path)
     mppx: float | None = None

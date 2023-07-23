@@ -9,6 +9,7 @@ import os
 import platform
 import shutil
 import subprocess
+from typing import Any
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -107,7 +108,9 @@ def _print_system_info() -> None:
         click.secho("*******************************************", fg="yellow")
 
 
-def _get_info_for_save(model_obj: models.LocalModelTorchScript | HFModel):
+def _get_info_for_save(
+    model_obj: models.LocalModelTorchScript | HFModel,
+) -> dict[str, Any]:
     """Get dictionary with information about the run. To save as JSON in output dir."""
 
     import torch
@@ -116,10 +119,10 @@ def _get_info_for_save(model_obj: models.LocalModelTorchScript | HFModel):
 
     here = Path(__file__).parent.resolve()
 
-    def get_git_info():
+    def get_git_info() -> dict[str, str | bool]:
         here = Path(__file__).parent.resolve()
 
-        def get_stdout(args) -> str:
+        def get_stdout(args: list[str]) -> str:
             proc = subprocess.run(args, capture_output=True, cwd=here)
             return "" if proc.returncode != 0 else proc.stdout.decode().strip()
 
@@ -260,7 +263,7 @@ def run(
     batch_size: int,
     num_workers: int = 0,
     speedup: bool = False,
-):
+) -> None:
     """Run model inference on a directory of whole slide images.
 
     This command will create a tissue mask of each WSI. Then patch coordinates will be

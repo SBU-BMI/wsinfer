@@ -25,7 +25,13 @@ def get_pretrained_torch_module(
     model: HFModelTorchScript | LocalModelTorchScript,
 ) -> torch.nn.Module:
     """Get a PyTorch Module with weights loaded."""
-    return torch.jit.load(model.model_path, map_location="cpu")
+    mod: torch.nn.Module = torch.jit.load(model.model_path, map_location="cpu")
+    if not isinstance(mod, torch.nn.Module):
+        raise TypeError(
+            "expected the loaded object to be a subclass of torch.nn.Module but got"
+            f" {type(mod)}."
+        )
+    return mod
 
 
 def jit_compile(
@@ -76,4 +82,4 @@ def jit_compile(
                 mjit_opt(test_input)
             return mjit_opt
         except Exception:
-            return mjit
+            return mjit  # type: ignore

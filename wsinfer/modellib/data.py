@@ -6,20 +6,21 @@ from typing import Sequence
 
 import h5py
 import numpy as np
+import numpy.typing as npt
 import torch
 from PIL import Image
 
 from wsinfer.wsi import WSI
 
 
-def _read_patch_coords(path: str | Path) -> np.ndarray:
+def _read_patch_coords(path: str | Path) -> npt.NDArray[np.int_]:
     """Read HDF5 file of patch coordinates are return numpy array.
 
     Returned array has shape (num_patches, 4). Each row has values
     [minx, miny, width, height].
     """
     with h5py.File(path, mode="r") as f:
-        coords = f["/coords"][()]
+        coords: npt.NDArray[np.int_] = f["/coords"][()]
         coords_metadata = f["/coords"].attrs
         if "patch_level" not in coords_metadata.keys():
             raise KeyError(
@@ -91,10 +92,11 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
         # x, y, width, height
         assert self.patches.shape[1] == 4, "expected second dimension to have len 4"
 
-    def worker_init(self, *_):
+    def worker_init(self, worker_id: int | None = None) -> None:
+        del worker_id
         self.slide = WSI(self.wsi_path)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.patches.shape[0]
 
     def __getitem__(self, idx: int) -> tuple[Image.Image | torch.Tensor, torch.Tensor]:

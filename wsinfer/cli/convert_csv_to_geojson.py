@@ -58,7 +58,7 @@ def _dataframe_to_geojson(df: pd.DataFrame, prob_cols: list[str]) -> dict:
     }
 
 
-def convert(input, output) -> None:
+def convert(input: str | Path, output: str | Path) -> None:
     df = pd.read_csv(input)
     prob_cols = [col for col in df.columns.tolist() if col.startswith("prob_")]
     if not prob_cols:
@@ -79,7 +79,7 @@ def convert(input, output) -> None:
     "output",
     type=click.Path(exists=False, path_type=Path, resolve_path=True),
 )
-def togeojson(*, results_dir: Path, output: Path):
+def togeojson(*, results_dir: Path, output: Path) -> None:
     """Convert model outputs to GeoJSON format.
 
     GeoJSON files can be used with pathology viewers like QuPath.

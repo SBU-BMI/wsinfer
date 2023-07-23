@@ -28,13 +28,15 @@ import random
 import shutil
 import time
 from pathlib import Path
+from typing import Any
 
 import click
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 import tqdm
 
-from wsinfer.wsi import WSI
+from ..wsi import WSI, CanReadRegion
 
 
 def _box_to_polygon(
@@ -71,7 +73,7 @@ def write_heatmap_and_meta_json_lines(
     version_dict["model_url"] = run_metadata["model_weights"]["weights_url"]
     version_dict["model_ver"] = None
 
-    def row_to_json(row: pd.Series):
+    def row_to_json(row: pd.Series) -> dict[str, Any]:
         minx, miny, width, height = (
             row["minx"],
             row["miny"],
@@ -168,7 +170,9 @@ def write_heatmap_and_meta_json_lines(
         json.dump(meta_dict, f)
 
 
-def write_heatmap_txt(input: str | Path, output: str | Path, class_names: list[str]):
+def write_heatmap_txt(
+    input: str | Path, output: str | Path, class_names: list[str]
+) -> None:
     df = pd.read_csv(input)
     # TODO: should we round and cast to int here?
     df.loc[:, "x_loc"] = (df.minx + (df.width / 2)).round().astype(int)
@@ -184,26 +188,26 @@ def write_heatmap_txt(input: str | Path, output: str | Path, class_names: list[s
 def write_color_txt(
     input: str | Path,
     output: str | Path,
-    slide,
+    slide: CanReadRegion,
     num_processes: int = 6,
-):
-    def whiteness(arr):
+) -> None:
+    def whiteness(arr: npt.ArrayLike) -> float:
         arr = np.asarray(arr)
-        return np.std(arr, axis=(0, 1)).mean()
+        return np.std(arr, axis=(0, 1)).mean()  # type: ignore
 
-    def blackness(arr):
+    def blackness(arr: npt.ArrayLike) -> float:
         arr = np.asarray(arr)
-        return arr.mean()
+        return arr.mean()  # type: ignore
 
-    def redness(arr):
+    def redness(arr: npt.ArrayLike) -> float:
         arr = np.asarray(arr)
         r, g, b = arr[:, :, 0], arr[:, :, 1], arr[:, :, 2]
         # boolean multiplication is logical and
-        return np.mean((r >= 190) * (g <= 100) * (b <= 100))
+        return np.mean((r >= 190) * (g <= 100) * (b <= 100))  # type: ignore
 
     global get_color  # Hack to please multiprocessing.
 
-    def get_color(row: pd.Series):
+    def get_color(row: pd.Series) -> tuple[float, float, float]:
         patch_im = slide.read_region(
             location=(row["minx"], row["miny"]),
             level=0,
@@ -283,7 +287,7 @@ def tosbu(
     study_id: str,
     make_color_text: bool = False,
     num_processes: int = 4,
-):
+) -> None:
     """Convert model outputs to Stony Brook format.
 
     Convert CSVs of patch predictions to .txt and .json formats for use with Stony

@@ -146,7 +146,9 @@ def get_nonoverlapping_patch_coordinates_within_polygon(
 
     # Query which centroids are inside the polygon.
     tree = STRtree(tile_centroids_poly)
-    centroid_indexes_in_polygon = tree.query(polygon, predicate="contains")
+    centroid_indexes_in_polygon: npt.NDArray[np.int_] = tree.query(
+        polygon, predicate="contains"
+    )
 
     # Sort so x and y are in ascending order (and y changes most rapidly).
     centroid_indexes_in_polygon.sort()
