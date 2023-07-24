@@ -71,13 +71,14 @@ dev = [
     "types-Pillow",
     "types-PyYAML",
     "types-tqdm",
-    "Flake8-pyproject"
+    "Flake8-pyproject",
 ]
 docs = [
     "pydata-sphinx-theme",
     "sphinx<6.0.0",
     "sphinx-autoapi",
-    "sphinx-click"
+    "sphinx-click",
+    "sphinx-copybutton",
 ]
 openslide = [
     "openslide-python",
