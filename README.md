@@ -2,7 +2,7 @@
 
 Original H&E                        |  Heatmap of Tumor Probability
 :----------------------------------:|:-----------------------------------:
-![](docs/images/brca-tissue.png)  | ![](docs/images/brca-heatmap.png)
+![](docs/_static/brca-tissue.png)  | ![](docs/_static/brca-heatmap.png)
 
 🔥 🚀 Blazingly fast pipeline to run patch-based classification models on whole slide images.
 
