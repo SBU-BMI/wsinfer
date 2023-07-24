@@ -39,7 +39,6 @@ dependencies = [
     "opencv-python-headless>=4.0.0",
     "pandas",
     "pillow",
-    "pyyaml",
     "scikit-image>=0.20.0",
     "shapely",
     # https://github.com/Bayer-Group/tiffslide/issues/72#issuecomment-1631015274
@@ -69,7 +68,6 @@ dev = [
     "pytest",
     "tiffslide",
     "types-Pillow",
-    "types-PyYAML",
     "types-tqdm",
     "Flake8-pyproject",
 ]

@@ -17,7 +17,6 @@ from typing import Any
 import click
 import wsinfer_zoo
 import wsinfer_zoo.client
-import yaml
 from wsinfer_zoo.client import HFModel
 from wsinfer_zoo.client import ModelConfiguration
 
@@ -320,13 +319,8 @@ def run(
     if model_name is not None:
         model_obj = models.get_registered_model(name=model_name)
     elif config is not None:
-        assert config.suffix in {".json", ".yaml", ".yml"}, "Unknown file type"
-        if config.suffix in {".yaml", ".yml"}:
-            with open(config) as f:
-                _config_dict = yaml.safe_load(f)
-        else:
-            with open(config) as f:
-                _config_dict = json.load(f)
+        with open(config) as f:
+            _config_dict = json.load(f)
         model_config = ModelConfiguration.from_dict(_config_dict)
         model_obj = models.LocalModelTorchScript(
             config=model_config, model_path=str(model_path)
