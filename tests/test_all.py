@@ -293,8 +293,13 @@ def test_convert_to_sbu():
     ["patch_size", "patch_spacing"],
     [(256, 0.25), (256, 0.50), (350, 0.25), (100, 0.3), (100, 0.5)],
 )
+@pytest.mark.parametrize("backend", ["openslide", "tiffslide"])
 def test_patch_cli(
-    patch_size: int, patch_spacing: float, tmp_path: Path, tiff_image: Path
+    patch_size: int,
+    patch_spacing: float,
+    backend: str,
+    tmp_path: Path,
+    tiff_image: Path,
 ):
     """Test of 'wsinfer patch'."""
     orig_slide_size = 4096
@@ -305,6 +310,8 @@ def test_patch_cli(
     result = runner.invoke(
         cli,
         [
+            "--backend",
+            backend,
             "patch",
             "--wsi-dir",
             str(tiff_image.parent),
@@ -342,7 +349,7 @@ def test_patch_cli(
     assert np.array_equal(expected_coords, coords)
 
 
-# FIXME: parametrize thie test across our models.
+# FIXME: parametrize this test across our models.
 def test_jit_compile():
     w = get_registered_model("breast-tumor-resnet34.tcga-brca")
     model = get_pretrained_torch_module(w)

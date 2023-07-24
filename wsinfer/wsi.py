@@ -126,6 +126,38 @@ def _get_mpp_openslide(slide_path: str | Path) -> tuple[float, float]:
                 return mppx, mppy
             except Exception as err:
                 logger.debug(f"Exception caught while converting to float: {err}")
+    elif (
+        "tiff.ResolutionUnit" in slide.properties
+        and "tiff.XResolution" in slide.properties
+        and "tiff.YResolution" in slide.properties
+    ):
+        logger.debug("Attempting to read spacing using openslide and tiff tags")
+        resunit = slide.properties["tiff.ResolutionUnit"].lower()
+        if resunit not in {"millimeter", "centimeter", "cm", "inch"}:
+            raise CannotReadSpacing(f"unknown resolution unit: '{resunit}'")
+        scale = {
+            "inch": 25400.0,
+            "centimeter": 10000.0,
+            "cm": 10000.0,
+            "millimeter": 1000.0,
+        }.get(resunit, None)
+
+        x_resolution = float(slide.properties["tiff.XResolution"])
+        y_resolution = float(slide.properties["tiff.YResolution"])
+
+        if scale is not None:
+            try:
+                mpp_x = scale / x_resolution
+                mpp_y = scale / y_resolution
+                return mpp_x, mpp_y
+            except ArithmeticError as err:
+                raise CannotReadSpacing(
+                    f"error in math {scale} / {x_resolution}"
+                    f" or {scale} / {y_resolution}"
+                ) from err
+        else:
+            raise CannotReadSpacing()
+
     else:
         logger.debug(
             "Properties of the OpenSlide object does not contain keys"
