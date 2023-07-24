@@ -42,6 +42,17 @@ To get help, report issues or request features, please
 repository. If you would like to make your patch classification model available in WSInfer, please
 get in touch with us! You can `submit a new GitHub issue <https://github.com/SBU-BMI/wsinfer/issues/new>`_.
 
+.. |img-tissue| image:: _static/brca-tissue.png
+  :alt: TCGA BRCA sample slide
+.. |img-heatmap| image:: _static/brca-heatmap.png
+  :alt: Heatmap of breast cancer detection
+
++----------------+------------------------------+
+| Original H&E   | Heatmap of Tumor Probability |
++================+==============================+
+| |img-tissue|   | |img-heatmap|                |
++----------------+------------------------------+
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
@@ -50,18 +61,6 @@ get in touch with us! You can `submit a new GitHub issue <https://github.com/SBU
    User Guide <user_guide>
    CLI <cli>
    QuPath Extension <qupath_ext>
-
-
-.. |img-tissue| image:: images/brca-tissue.png
-  :alt: TCGA BRCA sample slide
-.. |img-heatmap| image:: images/brca-heatmap.png
-  :alt: Heatmap of breast cancer detection
-
-+----------------+------------------------------+
-| Original H&E   | Heatmap of Tumor Probability |
-+================+==============================+
-| |img-tissue|   | |img-heatmap|                |
-+----------------+------------------------------+
 
 .. _available-models:
 
