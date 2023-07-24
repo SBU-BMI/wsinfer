@@ -11,6 +11,7 @@ import numpy.typing as npt
 from PIL import Image
 
 from ..wsi import WSI
+from ..wsi import _validate_wsi_directory
 from ..wsi import get_avg_mpp
 from .patch import get_multipolygon_from_binary_arr
 from .patch import get_nonoverlapping_patch_coordinates_within_polygon
@@ -34,7 +35,55 @@ def segment_and_patch_one_slide(
     min_object_size_um2: float = 200**2,
     min_hole_size_um2: float = 190**2,
 ) -> None:
-    """Get patch coordinates."""
+    """Get non-overlapping patch coordinates in tissue regions of a whole slide image.
+
+    Patch coordinates are saved to an HDF5 file in `{save_dir}/patches/`, and a tissue
+    detection image is saved to `{save_dir}/masks/` for quality control.
+
+    In general, this function takes the following steps:
+
+    1. Get a low-resolution thumbnail of the image.
+    2. Binarize the image to identify tissue regions.
+    3. Process this binary image to remove artifacts.
+    4. Create a regular grid of non-overlapping patches of specified size.
+    5. Keep patches whose centroids are in tissue regions.
+
+    Parameters
+    ----------
+    slide_path : str or Path
+        The path to the whole slide image file.
+    save_dir : str or Path
+        The directory in which to save patching results.
+    patch_size_px : int
+        The length of one side of a square patch in pixels.
+    patch_spacing_um_px : float
+        The physical spacing of patches in micrometers per pixels. This value multiplied
+        by patch_size_px gives the physical length of a patch in micrometers.
+    thumbsize : tuple of two integers
+        The size of the thumbnail to use for tissue detection. This specifies the
+        largest possible bounding box of the thumbnail, and a thumbnail is taken to fit
+        this space while maintaining the original aspect ratio of the whole slide image.
+        Larger thumbnails will take longer to process but will result in better tissue
+        masks.
+    median_filter_size : int
+        The size of the kernel for median filtering. This value must be odd and greater
+        than one. This is in units of pixels in the thumbnail.
+    binary_threshold: int
+        The value at which the image in binarized. A higher value will keep less tissue.
+    closing_kernel_size : int
+        The size of the kernel for a morphological closing operation. This is in units
+        of pixels in the thumbnail.
+    min_object_size_um2 : float
+        The minimum area of an object to keep, in units of micrometers squared. Any
+        disconnected objects smaller than this area will be removed.
+    min_hole_size_um2 : float
+        The minimum size of a hole to keep, in units of micrometers squared. Any hole
+        smaller than this area will be filled and be considered tissue.
+
+    Returns
+    -------
+    None
+    """
 
     save_dir = Path(save_dir).resolve()
     slide_path = Path(slide_path).resolve()
@@ -153,10 +202,28 @@ def save_hdf5(
     patch_size: int,
     patch_spacing_um_px: float,
     compression: str | None = "gzip",
-):
+) -> None:
     """Write patch coordinates to HDF5 file.
 
     This is designed to be interoperable with HDF5 files created by CLAM.
+
+    Parameters
+    ----------
+    path : str or Path
+        Path to save the HDF5 file.
+    coords : array
+        Nx2 array of coordinates, where N is the number of patches. Each row of the
+        array must be minx and miny to specify the top-left of the patch.
+    patch_size : int
+        The size of patches in pixels at level 0 of the slide (base resolution).
+    patch_spacing_um_px : float
+        The physical spacing of the patch in micrometers per pixel.
+    compression: str, optional
+        Compression to use for storing coordinates. Default is "gzip".
+
+    Returns
+    -------
+    None
     """
     logger.info(f"Writing coordinates to disk: {path}")
     logger.info(f"Coordinates have shape {coords.shape}")
@@ -178,6 +245,23 @@ def draw_contours_on_thumbnail(
     contours: Sequence[npt.NDArray[np.int_]],
     hierarchy: npt.NDArray[np.int_],
 ) -> Image.Image:
+    """Draw contours onto an image.
+
+    Parameters
+    ----------
+    thumb : Image.Image
+        The thumbnail of the whole slide of the same size as the binary image used
+        during contour detection.
+    contours : sequence of arrays
+        The contours result of `cv.findContours`.
+    hierarchy : array
+        The hierarchy result of `cv.findContours`.
+
+    Returns
+    -------
+    Image.Image
+        An image with contours burned in.
+    """
     assert hierarchy.ndim == 3
     assert hierarchy.shape[0] == 1
     assert hierarchy.shape[2] == 4
@@ -208,9 +292,61 @@ def segment_and_patch_directory_of_slides(
     min_object_size_um2: float = 200**2,
     min_hole_size_um2: float = 190**2,
 ) -> None:
-    """Get patch coordinates. for a directory of slides."""
+    """Get non-overlapping patch coordinates in tissue regions for a directory of whole
+    slide images.
+
+    Patch coordinates are saved to HDF5 files in `{save_dir}/patches/`, and tissue
+    detection images are saved to `{save_dir}/masks/` for quality control.
+
+    In general, this function takes the following steps for each whole slide image:
+
+    1. Get a low-resolution thumbnail of the image.
+    2. Binarize the image to identify tissue regions.
+    3. Process this binary image to remove artifacts.
+    4. Create a regular grid of non-overlapping patches of specified size.
+    5. Keep patches whose centroids are in tissue regions.
+
+    Parameters
+    ----------
+    wsi_dir : str or Path
+        The directory of whole slide images. This must only contain whole slide images.
+    save_dir : str or Path
+        The directory in which to save patching results.
+    patch_size_px : int
+        The length of one side of a square patch in pixels.
+    patch_spacing_um_px : float
+        The physical spacing of patches in micrometers per pixels. This value multiplied
+        by patch_size_px gives the physical length of a patch in micrometers.
+    thumbsize : tuple of two integers
+        The size of the thumbnail to use for tissue detection. This specifies the
+        largest possible bounding box of the thumbnail, and a thumbnail is taken to fit
+        this space while maintaining the original aspect ratio of the whole slide image.
+        Larger thumbnails will take longer to process but will result in better tissue
+        masks.
+    median_filter_size : int
+        The size of the kernel for median filtering. This value must be odd and greater
+        than one. This is in units of pixels in the thumbnail.
+    binary_threshold: int
+        The value at which the image in binarized. A higher value will keep less tissue.
+    closing_kernel_size : int
+        The size of the kernel for a morphological closing operation. This is in units
+        of pixels in the thumbnail.
+    min_object_size_um2 : float
+        The minimum area of an object to keep, in units of micrometers squared. Any
+        disconnected objects smaller than this area will be removed.
+    min_hole_size_um2 : float
+        The minimum size of a hole to keep, in units of micrometers squared. Any hole
+        smaller than this area will be filled and be considered tissue.
+
+    Returns
+    -------
+    None
+    """
 
     wsi_dir = Path(wsi_dir)
+
+    _validate_wsi_directory(wsi_dir)
+
     slide_paths = sorted(wsi_dir.glob("*"))
 
     # NOTE: we could use multi-processing here but then the logs would get

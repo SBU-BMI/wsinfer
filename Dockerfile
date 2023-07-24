@@ -17,13 +17,6 @@ WORKDIR /opt/wsinfer
 COPY . .
 RUN python -m pip install --no-cache-dir --editable . openslide-python tiffslide
 
-# Use a writable directory for downloading model weights. Default is ~/.cache, which is
-# not guaranteed to be writable in a Docker container.
-ENV TORCH_HOME=/var/lib/wsinfer
-RUN mkdir -p "$TORCH_HOME" \
-    && chmod 777 "$TORCH_HOME" \
-    && chmod a+s "$TORCH_HOME"
-
 # Test that the program runs (and also download the registry JSON file).
 RUN wsinfer --help
 

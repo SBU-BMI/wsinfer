@@ -18,7 +18,25 @@ logger = logging.getLogger(__name__)
 def get_multipolygon_from_binary_arr(
     arr: npt.NDArray[np.int_], scale: tuple[float, float] | None = None
 ) -> tuple[MultiPolygon, Sequence[npt.NDArray[np.int_]], npt.NDArray[np.int_]]:
-    """Create a Shapely Polygon from a binary array."""
+    """Create a Shapely Polygon from a binary array.
+
+    Parameters
+    ----------
+    arr : array
+        Binary array where non-zero values indicate presence of tissue.
+    scale : tuple of two floats, optional
+        If specified, this is the factor by which coordinates are multiplied to recover
+        the coordinates at the base resolution of the whole slide image.
+
+    Returns
+    -------
+    polygon
+        A shapely `MultiPolygon` object representing tissue regions.
+    contours
+        A sequence of arrays representing unscaled contours of tissue.
+    hierarchy
+        An array of the hierarchy of contours.
+    """
     # Find contours and hierarchy
     contours: Sequence[npt.NDArray]
     hierarchy: npt.NDArray[np.int_]
@@ -94,10 +112,24 @@ def get_nonoverlapping_patch_coordinates_within_polygon(
 ) -> npt.NDArray[np.int_]:
     """Get coordinates of patches within a polygon.
 
+    Parameters
+    ----------
+    slide_width : int
+        The width of the slide in pixels at base resolution.
+    slide_height : int
+        The height of the slide in pixels at base resolution.
+    patch_size : int
+        The size of a patch in pixels.
+    half_patch_size : int
+        Half of the length of a patch in pixels.
+    polygon : Polygon
+        A shapely Polygon representing the presence of tissue.
+
     Returns
     -------
-    Array with shape (N, 4), where N is the number of tiles. Each row in this array
-    contains the coordinates of a tile: (minx, miny, width, height).
+    coordinates
+        Array with shape (N, 2), where N is the number of tiles. Each row in this array
+        contains the coordinates of the top-left of a tile: (minx, miny).
     """
 
     # Make an array of Nx2, where each row is (x, y) centroid of the patch.
@@ -114,7 +146,9 @@ def get_nonoverlapping_patch_coordinates_within_polygon(
 
     # Query which centroids are inside the polygon.
     tree = STRtree(tile_centroids_poly)
-    centroid_indexes_in_polygon = tree.query(polygon, predicate="contains")
+    centroid_indexes_in_polygon: npt.NDArray[np.int_] = tree.query(
+        polygon, predicate="contains"
+    )
 
     # Sort so x and y are in ascending order (and y changes most rapidly).
     centroid_indexes_in_polygon.sort()
@@ -122,9 +156,5 @@ def get_nonoverlapping_patch_coordinates_within_polygon(
 
     # Transform the centroids to the upper-left point (x, y).
     tile_minx_miny_in_polygon = tile_centroids_in_polygon - half_patch_size
-
-    # Add the patch size to the coordinate array.
-    # patch_size_arr = np.full_like(tile_minx_miny_in_polygon, patch_size)
-    # coords = np.concatenate((tile_minx_miny_in_polygon, patch_size_arr), axis=1)
 
     return tile_minx_miny_in_polygon

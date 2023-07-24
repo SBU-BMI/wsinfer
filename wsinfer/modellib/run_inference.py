@@ -18,6 +18,7 @@ import tqdm
 import wsinfer_zoo.client
 
 from .. import errors
+from ..wsi import _validate_wsi_directory
 from .data import WholeSlideImagePatches
 from .models import LocalModelTorchScript
 from .models import get_pretrained_torch_module
@@ -74,6 +75,8 @@ def run_inference(
     results_dir = Path(results_dir)
     if not results_dir.exists():
         raise errors.ResultsDirectoryNotFound(results_dir)
+
+    _validate_wsi_directory(wsi_dir)
 
     # Check patches directory.
     patch_dir = results_dir / "patches"

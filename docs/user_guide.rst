@@ -14,7 +14,7 @@ List available models
 
 ::
 
-   wsinfer list
+   wsinfer-zoo ls
 
 
 Run model inference
@@ -24,23 +24,24 @@ The model inference workflow will separate each slide into patches and run model
 inference on all patches. The results directory will include the model outputs,
 patch coordinates, and metadata about the run.
 
-For available :code:`--model` and :code:`--weights` options, see :code:`wsinfer list`.
+To list available :code:`--model` options, use :code:`wsinfer-zoo ls`.
+
+Here is an example of the minimum command-line for :code:`wsinfer run` (with arguments
+:code:`--wsi-dir`, :code:`--results-dir`, and :code:`--model`).
 
 ::
 
-   CUDA_VISIBLE_DEVICES=0 wsinfer run \
+   wsinfer run \
       --wsi-dir slides/ \
       --results-dir results/ \
-      --model resnet34 \
-      --weights TCGA-BRCA-v1 \
-      --num-workers 8
+      --model breast-tumor-resnet34.tcga-brca \
 
-The option :code:`--num-workers` controls how many processes to use for data loading.
-Using more workers will typically speed up processing at the expense of more RAM and
-processor use.
+See :code:`wsinfer run --help` for more a list of options and how to use them.
 
-The results directory includes a file named :code:`run_metadata_TIMESTAMP.json` with
-provenance information.
+The option :code:`--wsi-dir` is a directory containing only whole slide images. The option
+:code:`--results-dir` is the path in which outputs are saved. The option :code:`--model`
+is the name of a model available in WSInfer. The model weights and configuration are
+downloaded from HuggingFace Hub. If you would like to use your own model, see :ref:`Use your own model`.
 
 Run model inference in containers
 ---------------------------------
@@ -50,16 +51,12 @@ See https://hub.docker.com/r/kaczmarj/wsinfer/tags for all available containers.
 The "base" image :code:`kaczmarj/wsinfer` includes
 :code:`wsinfer` and all of its runtime dependencies. It does not, however, include
 the downloaded model weights. Running a model will automatically download the weight,
-but these weights will be removed once the container is stopped. For this reason, we
-also provide model-specific containers. These are the same as the "base" image with the
-addition of downloaded weights.
+but these weights will be removed once the container is stopped.
 
 .. note::
 
   The base image :code:`kaczmarj/wsinfer` does not include downloaded models. The models
-  will be downloaded automatically but will be lost when the container is stopped. Use
-  versioned, application-specific containers like
-  :code:`kaczmarj/wsinfer:0.3.5-tumor-brca` as they already include weights.
+  will be downloaded automatically but will be lost when the container is stopped.
 
 Apptainer/Singularity
 ^^^^^^^^^^^^^^^^^^^^^
@@ -81,22 +78,7 @@ Run inference: ::
       wsinfer_latest.sif run \
          --wsi-dir slides/ \
          --results-dir results/ \
-         --model resnet34 \
-         --weights TCGA-BRCA-v1 \
-         --num-workers 8
-
-.. note::
-
-   If you get an error like :code:`Read-only file system: '/var/lib/wsinfer/hub/checkpoints/tmp4rs7aaz9'`,
-   then unset the environment variable :code:`TORCH_HOME`.
-
-   ::
-
-      apptainer run --nv --bind $(pwd) --env TORCH_HOME="" wsinfer_latest.sif
-
-   This happens when model weights are downloaded. Apptainer/Singularity containers are
-   not writable, so writing the weights file to the container fails. Unsetting
-   :code:`TORCH_HOME` will cause the models to be downloaded to the current directory.
+         --model breast-tumor-resnet34.tcga-brca
 
 Docker
 ^^^^^^
@@ -113,6 +95,14 @@ files would be owned by the root user.
 When mounting data, keep in mind that the workdir in the Docker container is :code:`/work`
 (one can override this with :code:`--workdir`). Relative paths must be relative to the workdir.
 
+One should mount their :code:`$HOME` directory onto the container. The registry of trained models
+(a JSON file) is downloaded to :code:`~/.wsinfer-zoo-registry.json`, and trained models
+are downloaded to :code:`~/.cache/huggingface/`.
+
+.. note::
+
+   Mount :code:`$HOME` into the container.
+
 .. note::
 
   Using :code:`--num_workers > 0` will require a :code:`--shm-size > 256mb`.
@@ -124,65 +114,33 @@ Pull the Docker image: ::
 
 Run inference: ::
 
-  docker run --rm -it \
-      --shm-size 512m \
+   docker run --rm -it \
+      --user $(id -u):$(id -g) \
+      --mount type=bind,source=$HOME,target=$HOME \
+      --mount type=bind,source=$(pwd),target=/work/ \
       --gpus all \
       --env CUDA_VISIBLE_DEVICES=0 \
-      --user $(id -u):$(id -g) \
-      --mount type=bind,source=$(pwd),target=/work/ \
+      --env HOME=$HOME \
+      --shm-size 512m \
       kaczmarj/wsinfer:latest run \
-          --wsi-dir slides/ \
-          --results-dir results/ \
-          --model resnet34 \
-          --weights TCGA-BRCA-v1 \
-          --num-workers 2
+         --wsi-dir /work/slides/ \
+         --results-dir /work/results/ \
+         --model breast-tumor-resnet34.tcga-brca
 
+.. _Use your own model:
 
 Use your own model
 ------------------
 
-WSInfer uses YAML configuration files for models and weights. Please see the commented
-example below.
+WSInfer uses JSON configuration files to specify information required to run a patch classification model.
 
-.. code-block:: yaml
+You can validate this configuration JSON file with ::
 
-   # The version of the spec. At this time, only "1.0" is valid. (str)
-   version: "1.0"
-   # Models are referenced by the pair of (architecture, weights), so this pair must be unique.
-   # The name of the architecture. We use timm to supply hundreds or network architectures,
-   # so the name can be one of those models. If the architecture is not provided in timm,
-   # then one can add an architecture themselves, but the code will have to be modified. (str)
-   architecture: resnet34
-   # A unique name for the weights for this architecture. (str)
-   name: TCGA-BRCA-v1
-   # Where to get the model weights. Either a URL or path to a file.
-   # If using a URL, set the url_file_name (the name of the file when it is downloaded).
-   # url: https://stonybrookmedicine.box.com/shared/static/dv5bxk6d15uhmcegs9lz6q70yrmwx96p.pt
-   # url_file_name: resnet34-brca-20190613-01eaf604.pt
-   # If not using a url, then 'file' must be supplied. Use an absolute or relative path. If
-   # using a relative path, the path is relative to the location of the yaml file.
-   file: path-to-weights.pt
-   # Size of patches from the slides. (int)
-   patch_size_pixels: 350
-   # The microns per pixel of the patches. (float)
-   spacing_um_px: 0.25
-   # Number of output classes from the model. (int)
-   num_classes: 2
-   # Names of the model outputs. The order matters. class_names[0] is the name of the first
-   # class of the model output.
-   class_names:  # (list of strings)
-      - notumor
-      - tumor
-   transform:
-      # Size of images immediately prior to inputting to the model. (int)
-      resize_size: 224
-      # Mean and standard deviation for RGB values. (list of three floats)
-      mean: [0.7238, 0.5716, 0.6779]
-      std: [0.1120, 0.1459, 0.1089]
+   wsinfer-zoo validate-config config.json
 
-Once you create a configuration file, use the config with `wsinfer run`: ::
+Once you create the configuration file, use the config with `wsinfer run`: ::
 
-   wsinfer run --wsi-dir slides/ --results-dir results/ --config config.yaml
+   wsinfer run --wsi-dir slides/ --results-dir results/ --model-path path/to/torchscript.pt --config config.json
 
 
 Convert model outputs to GeoJSON (QuPath)

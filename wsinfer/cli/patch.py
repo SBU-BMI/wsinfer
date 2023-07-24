@@ -84,7 +84,7 @@ def patch(
     closing_kernel_size: int,
     min_object_size_um2: float,
     min_hole_size_um2: float,
-):
+) -> None:
     """Patch a directory of whole slide iamges."""
     segment_and_patch_directory_of_slides(
         wsi_dir=wsi_dir,

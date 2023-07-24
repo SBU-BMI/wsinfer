@@ -15,6 +15,14 @@ class WholeSlideImageDirectoryNotFound(WsinferException, FileNotFoundError):
     ...
 
 
+class DuplicateFilePrefixesFound(WsinferException):
+    """A duplicate file prefix has been found.
+
+    An example of duplicate file prefixes is files a.svs and a.tif. WSInfer relies on
+    the stems as a unique ID, so we cannot allow duplicate stems.
+    """
+
+
 class WholeSlideImagesNotFound(WsinferException, FileNotFoundError):
     ...
 

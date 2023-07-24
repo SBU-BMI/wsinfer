@@ -30,7 +30,9 @@ _logging_levels = ["debug", "info", "warning", "error", "critical"]
     help="Set the loudness of logging.",
 )
 @click.version_option()
-def cli(backend: Literal["openslide"] | Literal["tiffslide"] | None, log_level: str):
+def cli(
+    backend: Literal["openslide"] | Literal["tiffslide"] | None, log_level: str
+) -> None:
     """Run patch-level classification inference on whole slide images."""
 
     # Configure logger.

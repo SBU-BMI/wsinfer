@@ -4,12 +4,15 @@ import logging
 from fractions import Fraction
 from pathlib import Path
 from typing import Literal
+from typing import Protocol
 from typing import overload
 
 import tifffile
+from PIL import Image
 
-from wsinfer.errors import CannotReadSpacing
-from wsinfer.errors import NoBackendException
+from .errors import CannotReadSpacing
+from .errors import DuplicateFilePrefixesFound
+from .errors import NoBackendException
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +63,7 @@ def set_backend(
 
 
 # Set the slide backend based on the environment.
-WSI: type[openslide.OpenSlide] | type[tifffile.TiffFile]
+WSI: type[openslide.OpenSlide] | type[tiffslide.TiffSlide]
 if HAS_OPENSLIDE:
     WSI = set_backend("openslide")
 elif HAS_TIFFSLIDE:
@@ -69,8 +72,33 @@ else:
     raise NoBackendException("No backend found! Please install openslide or tiffslide")
 
 
-def _get_mpp_openslide(slide_path: str | Path):
-    """Read MPP using OpenSlide."""
+# For typing an object that has a method `read_region`.
+
+
+class CanReadRegion(Protocol):
+    def read_region(
+        self, location: tuple[int, int], level: int, size: tuple[int, int]
+    ) -> Image.Image:
+        pass
+
+
+def _get_mpp_openslide(slide_path: str | Path) -> tuple[float, float]:
+    """Read MPP using OpenSlide.
+
+    Parameters
+    ----------
+    slide_path : str or Path
+        The path to the whole slide image.
+
+    Returns
+    -------
+    mppx, mppy
+        Two floats representing the micrometers per pixel in x and y dimensions.
+
+    Raises
+    ------
+    CannotReadSpacing if spacing cannot be read from the whole slide iamge.
+    """
     logger.debug("Attempting to read MPP using OpenSlide")
     slide = openslide.OpenSlide(slide_path)
     mppx: float | None = None
@@ -198,3 +226,15 @@ def get_avg_mpp(slide_path: Path | str) -> float:
         pass
 
     raise CannotReadSpacing(slide_path)
+
+
+def _validate_wsi_directory(wsi_dir: str | Path) -> None:
+    """Validate a directory of whole slide images."""
+    wsi_dir = Path(wsi_dir)
+    maybe_slides = sorted(wsi_dir.glob("*"))
+    uniq_stems = set(p.stem for p in maybe_slides)
+    if len(uniq_stems) != len(maybe_slides):
+        raise DuplicateFilePrefixesFound(
+            "A slide with the same prefix but different extensions has been found"
+            " (like slide.svs and slide.tif). Slides must have unique prefixes."
+        )
