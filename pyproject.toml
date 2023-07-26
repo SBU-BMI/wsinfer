@@ -30,7 +30,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Scientific/Engineering :: Image Recognition",
-    "Topic :: Scientific/Engineering :: Medical Science Apps"
+    "Topic :: Scientific/Engineering :: Medical Science Apps."
 ]
 dependencies = [
     "click>=8.0,<9,!=8.1.4,!=8.1.5",
