@@ -84,19 +84,7 @@ The table below may be incomplete.
      - Reference
    * - Breast adenocarcinoma detection
      - no-tumor, tumor
-     - InceptionV4
-     - TCGA BRCA
-     - 350 @ 0.25
-     - `Ref <https://doi.org/10.1016%2Fj.ajpath.2020.03.012>`_
-   * - Breast adenocarcinoma detection
-     - no-tumor, tumor
      - ResNet34
-     - TCGA BRCA
-     - 350 @ 0.25
-     - `Ref <https://doi.org/10.1016%2Fj.ajpath.2020.03.012>`_
-   * - Breast adenocarcinoma detection
-     - no-tumor, tumor
-     - VGG16 (modified)
      - TCGA BRCA
      - 350 @ 0.25
      - `Ref <https://doi.org/10.1016%2Fj.ajpath.2020.03.012>`_

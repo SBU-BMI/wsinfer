@@ -51,8 +51,6 @@ def tiff_image(tmp_path: Path) -> Path:
     "model",
     [
         "breast-tumor-resnet34.tcga-brca",
-        "breast-tumor-inception_v4.tcga-brca",
-        "breast-tumor-vgg16mod.tcga-brca",
         "lung-tumor-resnet34.tcga-luad",
         "pancancer-lymphocytes-inceptionv4.tcga",
         "pancreas-tumor-preactresnet34.tcga-paad",
