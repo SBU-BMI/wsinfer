@@ -83,6 +83,12 @@ if not version_match or version_match.isdigit():
         version_match = "v" + release
 
 html_theme = "pydata_sphinx_theme"
+
+# Add any paths that contain custom static files (such as style sheets) here,
+# relative to this directory. They are copied after the builtin static files,
+# so a file named "default.css" will overwrite the builtin "default.css".
+html_static_path = ["_static"]
+
 # Many of these options are copied directly from pydata-sphinx-theme's conf.py.
 html_theme_options = {
     "logo": {
@@ -92,22 +98,18 @@ html_theme_options = {
     },
     "use_edit_page_button": True,
     "show_toc_level": 1,
-    "navbar_align": "left",  # [left, content, right] For testing that the navbar items align properly
-    "navbar_center": ["version-switcher", "navbar-nav"],
+    # "navbar_align": "content",
+    "github_url": "https://github.com/SBU-BMI/wsinfer",
+    "navbar_end": ["version-switcher", "theme-switcher", "navbar-icon-links"],
     "show_version_warning_banner": True,
-    # "show_nav_level": 2,
-    # "navbar_start": ["navbar-logo"],
-    # "navbar_end": ["theme-switcher", "navbar-icon-links"],
-    # "navbar_persistent": ["search-button"],
-    # "primary_sidebar_end": ["custom-template.html", "sidebar-ethical-ads.html"],
-    # "article_footer_items": ["test.html", "test.html"],
-    # "content_footer_items": ["test.html", "test.html"],
-    # "footer_start": ["test.html", "test.html"],
-    # "secondary_sidebar_items": ["page-toc.html"],  # Remove the source buttons
     "switcher": {
         "json_url": json_url,
         "version_match": version_match,
     },
+    "external_links": [
+        {"name": "GitHub Repository", "url": "https://github.com/SBU-BMI/wsinfer"},
+    ],
+    "header_links_before_dropdown": 6,
 }
 # html_logo = "_static/logo.svg"
 # html_favicon = "_static/log
