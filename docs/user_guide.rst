@@ -56,8 +56,8 @@ but these weights will be removed once the container is stopped.
 .. note::
 
   The image :code:`kaczmarj/wsinfer` does not include downloaded models. The models are downloaded
-  automatically to `~/.cache` but will be lost when the container is stopped if `~/.cache` is
-  not mounted.
+  automatically to :code:`~/.cache` but will be lost when the container is stopped if
+  :code:`~/.cache` is not mounted.
 
 Apptainer/Singularity
 ^^^^^^^^^^^^^^^^^^^^^
