@@ -41,3 +41,7 @@ class CannotReadSpacing(WsinferException):
 
 class NoBackendException(WsinferException):
     ...
+
+
+class BackendNotAvailable(WsinferException):
+    """The requested backend is not available."""
