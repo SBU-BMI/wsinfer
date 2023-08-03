@@ -55,8 +55,9 @@ but these weights will be removed once the container is stopped.
 
 .. note::
 
-  The base image :code:`kaczmarj/wsinfer` does not include downloaded models. The models
-  will be downloaded automatically but will be lost when the container is stopped.
+  The image :code:`kaczmarj/wsinfer` does not include downloaded models. The models are downloaded
+  automatically to `~/.cache` but will be lost when the container is stopped if `~/.cache` is
+  not mounted.
 
 Apptainer/Singularity
 ^^^^^^^^^^^^^^^^^^^^^
@@ -73,7 +74,6 @@ Run inference: ::
    apptainer run \
       --nv \
       --bind $(pwd) \
-      --env TORCH_HOME="" \
       --env CUDA_VISIBLE_DEVICES=0 \
       wsinfer_latest.sif run \
          --wsi-dir slides/ \
