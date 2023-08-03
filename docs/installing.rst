@@ -34,6 +34,14 @@ To install the latest unstable version of WSInfer, use ::
 
     pip install git+https://github.com/SBU-BMI/wsinfer
 
+Supported backends
+------------------
+
+WSInfer supports two backends for reading whole slide images: `OpenSlide <https://openslide.org/>`_
+and `TiffSlide <https://github.com/Bayer-Group/tiffslide>`_. When you install WSInfer, TiffSlide is also
+installed. To install OpenSlide, install the compiled OpenSlide library and the Python package
+:code:`openslide-python`.
+
 Containers
 ----------
 
@@ -66,7 +74,7 @@ Clone the repository from https://github.com/SBU-BMI/wsinfer and install it in e
 
     git clone https://github.com/SBU-BMI/wsinfer.git
     cd wsinfer
-    python -m pip install --editable .[dev]
+    python -m pip install --editable .[dev,openslide]
     wsinfer --help
 
 Getting started
