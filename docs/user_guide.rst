@@ -150,7 +150,7 @@ GeoJSON is a JSON format compatible with whole slide image viewers like QuPath.
 
 ::
 
-   wsirun togeojson results/ geojson-results/
+   wsinfer togeojson results/ geojson-results/
 
 If you open one of your slides in QuPath, you can drag and drop the corresponding
 JSON file into the QuPath window to load the model outputs.
@@ -162,7 +162,7 @@ The QuIP whole slide image viewer uses a particular format consisting of JSON an
 
 ::
 
-   wsirun tosbu \
+   wsinfer tosbu \
       --wsi-dir slides/ \
       --execution-id UNIQUE_ID_HERE \
       --study-id STUDY_ID_HERE \
