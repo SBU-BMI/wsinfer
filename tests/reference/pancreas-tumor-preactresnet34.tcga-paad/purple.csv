@@ -1,4 +1,4 @@
-minx,miny,width,height,prob_tumor
+minx,miny,width,height,prob_Tumor
 0,0,2100,2100,0.014464837
 0,2100,2100,2100,0.008648535
 2100,0,2100,2100,0.019902095
