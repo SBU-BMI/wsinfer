@@ -36,6 +36,11 @@ except Exception as err:
     HAS_TIFFSLIDE = False
     logger.debug(f"Unable to import tiffslide due to error: {err}")
 
+if not HAS_TIFFSLIDE and not HAS_OPENSLIDE:
+    raise NoBackendException(
+        "No backend is available. Please install openslide or tiffslide."
+    )
+
 
 @overload
 def set_backend(name: Literal["openslide"]) -> type[openslide.OpenSlide]:
