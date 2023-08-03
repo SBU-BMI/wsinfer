@@ -1,4 +1,4 @@
-minx,miny,width,height,prob_notils,prob_tils
+minx,miny,width,height,prob_Other,prob_Lymphocytes
 0,0,200,200,1.0,3.427372535086404e-12
 0,200,200,200,1.0,3.427372535086404e-12
 0,400,200,200,1.0,3.427372535086404e-12
