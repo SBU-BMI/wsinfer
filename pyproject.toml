@@ -40,6 +40,7 @@ dependencies = [
     "opencv-python-headless>=4.0.0",
     "pandas",
     "pillow",
+    "paquo>=0.7.1",
     "scikit-image>=0.20.0",
     "shapely",
     # https://github.com/Bayer-Group/tiffslide/issues/72#issuecomment-1631015274
