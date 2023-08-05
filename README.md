@@ -1,4 +1,4 @@
-# WSInfer: deep learning inference on whole slide images
+# ![](docs/_static/logo.svg) WSInfer: deep learning inference on whole slide images
 
 Original H&E                        |  Heatmap of Tumor Probability
 :----------------------------------:|:-----------------------------------:
