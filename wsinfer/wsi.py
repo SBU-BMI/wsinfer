@@ -10,6 +10,7 @@ from typing import overload
 import tifffile
 from PIL import Image
 
+from .errors import BackendNotAvailable
 from .errors import CannotReadSpacing
 from .errors import DuplicateFilePrefixesFound
 from .errors import NoBackendException
@@ -35,6 +36,11 @@ except Exception as err:
     HAS_TIFFSLIDE = False
     logger.debug(f"Unable to import tiffslide due to error: {err}")
 
+if not HAS_TIFFSLIDE and not HAS_OPENSLIDE:
+    raise NoBackendException(
+        "No backend is available. Please install openslide or tiffslide."
+    )
+
 
 @overload
 def set_backend(name: Literal["openslide"]) -> type[openslide.OpenSlide]:
@@ -54,8 +60,18 @@ def set_backend(
         raise ValueError(f"Unknown backend: {name}")
     logger.info(f"Setting backend to {name}")
     if name == "openslide":
+        if not HAS_OPENSLIDE:
+            raise BackendNotAvailable(
+                "OpenSlide is not available. Please install the OpenSlide compiled"
+                " library and the Python package 'openslide-python'."
+                " See https://openslide.org/ for more information."
+            )
         WSI = openslide.OpenSlide
     elif name == "tiffslide":
+        if not HAS_TIFFSLIDE:
+            raise BackendNotAvailable(
+                "TiffSlide is not available. Please install 'tiffslide'."
+            )
         WSI = tiffslide.TiffSlide
     else:
         raise ValueError(f"Unknown backend: {name}")
@@ -73,8 +89,6 @@ else:
 
 
 # For typing an object that has a method `read_region`.
-
-
 class CanReadRegion(Protocol):
     def read_region(
         self, location: tuple[int, int], level: int, size: tuple[int, int]
@@ -100,6 +114,11 @@ def _get_mpp_openslide(slide_path: str | Path) -> tuple[float, float]:
     CannotReadSpacing if spacing cannot be read from the whole slide iamge.
     """
     logger.debug("Attempting to read MPP using OpenSlide")
+    if not HAS_OPENSLIDE:
+        logger.critical(
+            "Cannot read MPP with OpenSlide because OpenSlide is not available"
+        )
+        raise CannotReadSpacing()
     slide = openslide.OpenSlide(slide_path)
     mppx: float | None = None
     mppy: float | None = None
@@ -170,6 +189,12 @@ def _get_mpp_tiffslide(
     slide_path: str | Path,
 ) -> tuple[float, float]:
     """Read MPP using TiffSlide."""
+    if not HAS_TIFFSLIDE:
+        logger.critical(
+            "Cannot read MPP with TiffSlide because TiffSlide is not available"
+        )
+        raise CannotReadSpacing()
+
     slide = tiffslide.TiffSlide(slide_path)
     mppx: float | None = None
     mppy: float | None = None

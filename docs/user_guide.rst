@@ -55,8 +55,9 @@ but these weights will be removed once the container is stopped.
 
 .. note::
 
-  The base image :code:`kaczmarj/wsinfer` does not include downloaded models. The models
-  will be downloaded automatically but will be lost when the container is stopped.
+  The image :code:`kaczmarj/wsinfer` does not include downloaded models. The models are downloaded
+  automatically to :code:`~/.cache` but will be lost when the container is stopped if
+  :code:`~/.cache` is not mounted.
 
 Apptainer/Singularity
 ^^^^^^^^^^^^^^^^^^^^^
@@ -73,7 +74,6 @@ Run inference: ::
    apptainer run \
       --nv \
       --bind $(pwd) \
-      --env TORCH_HOME="" \
       --env CUDA_VISIBLE_DEVICES=0 \
       wsinfer_latest.sif run \
          --wsi-dir slides/ \
@@ -150,7 +150,7 @@ GeoJSON is a JSON format compatible with whole slide image viewers like QuPath.
 
 ::
 
-   wsirun togeojson results/ geojson-results/
+   wsinfer togeojson results/ geojson-results/
 
 If you open one of your slides in QuPath, you can drag and drop the corresponding
 JSON file into the QuPath window to load the model outputs.
@@ -162,7 +162,7 @@ The QuIP whole slide image viewer uses a particular format consisting of JSON an
 
 ::
 
-   wsirun tosbu \
+   wsinfer tosbu \
       --wsi-dir slides/ \
       --execution-id UNIQUE_ID_HERE \
       --study-id STUDY_ID_HERE \

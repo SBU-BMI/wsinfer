@@ -7,12 +7,12 @@ name = "wsinfer"
 description = "Run patch-based classification on pathology whole slide images."
 readme = "README.md"
 requires-python = ">= 3.8"
-license = {text = "Apache License, Version 2.0"}
+license = { text = "Apache License, Version 2.0" }
 authors = [
-  {name = "Jakub Kaczmarzyk", email = "jakub.kaczmarzyk@stonybrookmedicine.edu"},
+    { name = "Jakub Kaczmarzyk", email = "jakub.kaczmarzyk@stonybrookmedicine.edu" },
 ]
 maintainers = [
-  {name = "Jakub Kaczmarzyk", email = "jakub.kaczmarzyk@stonybrookmedicine.edu"},
+    { name = "Jakub Kaczmarzyk", email = "jakub.kaczmarzyk@stonybrookmedicine.edu" },
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -30,12 +30,13 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Scientific/Engineering :: Image Recognition",
-    "Topic :: Scientific/Engineering :: Medical Science Apps."
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
 ]
 dependencies = [
     "click>=8.0,<9,!=8.1.4,!=8.1.5",
     "h5py",
-    "numpy",
+    # This is when numpy.typing.NDArray was introduced.
+    "numpy>=1.21.0",
     "opencv-python-headless>=4.0.0",
     "pandas",
     "pillow",
@@ -54,7 +55,7 @@ dependencies = [
     "torch>=1.7",
     "torchvision",
     "tqdm",
-    "wsinfer-zoo"
+    "wsinfer-zoo",
 ]
 dynamic = ["version"]
 
@@ -78,9 +79,7 @@ docs = [
     "sphinx-click",
     "sphinx-copybutton",
 ]
-openslide = [
-    "openslide-python",
-]
+openslide = ["openslide-python"]
 
 [project.urls]
 Homepage = "https://wsinfer.readthedocs.io"
