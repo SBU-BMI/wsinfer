@@ -30,7 +30,7 @@ def _row_to_geojson(row: pd.Series, prob_cols: list[str]) -> dict:
     measurements = [{"name": k, "value": v} for k, v in prob_dict.items()]
     return {
         "type": "Feature",
-        "id": "PathTileObject",
+        "id": "49069bbb-a0ac-4343-96fe-15af45c30634",
         "geometry": {
             "type": "Polygon",
             "coordinates": [coords],
