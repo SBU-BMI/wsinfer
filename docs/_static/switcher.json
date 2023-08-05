@@ -1,13 +1,12 @@
 [
     {
-        "version": "dev",
+        "version": "latest",
         "url": "https://wsinfer.readthedocs.io/en/latest/"
     },
     {
         "name": "0.4.0 (stable)",
         "version": "v0.4.0",
-        "url": "https://wsinfer.readthedocs.io/en/stable/",
-        "preferred": true
+        "url": "https://wsinfer.readthedocs.io/en/stable/"
     },
     {
         "name": "0.3.6",

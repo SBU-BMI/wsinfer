@@ -172,7 +172,7 @@ def test_cli_run_with_local_model(tmp_path: Path, tiff_image: Path):
         "spec_version": "1.0",
         "architecture": "resnet34",
         "num_classes": 2,
-        "class_names": ["notumor", "tumor"],
+        "class_names": ["Other", "Tumor"],
         "patch_size_pixels": 350,
         "spacing_um_px": 0.25,
         "transform": [
