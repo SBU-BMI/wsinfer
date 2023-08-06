@@ -134,7 +134,7 @@ def test_cli_run_with_registered_models(
 
     for geojson_row in d["features"]:
         assert geojson_row["type"] == "Feature"
-        assert geojson_row["id"] == "49069bbb-a0ac-4343-96fe-15af45c30634"
+        assert geojson_row["id"] == isinstance(geojson_row["id"] , str)
         assert geojson_row["geometry"]["type"] == "Polygon"
     res = []
     for i, _ in enumerate(prob_cols):

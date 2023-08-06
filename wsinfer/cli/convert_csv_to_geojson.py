@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import uuid
 
 import click
 import pandas as pd
@@ -30,7 +31,7 @@ def _row_to_geojson(row: pd.Series, prob_cols: list[str]) -> dict:
     measurements = [{"name": k, "value": v} for k, v in prob_dict.items()]
     return {
         "type": "Feature",
-        "id": "49069bbb-a0ac-4343-96fe-15af45c30634",
+        "id": "str(uuid.uuid4())",
         "geometry": {
             "type": "Polygon",
             "coordinates": [coords],
