@@ -31,7 +31,7 @@ def _row_to_geojson(row: pd.Series, prob_cols: list[str]) -> dict:
     measurements = [{"name": k, "value": v} for k, v in prob_dict.items()]
     return {
         "type": "Feature",
-        "id": "str(uuid.uuid4())",
+        "id": str(uuid.uuid4()),
         "geometry": {
             "type": "Polygon",
             "coordinates": [coords],
