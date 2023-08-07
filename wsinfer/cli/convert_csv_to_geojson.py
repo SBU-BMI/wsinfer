@@ -31,7 +31,7 @@ def _row_to_geojson(row: pd.Series, prob_cols: list[str]) -> dict:
     
     measurements = {}
     for k,v in prob_dict.items():
-        measurements[f"{k}"] = v
+        measurements[k] = v
 
     return {
         "type": "Feature",
