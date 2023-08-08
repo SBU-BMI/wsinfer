@@ -6,8 +6,8 @@ GeoJSON files can be loaded into whole slide image viewers like QuPath.
 from __future__ import annotations
 
 import json
-from pathlib import Path
 import uuid
+from pathlib import Path
 
 import click
 import pandas as pd
@@ -30,7 +30,7 @@ def _row_to_geojson(row: pd.Series, prob_cols: list[str]) -> dict:
     prob_dict = row[prob_cols].to_dict()
 
     measurements = {}
-    for k , v in prob_dict.items():
+    for k, v in prob_dict.items():
         measurements[k] = v
 
     return {
