@@ -22,7 +22,7 @@ from wsinfer.modellib.models import get_pretrained_torch_module
 from wsinfer.modellib.models import get_registered_model
 from wsinfer.modellib.run_inference import jit_compile
 
-
+print("test")
 @pytest.fixture
 def tiff_image(tmp_path: Path) -> Path:
     x = np.empty((4096, 4096, 3), dtype="uint8")
@@ -140,7 +140,7 @@ def test_cli_run_with_registered_models(
     for i, _ in enumerate(prob_cols):
         res.append(
             np.array(
-                [dd["properties"]["measurements"][i]["value"] for dd in d["features"]]
+                [dd["properties"]["measurements"][prob_cols[i]] for dd in d["features"]]
             )
         )
     geojson_probs = np.stack(res, axis=0)

@@ -28,10 +28,10 @@ def _row_to_geojson(row: pd.Series, prob_cols: list[str]) -> dict:
     minx, miny, width, height = row["minx"], row["miny"], row["width"], row["height"]
     coords = _box_to_polygon(minx=minx, miny=miny, width=width, height=height)
     prob_dict = row[prob_cols].to_dict()
-    
+
     measurements = {}
-    for k,v in prob_dict.items():
-        measurements[f"{k}"] = v
+    for k , v in prob_dict.items():
+        measurements[k] = v
 
     return {
         "type": "Feature",
