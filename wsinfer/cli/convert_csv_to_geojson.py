@@ -6,6 +6,7 @@ GeoJSON files can be loaded into whole slide image viewers like QuPath.
 from __future__ import annotations
 
 import json
+import uuid
 from pathlib import Path
 
 import click
@@ -27,10 +28,14 @@ def _row_to_geojson(row: pd.Series, prob_cols: list[str]) -> dict:
     minx, miny, width, height = row["minx"], row["miny"], row["width"], row["height"]
     coords = _box_to_polygon(minx=minx, miny=miny, width=width, height=height)
     prob_dict = row[prob_cols].to_dict()
-    measurements = [{"name": k, "value": v} for k, v in prob_dict.items()]
+
+    measurements = {}
+    for k, v in prob_dict.items():
+        measurements[k] = v
+
     return {
         "type": "Feature",
-        "id": "PathTileObject",
+        "id": str(uuid.uuid4()),
         "geometry": {
             "type": "Polygon",
             "coordinates": [coords],
@@ -40,6 +45,7 @@ def _row_to_geojson(row: pd.Series, prob_cols: list[str]) -> dict:
             # measurements is a list of {"name": str, "value": float} dicts.
             # https://qupath.github.io/javadoc/docs/qupath/lib/measurements/MeasurementList.html
             "measurements": measurements,
+            "objectType": "tile"
             # classification is a dict of "name": str and optionally "color": int.
             # https://qupath.github.io/javadoc/docs/qupath/lib/objects/classes/PathClass.html
             # We do not include classification because we do not enforce a single class

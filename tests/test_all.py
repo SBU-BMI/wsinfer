@@ -24,7 +24,6 @@ from wsinfer.modellib.run_inference import jit_compile
 from wsinfer.wsi import HAS_OPENSLIDE
 from wsinfer.wsi import HAS_TIFFSLIDE
 
-
 @pytest.fixture
 def tiff_image(tmp_path: Path) -> Path:
     x = np.empty((4096, 4096, 3), dtype="uint8")
@@ -152,14 +151,13 @@ def test_cli_run_with_registered_models(
 
     for geojson_row in d["features"]:
         assert geojson_row["type"] == "Feature"
-        assert geojson_row["id"] == "PathTileObject"
+        isinstance(geojson_row["id"] , str)
         assert geojson_row["geometry"]["type"] == "Polygon"
-
     res = []
-    for i, _ in enumerate(prob_cols):
+    for i, prob_col in enumerate(prob_cols):
         res.append(
             np.array(
-                [dd["properties"]["measurements"][i]["value"] for dd in d["features"]]
+                [dd["properties"]["measurements"][prob_col] for dd in d["features"]]
             )
         )
     geojson_probs = np.stack(res, axis=0)
