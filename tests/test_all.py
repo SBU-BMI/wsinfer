@@ -24,7 +24,6 @@ from wsinfer.modellib.run_inference import jit_compile
 from wsinfer.wsi import HAS_OPENSLIDE
 from wsinfer.wsi import HAS_TIFFSLIDE
 
-print("test")
 @pytest.fixture
 def tiff_image(tmp_path: Path) -> Path:
     x = np.empty((4096, 4096, 3), dtype="uint8")
