@@ -21,6 +21,8 @@ from wsinfer.cli.infer import _get_info_for_save
 from wsinfer.modellib.models import get_pretrained_torch_module
 from wsinfer.modellib.models import get_registered_model
 from wsinfer.modellib.run_inference import jit_compile
+from wsinfer.wsi import HAS_OPENSLIDE
+from wsinfer.wsi import HAS_TIFFSLIDE
 
 
 @pytest.fixture
@@ -58,7 +60,23 @@ def tiff_image(tmp_path: Path) -> Path:
     ],
 )
 @pytest.mark.parametrize("speedup", [False, True])
-@pytest.mark.parametrize("backend", ["openslide", "tiffslide"])
+@pytest.mark.parametrize(
+    "backend",
+    [
+        pytest.param(
+            "openslide",
+            marks=pytest.mark.skipif(
+                not HAS_OPENSLIDE, reason="OpenSlide not available"
+            ),
+        ),
+        pytest.param(
+            "tiffslide",
+            marks=pytest.mark.skipif(
+                not HAS_TIFFSLIDE, reason="TiffSlide not available"
+            ),
+        ),
+    ],
+)
 def test_cli_run_with_registered_models(
     model: str,
     speedup: bool,
@@ -199,7 +217,7 @@ def test_cli_run_with_local_model(tmp_path: Path, tiff_image: Path):
         cli,
         [
             "--backend",
-            "openslide",
+            "tiffslide",
             "run",
             "--wsi-dir",
             str(tiff_image.parent),
@@ -291,7 +309,23 @@ def test_convert_to_sbu():
     ["patch_size", "patch_spacing"],
     [(256, 0.25), (256, 0.50), (350, 0.25), (100, 0.3), (100, 0.5)],
 )
-@pytest.mark.parametrize("backend", ["openslide", "tiffslide"])
+@pytest.mark.parametrize(
+    "backend",
+    [
+        pytest.param(
+            "openslide",
+            marks=pytest.mark.skipif(
+                not HAS_OPENSLIDE, reason="OpenSlide not available"
+            ),
+        ),
+        pytest.param(
+            "tiffslide",
+            marks=pytest.mark.skipif(
+                not HAS_TIFFSLIDE, reason="TiffSlide not available"
+            ),
+        ),
+    ],
+)
 def test_patch_cli(
     patch_size: int,
     patch_spacing: float,
