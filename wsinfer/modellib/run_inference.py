@@ -170,7 +170,10 @@ def run_inference(
                 probs = torch.nn.functional.softmax(logits, dim=1)
             else:
                 probs = torch.sigmoid(logits.squeeze(1))
-            slide_coords.append(batch_coords.numpy())
+            # Cloning the tensor prevents memory accumulation and prevents
+            # the error "RuntimeError: Too many open files". Jakub ran into this
+            # error when running wsinfer on a slide in Windows Subsystem for Linux.
+            slide_coords.append(batch_coords.clone().numpy())
             slide_probs.append(probs.numpy())
 
         slide_coords_arr = np.concatenate(slide_coords, axis=0)
