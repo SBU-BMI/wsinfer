@@ -24,7 +24,7 @@ from wsinfer_zoo.client import ModelConfiguration
 from ..modellib import models
 from ..modellib.run_inference import run_inference
 from ..patchlib import segment_and_patch_directory_of_slides
-from ..write_geojson import(_box_to_polygon, _row_to_geojson, _dataframe_to_geojson, convert)
+from ..write_geojson import parallelize_geojson
 
 
 def _num_cpus() -> int:
@@ -377,36 +377,5 @@ def run(
 
     click.secho("Finished.", fg="green")
 
-    click.secho("Converting csv files to geojson files", fg="green")
-
-    output = results_dir/"model-outputs-geojson"
-
-    if not results_dir.exists():
-        raise click.ClickException(f"results_dir does not exist: {results_dir}")
-    if output.exists():
-        raise click.ClickException("Output directory already exists.")
-    if (
-        not (results_dir / "model-outputs-csv").exists()
-        and (results_dir / "patches").exists()
-    ):
-        raise click.ClickException(
-            "Model outputs have not been generated yet. Please run model inference."
-        )
-    if not (results_dir / "model-outputs-csv").exists():
-        raise click.ClickException(
-            "Expected results_dir to contain a 'model-outputs' directory but it does"
-            " not. Please provide the path to the directory that contains"
-            " model-outputs, masks, and patches."
-        )
-
     csvs = list((results_dir / "model-outputs-csv").glob("*.csv"))
-    if not csvs:
-        raise click.ClickException("No CSVs found. Did you generate model outputs?")
-
-    output.mkdir(parents=True,exist_ok=False)
-
-    for input_csv in tqdm.tqdm(csvs):
-        output_path = output / input_csv.with_suffix(".json").name
-        convert(input=input_csv, output=output_path)
-
-    click.secho(f"Saved outputs to {output}", fg="green")
+    parallelize_geojson(csvs, results_dir, num_workers)

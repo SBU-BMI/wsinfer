@@ -12,6 +12,8 @@ from pathlib import Path
 import click
 import pandas as pd
 import tqdm
+from tqdm.contrib.concurrent import process_map
+from functools import partial
 
 
 def _box_to_polygon(
@@ -64,11 +66,40 @@ def _dataframe_to_geojson(df: pd.DataFrame, prob_cols: list[str]) -> dict:
     }
 
 
-def convert(input: str | Path, output: str | Path) -> None:
-    df = pd.read_csv(input)
+def make_geojson(results_dir: Path, csv: str) -> None:
+    df = pd.read_csv(csv)
     prob_cols = [col for col in df.columns.tolist() if col.startswith("prob_")]
     if not prob_cols:
         raise click.ClickException("Did not find any columns with prob_ prefix.")
     geojson = _dataframe_to_geojson(df, prob_cols)
-    with open(output, "w") as f:
+    with open(
+        f"""{results_dir}/model-outputs-geojson/{csv.name.split(".")[0]}.json""", "w"
+    ) as f:
         json.dump(geojson, f)
+
+
+def parallelize_geojson(csvs: list, results_dir: Path, num_workers: int) -> None:
+    output = results_dir / "model-outputs-geojson"
+
+    if not results_dir.exists():
+        raise FileExistsError(f"results_dir does not exist: {results_dir}")
+    if output.exists():
+        raise FileExistsError("Output directory already exists.")
+    if (
+        not (results_dir / "model-outputs-csv").exists()
+        and (results_dir / "patches").exists()
+    ):
+        raise FileExistsError(
+            "Model outputs have not been generated yet. Please run model inference."
+        )
+    if not (results_dir / "model-outputs-csv").exists():
+        raise FileExistsError(
+            "Expected results_dir to contain a 'model-outputs' directory but it does"
+            " not. Please provide the path to the directory that contains"
+            " model-outputs, masks, and patches."
+        )
+
+    output.mkdir(parents=True, exist_ok=True)
+
+    func = partial(make_geojson, results_dir)
+    process_map(func, csvs, max_workers=num_workers)
