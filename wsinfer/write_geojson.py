@@ -66,17 +66,14 @@ def _dataframe_to_geojson(df: pd.DataFrame, prob_cols: list[str]) -> dict:
     }
 
 
-def make_geojson(results_dir: Path, csv: str) -> None:
-    
+def make_geojson(results_dir: Path, csv: Path) -> None:
     filename = csv.name.split(".")[0]
     df = pd.read_csv(csv)
     prob_cols = [col for col in df.columns.tolist() if col.startswith("prob_")]
     if not prob_cols:
         raise click.ClickException("Did not find any columns with prob_ prefix.")
     geojson = _dataframe_to_geojson(df, prob_cols)
-    with open(
-        f"{results_dir}/model-outputs-geojson/{filename}.json", "w"
-    ) as f:
+    with open(f"{results_dir}/model-outputs-geojson/{filename}.json", "w") as f:
         json.dump(geojson, f)
 
 
