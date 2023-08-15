@@ -14,6 +14,7 @@ import pandas as pd
 import tqdm
 from tqdm.contrib.concurrent import process_map
 from functools import partial
+import shutil
 
 
 def _box_to_polygon(
@@ -84,7 +85,8 @@ def parallelize_geojson(csvs: list, results_dir: Path, num_workers: int) -> None
     if not results_dir.exists():
         raise FileExistsError(f"results_dir does not exist: {results_dir}")
     if output.exists():
-        raise FileExistsError("Output directory already exists.")
+        # raise FileExistsError("Output directory already exists.")
+        shutil.rmtree(f"{output}")
     if (
         not (results_dir / "model-outputs-csv").exists()
         and (results_dir / "patches").exists()

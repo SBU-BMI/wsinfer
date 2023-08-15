@@ -107,8 +107,8 @@ def test_cli_run_with_registered_models(
         ],
     )
     assert result.exit_code == 0
-    assert (results_dir / "model-outputs").exists()
-    df = pd.read_csv(results_dir / "model-outputs" / "purple.csv")
+    assert (results_dir / "model-outputs-csv").exists()
+    df = pd.read_csv(results_dir / "model-outputs-csv" / "purple.csv")
     df_ref = pd.read_csv(reference_csv)
 
     assert set(df.columns) == set(df_ref.columns)
@@ -141,8 +141,8 @@ def test_cli_run_with_registered_models(
     del metadata_path, meta
 
     # Test conversion to geojson.
-    geojson_dir = results_dir / "geojson"
-    result = runner.invoke(cli, ["togeojson", str(results_dir), str(geojson_dir)])
+    geojson_dir = results_dir / "model-outputs-geojson"
+    # result = runner.invoke(cli, ["togeojson", str(results_dir), str(geojson_dir)])
     assert result.exit_code == 0
     with open(geojson_dir / "purple.json") as f:
         d: geojsonlib.GeoJSON = geojsonlib.load(f)
@@ -228,8 +228,8 @@ def test_cli_run_with_local_model(tmp_path: Path, tiff_image: Path):
         ],
     )
     assert result.exit_code == 0
-    assert (results_dir / "model-outputs").exists()
-    df = pd.read_csv(results_dir / "model-outputs" / "purple.csv")
+    assert (results_dir / "model-outputs-csv").exists()
+    df = pd.read_csv(results_dir / "model-outputs-csv" / "purple.csv")
     df_ref = pd.read_csv(reference_csv)
 
     assert set(df.columns) == set(df_ref.columns)
@@ -457,8 +457,8 @@ def test_issue_94(tmp_path: Path, tiff_image: Path):
     # Important part is that we run through all of the files, despite the unreadble
     # file.
     assert result.exit_code == 0
-    assert results_dir.joinpath("model-outputs").joinpath("purple.csv").exists()
-    assert not results_dir.joinpath("model-outputs").joinpath("bad.csv").exists()
+    assert results_dir.joinpath("model-outputs-csv").joinpath("purple.csv").exists()
+    assert not results_dir.joinpath("model-outputs-csv").joinpath("bad.csv").exists()
 
 
 def test_issue_97(tmp_path: Path, tiff_image: Path):
