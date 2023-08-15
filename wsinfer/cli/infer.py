@@ -13,9 +13,9 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any
-import tqdm
 
 import click
+import tqdm
 import wsinfer_zoo
 import wsinfer_zoo.client
 from wsinfer_zoo.client import HFModel

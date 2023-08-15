@@ -6,15 +6,14 @@ GeoJSON files can be loaded into whole slide image viewers like QuPath.
 from __future__ import annotations
 
 import json
+import shutil
 import uuid
+from functools import partial
 from pathlib import Path
 
 import click
 import pandas as pd
-import tqdm
 from tqdm.contrib.concurrent import process_map
-from functools import partial
-import shutil
 
 
 def _box_to_polygon(
@@ -68,13 +67,15 @@ def _dataframe_to_geojson(df: pd.DataFrame, prob_cols: list[str]) -> dict:
 
 
 def make_geojson(results_dir: Path, csv: str) -> None:
+    
+    filename = csv.name.split(".")[0]
     df = pd.read_csv(csv)
     prob_cols = [col for col in df.columns.tolist() if col.startswith("prob_")]
     if not prob_cols:
         raise click.ClickException("Did not find any columns with prob_ prefix.")
     geojson = _dataframe_to_geojson(df, prob_cols)
     with open(
-        f"""{results_dir}/model-outputs-geojson/{csv.name.split(".")[0]}.json""", "w"
+        f"{results_dir}/model-outputs-geojson/{filename}.json", "w"
     ) as f:
         json.dump(geojson, f)
 
