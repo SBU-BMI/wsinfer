@@ -15,7 +15,6 @@ from pathlib import Path
 from typing import Any
 
 import click
-import tqdm
 import wsinfer_zoo
 import wsinfer_zoo.client
 from wsinfer_zoo.client import HFModel
