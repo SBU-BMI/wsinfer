@@ -82,16 +82,6 @@ def parallelize_geojson(csvs: list, results_dir: Path, num_workers: int) -> None
 
     if not results_dir.exists():
         raise FileExistsError(f"results_dir does not exist: {results_dir}")
-    if output.exists():
-        geojsons = list((results_dir / "model-outputs-geojson").glob("*.json"))
-        
-        # Makes a list of filenames for both geojsons and csvs
-        geojson_filenames = [filename.name.split(".")[0] for filename in geojsons]
-        csv_filenames = [filename.name.split(".")[0] for filename in csvs]
-
-        # Makes a list of new csvs that need to be converted to geojson
-        csvs_new = [filename for filename in csv_filenames if filename not in geojson_filenames]
-        csvs_final = [path for path in csvs if path.name.split(".")[0] in csvs_new]
     if (
         not (results_dir / "model-outputs-csv").exists()
         and (results_dir / "patches").exists()
@@ -105,8 +95,23 @@ def parallelize_geojson(csvs: list, results_dir: Path, num_workers: int) -> None
             " not. Please provide the path to the directory that contains"
             " model-outputs, masks, and patches."
         )
+    if output.exists():
+        geojsons = list((results_dir / "model-outputs-geojson").glob("*.json"))
+        
+        # Makes a list of filenames for both geojsons and csvs
+        geojson_filenames = [filename.name.split(".")[0] for filename in geojsons]
+        csv_filenames = [filename.name.split(".")[0] for filename in csvs]
 
-    output.mkdir(parents=True, exist_ok=True)
+        # Makes a list of new csvs that need to be converted to geojson
+        csvs_new = [filename for filename in csv_filenames if filename not in geojson_filenames]
+        csvs_final = [path for path in csvs if path.name.split(".")[0] in csvs_new]
+
+        # if len(csvs_final) == 0:
+        #     raise FileExistsError("All outputs have been converted to geojson")
+    else:
+        # If output directory doesn't exist, make one and set csvs_final to csvs
+        output.mkdir(parents=True, exist_ok=True)
+        csvs_final = csvs
 
     func = partial(make_geojson, results_dir)
     process_map(func, csvs_final, max_workers=num_workers)
