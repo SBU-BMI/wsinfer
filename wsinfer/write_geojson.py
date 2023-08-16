@@ -66,14 +66,14 @@ def _dataframe_to_geojson(df: pd.DataFrame, prob_cols: list[str]) -> dict:
     }
 
 
-def make_geojson(csv: Path,results_dir: Path) -> None:
+def make_geojson(csv: Path, results_dir: Path) -> None:
     filename = csv.stem
     df = pd.read_csv(csv)
     prob_cols = [col for col in df.columns.tolist() if col.startswith("prob_")]
     if not prob_cols:
         raise KeyError("Did not find any columns with prob_ prefix.")
     geojson = _dataframe_to_geojson(df, prob_cols)
-    with open(results_dir/"model-outputs-geojson"/f"{filename}.json", "w") as f:
+    with open(results_dir / "model-outputs-geojson" / f"{filename}.json", "w") as f:
         json.dump(geojson, f)
 
 
@@ -97,7 +97,7 @@ def write_geojsons(csvs: list[Path], results_dir: Path, num_workers: int) -> Non
         )
     if output.exists():
         geojsons = list((results_dir / "model-outputs-geojson").glob("*.json"))
-        
+
         # Makes a list of filenames for both geojsons and csvs
         geojson_filenames = [filename.stem for filename in geojsons]
         csv_filenames = [filename.stem for filename in csvs]
@@ -109,5 +109,5 @@ def write_geojsons(csvs: list[Path], results_dir: Path, num_workers: int) -> Non
         # If output directory doesn't exist, make one and set csvs_final to csvs
         output.mkdir(parents=True, exist_ok=True)
 
-    func = partial(make_geojson, results_dir = results_dir)
+    func = partial(make_geojson, results_dir=results_dir)
     process_map(func, csvs, max_workers=num_workers)
