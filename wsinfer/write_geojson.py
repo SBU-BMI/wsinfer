@@ -66,18 +66,18 @@ def _dataframe_to_geojson(df: pd.DataFrame, prob_cols: list[str]) -> dict:
     }
 
 
-def make_geojson(results_dir: Path, csv: Path) -> None:
-    filename = csv.name.split(".")[0]
+def make_geojson(csv: Path,results_dir: Path) -> None:
+    filename = csv.stem
     df = pd.read_csv(csv)
     prob_cols = [col for col in df.columns.tolist() if col.startswith("prob_")]
     if not prob_cols:
-        raise click.ClickException("Did not find any columns with prob_ prefix.")
+        raise KeyError("Did not find any columns with prob_ prefix.")
     geojson = _dataframe_to_geojson(df, prob_cols)
-    with open(f"{results_dir}/model-outputs-geojson/{filename}.json", "w") as f:
+    with open(results_dir/"model-outputs-geojson"/f"{filename}.json", "w") as f:
         json.dump(geojson, f)
 
 
-def parallelize_geojson(csvs: list, results_dir: Path, num_workers: int) -> None:
+def write_geojsons(csvs: list[Path], results_dir: Path, num_workers: int) -> None:
     output = results_dir / "model-outputs-geojson"
 
     if not results_dir.exists():
@@ -91,7 +91,7 @@ def parallelize_geojson(csvs: list, results_dir: Path, num_workers: int) -> None
         )
     if not (results_dir / "model-outputs-csv").exists():
         raise FileExistsError(
-            "Expected results_dir to contain a 'model-outputs' directory but it does"
+            "Expected results_dir to contain a 'model-outputs-csv' directory but it does"
             " not. Please provide the path to the directory that contains"
             " model-outputs, masks, and patches."
         )
@@ -99,19 +99,15 @@ def parallelize_geojson(csvs: list, results_dir: Path, num_workers: int) -> None
         geojsons = list((results_dir / "model-outputs-geojson").glob("*.json"))
         
         # Makes a list of filenames for both geojsons and csvs
-        geojson_filenames = [filename.name.split(".")[0] for filename in geojsons]
-        csv_filenames = [filename.name.split(".")[0] for filename in csvs]
+        geojson_filenames = [filename.stem for filename in geojsons]
+        csv_filenames = [filename.stem for filename in csvs]
 
         # Makes a list of new csvs that need to be converted to geojson
-        csvs_new = [filename for filename in csv_filenames if filename not in geojson_filenames]
-        csvs_final = [path for path in csvs if path.name.split(".")[0] in csvs_new]
-
-        # if len(csvs_final) == 0:
-        #     raise FileExistsError("All outputs have been converted to geojson")
+        csvs_new = [csv for csv in csv_filenames if csv not in geojson_filenames]
+        csvs = [path for path in csvs if path.stem in csvs_new]
     else:
         # If output directory doesn't exist, make one and set csvs_final to csvs
         output.mkdir(parents=True, exist_ok=True)
-        csvs_final = csvs
 
-    func = partial(make_geojson, results_dir)
-    process_map(func, csvs_final, max_workers=num_workers)
+    func = partial(make_geojson, results_dir = results_dir)
+    process_map(func, csvs, max_workers=num_workers)
