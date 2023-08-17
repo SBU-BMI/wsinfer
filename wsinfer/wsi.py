@@ -221,9 +221,10 @@ def _get_mpp_tiffslide(
 def _get_mpp_tifffile(slide_path: str | Path) -> tuple[float, float]:
     """Read MPP using Tifffile."""
     with tifffile.TiffFile(slide_path) as tif:
-        series0 = tif.series[0]
-        page0 = series0[0]
-        if page0 is None:
+        try: 
+            series0 = tif.series[0]
+            page0 = series0[0]
+        except:
             raise CannotReadSpacing()
         try:
             resolution_unit = page0.tags["ResolutionUnit"].value
