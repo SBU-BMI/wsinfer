@@ -221,11 +221,18 @@ def _get_mpp_tiffslide(
 def _get_mpp_tifffile(slide_path: str | Path) -> tuple[float, float]:
     """Read MPP using Tifffile."""
     with tifffile.TiffFile(slide_path) as tif:
+<<<<<<< HEAD
         try:
             series0 = tif.series[0]
             page0 = series0[0]
         except:
             raise CannotReadSpacing()
+=======
+        series0 = tif.series[0]
+        page0 = series0[0]
+        if not isinstance(page0, tifffile.TiffPage):
+            raise CannotReadSpacing("not a tifffile.TiffPage instance")
+>>>>>>> 123d7c1aaa8bf72b00e857a090db6385db069720
         try:
             resolution_unit = page0.tags["ResolutionUnit"].value
             x_resolution = Fraction(*page0.tags["XResolution"].value)
