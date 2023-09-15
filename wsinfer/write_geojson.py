@@ -6,12 +6,10 @@ GeoJSON files can be loaded into whole slide image viewers like QuPath.
 from __future__ import annotations
 
 import json
-import shutil
 import uuid
 from functools import partial
 from pathlib import Path
 
-import click
 import pandas as pd
 from tqdm.contrib.concurrent import process_map
 
