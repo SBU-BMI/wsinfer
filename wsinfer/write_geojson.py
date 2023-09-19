@@ -89,9 +89,10 @@ def write_geojsons(csvs: list[Path], results_dir: Path, num_workers: int) -> Non
         )
     if not (results_dir / "model-outputs-csv").exists():
         raise FileExistsError(
-            "Expected results_dir to contain a 'model-outputs-csv' directory but it does"
-            " not. Please provide the path to the directory that contains"
-            " model-outputs, masks, and patches."
+            "Expected results_dir to contain a 'model-outputs-csv' "
+            "directory but it does not."
+            "Please provide the path to the directory"
+            "that contains model-outputs, masks, and patches."
         )
     if output.exists():
         geojsons = list((results_dir / "model-outputs-geojson").glob("*.json"))
