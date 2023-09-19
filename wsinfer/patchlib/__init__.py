@@ -347,7 +347,7 @@ def segment_and_patch_directory_of_slides(
 
     _validate_wsi_directory(wsi_dir)
 
-    slide_paths = sorted(wsi_dir.glob("*.*"))
+    slide_paths = sorted([p for p in wsi_dir.iterdir() if p.is_file()])
 
     # NOTE: we could use multi-processing here but then the logs would get
     # discombobulated.

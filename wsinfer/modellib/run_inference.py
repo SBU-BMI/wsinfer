@@ -69,7 +69,7 @@ def run_inference(
     wsi_dir = Path(wsi_dir)
     if not wsi_dir.exists():
         raise errors.WholeSlideImageDirectoryNotFound(f"directory not found: {wsi_dir}")
-    wsi_paths = list(wsi_dir.glob("*.*"))
+    wsi_paths = [p for p in wsi_dir.iterdir() if p.is_file()]
     if not wsi_paths:
         raise errors.WholeSlideImagesNotFound(wsi_dir)
     results_dir = Path(results_dir)
