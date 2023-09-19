@@ -290,7 +290,7 @@ def get_avg_mpp(slide_path: Path | str) -> float:
 def _validate_wsi_directory(wsi_dir: str | Path) -> None:
     """Validate a directory of whole slide images."""
     wsi_dir = Path(wsi_dir)
-    maybe_slides = sorted(wsi_dir.glob("*"))
+    maybe_slides = [p for p in wsi_dir.iterdir() if p.is_file()]
     uniq_stems = set(p.stem for p in maybe_slides)
     if len(uniq_stems) != len(maybe_slides):
         raise DuplicateFilePrefixesFound(

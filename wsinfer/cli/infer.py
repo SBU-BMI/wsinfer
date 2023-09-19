@@ -301,7 +301,7 @@ def run(
     # different directory, both directories need to be bind mounted onto the container.
     # If only the symlinked directory is included, then the patching script will fail,
     # even though it looks like there are files in the wsi_dir directory.
-    files_in_wsi_dir = [p for p in wsi_dir.glob("*") if p.exists()]
+    files_in_wsi_dir = [p for p in wsi_dir.iterdir() if p.is_file()]
     if not files_in_wsi_dir:
         raise FileNotFoundError(f"no files exist in the slide directory: {wsi_dir}")
 
