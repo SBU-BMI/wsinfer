@@ -4,5 +4,4 @@ QuPath extension
 ================
 
 WSInfer has a QuPath extension for interactive model inference.
-
-This documentation is a work in progress.
+See `the documentation on QuPath's website <https://qupath.readthedocs.io/en/latest/docs/deep/wsinfer.html>`_.
