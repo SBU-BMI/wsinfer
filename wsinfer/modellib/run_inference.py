@@ -86,7 +86,7 @@ def run_inference(
     # create patch paths if the whole slide image patch exists.
     patch_paths = [patch_dir / p.with_suffix(".h5").name for p in wsi_paths]
 
-    model_output_dir = results_dir / "model-outputs"
+    model_output_dir = results_dir / "model-outputs-csv"
     model_output_dir.mkdir(exist_ok=True)
 
     model = get_pretrained_torch_module(model=model_info)

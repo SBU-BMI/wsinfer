@@ -7,11 +7,11 @@ from __future__ import annotations
 
 import json
 import uuid
+from functools import partial
 from pathlib import Path
 
-import click
 import pandas as pd
-import tqdm
+from tqdm.contrib.concurrent import process_map
 
 
 def _box_to_polygon(
@@ -64,62 +64,49 @@ def _dataframe_to_geojson(df: pd.DataFrame, prob_cols: list[str]) -> dict:
     }
 
 
-def convert(input: str | Path, output: str | Path) -> None:
-    df = pd.read_csv(input)
+def make_geojson(csv: Path, results_dir: Path) -> None:
+    filename = csv.stem
+    df = pd.read_csv(csv)
     prob_cols = [col for col in df.columns.tolist() if col.startswith("prob_")]
     if not prob_cols:
-        raise click.ClickException("Did not find any columns with prob_ prefix.")
+        raise KeyError("Did not find any columns with prob_ prefix.")
     geojson = _dataframe_to_geojson(df, prob_cols)
-    with open(output, "w") as f:
+    with open(results_dir / "model-outputs-geojson" / f"{filename}.json", "w") as f:
         json.dump(geojson, f)
 
 
-@click.command()
-@click.argument(
-    "results_dir",
-    type=click.Path(
-        exists=True, file_okay=False, dir_okay=True, path_type=Path, resolve_path=True
-    ),
-)
-@click.argument(
-    "output",
-    type=click.Path(exists=False, path_type=Path, resolve_path=True),
-)
-def togeojson(*, results_dir: Path, output: Path) -> None:
-    """Convert model outputs to GeoJSON format.
+def write_geojsons(csvs: list[Path], results_dir: Path, num_workers: int) -> None:
+    output = results_dir / "model-outputs-geojson"
 
-    GeoJSON files can be used with pathology viewers like QuPath.
-
-    RESULTS_DIR     Path to results directory (containing model-outputs dir).
-
-    OUTPUT          Path to output directory in which to save GeoJSON files.
-    """
     if not results_dir.exists():
-        raise click.ClickException(f"results_dir does not exist: {results_dir}")
-    if output.exists():
-        raise click.ClickException("Output directory already exists.")
+        raise FileExistsError(f"results_dir does not exist: {results_dir}")
     if (
-        not (results_dir / "model-outputs").exists()
+        not (results_dir / "model-outputs-csv").exists()
         and (results_dir / "patches").exists()
     ):
-        raise click.ClickException(
+        raise FileExistsError(
             "Model outputs have not been generated yet. Please run model inference."
         )
-    if not (results_dir / "model-outputs").exists():
-        raise click.ClickException(
-            "Expected results_dir to contain a 'model-outputs' directory but it does"
-            " not. Please provide the path to the directory that contains"
-            " model-outputs, masks, and patches."
+    if not (results_dir / "model-outputs-csv").exists():
+        raise FileExistsError(
+            "Expected results_dir to contain a 'model-outputs-csv' "
+            "directory but it does not."
+            "Please provide the path to the directory"
+            "that contains model-outputs, masks, and patches."
         )
+    if output.exists():
+        geojsons = list((results_dir / "model-outputs-geojson").glob("*.json"))
 
-    csvs = list((results_dir / "model-outputs").glob("*.csv"))
-    if not csvs:
-        raise click.ClickException("No CSVs found. Did you generate model outputs?")
+        # Makes a list of filenames for both geojsons and csvs
+        geojson_filenames = [filename.stem for filename in geojsons]
+        csv_filenames = [filename.stem for filename in csvs]
 
-    output.mkdir(exist_ok=False)
+        # Makes a list of new csvs that need to be converted to geojson
+        csvs_new = [csv for csv in csv_filenames if csv not in geojson_filenames]
+        csvs = [path for path in csvs if path.stem in csvs_new]
+    else:
+        # If output directory doesn't exist, make one and set csvs_final to csvs
+        output.mkdir(parents=True, exist_ok=True)
 
-    for input_csv in tqdm.tqdm(csvs):
-        output_path = output / input_csv.with_suffix(".json").name
-        convert(input=input_csv, output=output_path)
-
-    click.secho(f"Saved outputs to {output}", fg="green")
+    func = partial(make_geojson, results_dir=results_dir)
+    process_map(func, csvs, max_workers=num_workers)

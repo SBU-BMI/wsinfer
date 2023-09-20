@@ -23,6 +23,7 @@ from wsinfer_zoo.client import ModelConfiguration
 from ..modellib import models
 from ..modellib.run_inference import run_inference
 from ..patchlib import segment_and_patch_directory_of_slides
+from ..write_geojson import write_geojsons
 
 
 def _num_cpus() -> int:
@@ -374,3 +375,6 @@ def run(
         json.dump(run_metadata, f, indent=2)
 
     click.secho("Finished.", fg="green")
+
+    csvs = list((results_dir / "model-outputs-csv").glob("*.csv"))
+    write_geojsons(csvs, results_dir, num_workers)
