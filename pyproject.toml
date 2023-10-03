@@ -55,7 +55,7 @@ dependencies = [
     "torch>=1.7",
     "torchvision",
     "tqdm",
-    "wsinfer-zoo",
+    "wsinfer-zoo>=0.6.2",
 ]
 dynamic = ["version"]
 

@@ -221,11 +221,10 @@ def _get_mpp_tiffslide(
 def _get_mpp_tifffile(slide_path: str | Path) -> tuple[float, float]:
     """Read MPP using Tifffile."""
     with tifffile.TiffFile(slide_path) as tif:
-        try:
-            series0 = tif.series[0]
-            page0 = series0[0]
-        except:
-            raise CannotReadSpacing()
+        series0 = tif.series[0]
+        page0 = series0[0]
+        if not isinstance(page0, tifffile.TiffPage):
+            raise CannotReadSpacing("not a tifffile.TiffPage instance")
         try:
             resolution_unit = page0.tags["ResolutionUnit"].value
             x_resolution = Fraction(*page0.tags["XResolution"].value)
@@ -291,7 +290,7 @@ def get_avg_mpp(slide_path: Path | str) -> float:
 def _validate_wsi_directory(wsi_dir: str | Path) -> None:
     """Validate a directory of whole slide images."""
     wsi_dir = Path(wsi_dir)
-    maybe_slides = sorted(wsi_dir.glob("*"))
+    maybe_slides = [p for p in wsi_dir.iterdir() if p.is_file()]
     uniq_stems = set(p.stem for p in maybe_slides)
     if len(uniq_stems) != len(maybe_slides):
         raise DuplicateFilePrefixesFound(
