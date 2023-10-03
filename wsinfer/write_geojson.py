@@ -6,12 +6,10 @@ GeoJSON files can be loaded into whole slide image viewers like QuPath.
 from __future__ import annotations
 
 import json
-import shutil
 import uuid
 from functools import partial
 from pathlib import Path
 
-import click
 import pandas as pd
 from tqdm.contrib.concurrent import process_map
 
@@ -91,9 +89,10 @@ def write_geojsons(csvs: list[Path], results_dir: Path, num_workers: int) -> Non
         )
     if not (results_dir / "model-outputs-csv").exists():
         raise FileExistsError(
-            "Expected results_dir to contain a 'model-outputs-csv' directory but it does"
-            " not. Please provide the path to the directory that contains"
-            " model-outputs, masks, and patches."
+            "Expected results_dir to contain a 'model-outputs-csv' "
+            "directory but it does not."
+            "Please provide the path to the directory"
+            "that contains model-outputs, masks, and patches."
         )
     if output.exists():
         geojsons = list((results_dir / "model-outputs-geojson").glob("*.json"))
