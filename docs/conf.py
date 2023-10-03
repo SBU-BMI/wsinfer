@@ -99,7 +99,7 @@ html_theme_options = {
     },
     "use_edit_page_button": True,
     "show_toc_level": 1,
-    # "navbar_align": "content",
+    "navbar_align": "left",
     "github_url": "https://github.com/SBU-BMI/wsinfer",
     "navbar_end": ["version-switcher", "theme-switcher", "navbar-icon-links"],
     "show_version_warning_banner": True,
@@ -112,5 +112,5 @@ html_theme_options = {
     ],
     "header_links_before_dropdown": 6,
 }
-# html_logo = "_static/logo.svg"
-# html_favicon = "_static/log
+
+html_favicon = "_static/logo.svg"
