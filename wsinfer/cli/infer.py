@@ -24,6 +24,7 @@ from ..modellib import models
 from ..modellib.run_inference import run_inference
 from ..patchlib import segment_and_patch_directory_of_slides
 from ..write_geojson import write_geojsons
+from ..qupath import make_qupath_project
 
 
 def _num_cpus() -> int:
@@ -377,4 +378,6 @@ def run(
     click.secho("Finished.", fg="green")
 
     csvs = list((results_dir / "model-outputs-csv").glob("*.csv"))
+    print("")
     write_geojsons(csvs, results_dir, num_workers)
+    make_qupath_project(wsi_dir, results_dir)
