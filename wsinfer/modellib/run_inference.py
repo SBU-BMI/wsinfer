@@ -6,6 +6,7 @@ From the original paper (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7369575/):
 """
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 from typing import cast as type_cast
@@ -93,7 +94,14 @@ def run_inference(
     model.eval()
 
     # Set the device.
-    if torch.cuda.is_available():
+    # Use CPU if env var specifies. Prefer checking if this is false, because
+    # if the var is set to almost anything (other than 0, False, f), then it
+    # should be true.
+    # This env var was introduced mainly for continuous integration tests that
+    # failed on apple silicon in github actions. Forcing to cpu avoids failures.
+    if os.getenv("WSINFER_FORCE_CPU", "0").lower() not in {"0", "f", "false"}:
+        device = torch.device("cpu")
+    elif torch.cuda.is_available():
         device = torch.device("cuda")
         if torch.cuda.device_count() > 1:
             model = torch.nn.DataParallel(model)
