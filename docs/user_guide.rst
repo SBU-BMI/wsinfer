@@ -11,6 +11,17 @@ https://openslide.cs.cmu.edu/download/openslide-testdata/Aperio/.
 
 The rest of this page assumes that slides are saved to the directory :code:`slides`.
 
+Video walkthrough
+-----------------
+
+In this video, Jakub demonstrates from beginning to end how one can use WSInfer to detect
+tumor regions in a whole slide image. He shows how to install PyTorch and WSInfer,
+use the command line :code:`wsinfer` tool, and visualize results in QuPath.
+
+.. raw:: html
+
+   <iframe width="560" height="315" src="https://www.youtube.com/embed/0X86_A4vopw?si=JtXsmBd8OUcDndS5" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+
 Getting help
 ------------
 
