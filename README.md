@@ -43,6 +43,12 @@ You will need a new-enough driver for your NVIDIA GPU. Please see
 [this version compatibility table](https://docs.nvidia.com/deploy/cuda-compatibility/#minor-version-compatibility)
 for the minimum versions required for different CUDA versions.
 
+To test whether PyTorch can detect your GPU, check that this code snippet prints `True`.
+
+```
+python -c 'import torch; print(torch.cuda.is_available())'
+```
+
 ## Install WSInfer
 
 WSInfer can be installed with `pip` or `conda` (from `conda-forge`).
