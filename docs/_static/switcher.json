@@ -4,9 +4,19 @@
         "url": "https://wsinfer.readthedocs.io/en/latest/"
     },
     {
-        "name": "0.4.0 (stable)",
-        "version": "v0.4.0",
+        "name": "0.5.0 (stable)",
+        "version": "v0.5.0",
         "url": "https://wsinfer.readthedocs.io/en/stable/"
+    },
+    {
+        "name": "0.4.1",
+        "version": "v0.4.1",
+        "url": "https://wsinfer.readthedocs.io/en/v0.4.1/"
+    },
+    {
+        "name": "0.4.0",
+        "version": "v0.4.0",
+        "url": "https://wsinfer.readthedocs.io/en/v0.4.0/"
     },
     {
         "name": "0.3.6",
