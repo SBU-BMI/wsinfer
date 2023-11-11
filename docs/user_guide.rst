@@ -3,14 +3,41 @@
 User Guide
 ==========
 
-This guide assumes that you have a directory with at least one whole slide image.
+This guide assumes that you have installed WSInfer. If you have not, please see :ref:`installing`.
+
+It also assumes that you have a directory with at least one whole slide image.
 If you do not, you can download a sample image from
 https://openslide.cs.cmu.edu/download/openslide-testdata/Aperio/.
 
-We assume the slides are saved to the directory :code:`slides`.
+The rest of this page assumes that slides are saved to the directory :code:`slides`.
+
+Getting help
+------------
+
+If you read the documentation but still have questions, need help, have feedback, found a bug,
+or just want to chat, please
+`submit a new issue <https://github.com/SBU-BMI/wsinfer/issues/new>`_ on our GitHub repo!
+
+Get help on the command line
+----------------------------
+
+Most command line tools in macOS and Linux can help you with the :code:`--help` flag.
+For example ::
+
+   wsinfer --help
+
+and ::
+
+   wsinfer run --help
+
+That will show you different subcommands, options, and expected inputs.
 
 List available models
 ---------------------
+
+WSInfer includes a Zoo of pretrained models. List them with the :code:`wsinfer-zoo` command line tool,
+which is installed automatically with WSInfer. Please not the difference in the names :code:`wsinfer-zoo`
+and :code:`wsinfer`.
 
 ::
 
@@ -42,6 +69,42 @@ The option :code:`--wsi-dir` is a directory containing only whole slide images. 
 :code:`--results-dir` is the path in which outputs are saved. The option :code:`--model`
 is the name of a model available in WSInfer. The model weights and configuration are
 downloaded from HuggingFace Hub. If you would like to use your own model, see :ref:`Use your own model`.
+
+Outputs of model inference
+--------------------------
+
+The results directory will have several directories in it. We'll go over them now. ::
+
+   results
+   ├── masks
+   │   ├── TCGA-3C-AALI-01Z-00-DX1.F6E9A5DF-D8FB-45CF-B4BD-C6B76294C291.jpg
+   │   └── TCGA-3L-AA1B-01Z-00-DX1.8923A151-A690-40B7-9E5A-FCBEDFC2394F.jpg
+   ├── model-outputs-csv
+   │   ├── TCGA-3C-AALI-01Z-00-DX1.F6E9A5DF-D8FB-45CF-B4BD-C6B76294C291.csv
+   │   └── TCGA-3L-AA1B-01Z-00-DX1.8923A151-A690-40B7-9E5A-FCBEDFC2394F.csv
+   ├── model-outputs-geojson
+   │   ├── TCGA-3C-AALI-01Z-00-DX1.F6E9A5DF-D8FB-45CF-B4BD-C6B76294C291.json
+   │   └── TCGA-3L-AA1B-01Z-00-DX1.8923A151-A690-40B7-9E5A-FCBEDFC2394F.json
+   ├── patches
+   │   ├── TCGA-3C-AALI-01Z-00-DX1.F6E9A5DF-D8FB-45CF-B4BD-C6B76294C291.h5
+   │   └── TCGA-3L-AA1B-01Z-00-DX1.8923A151-A690-40B7-9E5A-FCBEDFC2394F.h5
+   └── run_metadata_20231110T235210.json
+
+This hierarchy is inspired by CLAM's outputs. The :code:`masks` directory contains JPEG images
+with thumbnails of the images and contours of the tissue and holes. The directory :code:`model-outputs-csv`
+contains one CSV per slide, and each CSV contains the patchwise model outputs. Each row is a different patch.
+Here are the feirst few rows of a sample CSV ::
+
+   minx,miny,width,height,prob_Tumor
+   4200,27300,2100,2100,6.4415544e-05
+   4200,29400,2100,2100,9.763688e-05
+   4200,31500,2100,2100,0.03654445
+
+The directory :code:`model-outputs-geojson` contains the same information as the CSVs but in GeoJSON format.
+GeoJSON is well-suited for spatial data, and QuPath can read it! Just drag and drop the GeoJSON file into the
+QuPath window, and all of the patches and their model outputs will be appear. The directory :code:`patches`
+contains HDF5 files of the patch coordinates. Last, there is a JSON file containing metadata about this run.
+This has a timestamp in the filename in case you run inference multiple times to the same directory.
 
 Run model inference in containers
 ---------------------------------
@@ -141,19 +204,6 @@ You can validate this configuration JSON file with ::
 Once you create the configuration file, use the config with `wsinfer run`: ::
 
    wsinfer run --wsi-dir slides/ --results-dir results/ --model-path path/to/torchscript.pt --config config.json
-
-
-Convert model outputs to GeoJSON (QuPath)
------------------------------------------
-
-GeoJSON is a JSON format compatible with whole slide image viewers like QuPath.
-
-::
-
-   wsinfer togeojson results/ geojson-results/
-
-If you open one of your slides in QuPath, you can drag and drop the corresponding
-JSON file into the QuPath window to load the model outputs.
 
 Convert model outputs to Stony Brook format (QuIP)
 --------------------------------------------------
