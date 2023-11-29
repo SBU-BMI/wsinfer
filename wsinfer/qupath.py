@@ -1,44 +1,39 @@
 from __future__ import annotations
 
+import sys
 import json
 from pathlib import Path
 import subprocess
-import toml
 import os
-
-# try:
-#     subprocess.run(f"python -m paquo config -l -o {Path.cwd()}", shell=True, check=True)
-#     print("Command executed successfully.")
-#     data = toml.load(".paquo.toml")
-#     data["qupath_dir"] = "/home/sggat/QuPath"
-
-#     f = open(".paquo.toml",'w')
-#     toml.dump(data, f)
-#     f.close()
-# except subprocess.CalledProcessError as e:
-#     print(f"Error running the command: {e}")
+import toml
+import paquo
+from natsort import natsorted #add in dependencies?
 
 def configure_qupath():
 
-    choice = input("""QuPath can be configured by setting the 'qupath_dir' 
-                    field in '.paquo.toml'. You can also manually enter the path
-                    to your local QuPath installation. Do you want to enter manually?
-                    Y[yes] or n[no]:
-       """)
+    try:
+        from paquo.projects import QuPathProject
+    except Exception as e:
+        print(f"Couldn't find Qupath project with error: {e}")
 
-    if choice is None or choice == 'n':
-        pass
-    elif choice == 'Y':
-        ### Converting the string to Path doesnt work. Gives TypeError: str expected, not PosixPath
-        qupath_directory = input("Please enter the exact path where QuPath is installed: ")
+        choice = input("""QuPath can be configured by setting the 'qupath_dir' field in '.paquo.toml'.
+        You can also manually enter the path to your local QuPath installation.
+        Do you want to enter manually? (Y[yes] or n[no]): 
+        """)
 
-        try: 
+
+        if choice is None or choice != 'Y':
+            pass
+        elif choice == 'Y':
+            ### Converting the string to Path doesnt work. Gives TypeError: str expected, not PosixPath
+            qupath_directory = input("Please enter the exact path where QuPath is installed: ")
+
             if Path(qupath_directory).exists():
-                os.environ["PAQUO_QUPATH_DIR"] = qupath_directory
+                os.environ["PAQUO_QUPATH_DIR"] = str(qupath_directory) # setting the env var 
+                paquo.settings.reload() # Reloading 
             else:
-                raise FileNotFoundError
-        except FileNotFoundError:
-            print(f"QuPath Directory not found. Try again!")
+                print(f"QuPath Directory not found. Try again!")
+                sys.exit(1)
 
 def add_image_and_geojson(
     qupath_proj: QuPathProject, *, image_path: Path | str, geojson_path: Path | str
@@ -59,18 +54,26 @@ def add_image_and_geojson(
 
 def make_qupath_project(wsi_dir, results_dir):
 
-    configure_qupath()
-    from paquo.projects import QuPathProject
+    configure_qupath() # Sets the environment variable "PAQUO_QUPATH_DIR"
+    try:
+        from paquo.projects import QuPathProject
+    except: 
+        print("Unable to find Qupath! Run the program again")
+        sys.exit(1)
+
+    print("Found QuPath successfully!")
     QUPATH_PROJECT_DIRECTORY = "QuPathProject"
 
+    csv_list = natsorted([str(file) for file in wsi_dir.iterdir() if file.is_file()])
+    json_list = natsorted([str(file) for file in Path(f"{results_dir}/model-outputs-geojson").iterdir() if file.is_file()])
+
     slides_and_geojsons = [
-    ("/home/sggat/wsinfer/wsinfer/SlideImages/CMU-1.svs", "/home/sggat/wsinfer/wsinfer/Results/model-outputs-geojson/CMU-1.json"),
-    ("/home/sggat/wsinfer/wsinfer/SlideImages/CMU-2.svs", "/home/sggat/wsinfer/wsinfer/Results/model-outputs-geojson/CMU-2.json"),
-    ("/home/sggat/wsinfer/wsinfer/SlideImages/CMU-3.svs", "/home/sggat/wsinfer/wsinfer/Results/model-outputs-geojson/CMU-3.json"),
-]
+        (csv, json) for csv, json in zip(csv_list, json_list)
+    ]
     with QuPathProject(QUPATH_PROJECT_DIRECTORY, mode="w") as qp:
         for image_path, geojson_path in slides_and_geojsons:
             try:
                 add_image_and_geojson(qp, image_path=image_path, geojson_path=geojson_path)
             except Exception as e:
                 print(f"Failed to add image/geojson with error:: {e}")
+    print("Successfully created QuPath Project!")
