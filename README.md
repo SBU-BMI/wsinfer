@@ -13,26 +13,71 @@ Original H&E                        |  Heatmap of Tumor Probability
 
 See https://wsinfer.readthedocs.io for documentation.
 
+The main feature of WSInfer is a minimal command-line interface for running deep learning inference
+on whole slide images. Here is an example:
+
+```
+wsinfer run \
+   --wsi-dir slides/ \
+   --results-dir results/ \
+   --model breast-tumor-resnet34.tcga-brca
+```
+
 # Installation
 
-## Pip
+WSInfer can be installed using `pip` or `conda`. WSInfer will install PyTorch automatically
+if it is not installed, but this may not install GPU-enabled PyTorch even if a GPU is available.
+For this reason, _install PyTorch before installing WSInfer_.
 
-WSInfer will install PyTorch automatically if it is not installed, but this may not
-install GPU-enabled PyTorch even if a GPU is available. For this reason, install PyTorch
-before installing WSInfer. Please see [PyTorch's installation instructions](https://pytorch.org/get-started/locally/)
-for help install PyTorch.
+## Install PyTorch first
+
+Please see [PyTorch's installation instructions](https://pytorch.org/get-started/locally/)
+for help installing PyTorch. The installation instructions differ based on your operating system
+and choice of `pip` or `conda`. Thankfully, the instructions provided
+by PyTorch also install the appropriate version of CUDA. We refrain from including code
+examples of installation commands because these commands can change over time. Please
+refer to [PyTorch's installation instructions](https://pytorch.org/get-started/locally/)
+for the most up-to-date instructions.
+
+You will need a new-enough driver for your NVIDIA GPU. Please see
+[this version compatibility table](https://docs.nvidia.com/deploy/cuda-compatibility/#minor-version-compatibility)
+for the minimum versions required for different CUDA versions.
+
+To test whether PyTorch can detect your GPU, check that this code snippet prints `True`.
+
+```
+python -c 'import torch; print(torch.cuda.is_available())'
+```
+
+## Install WSInfer
+
+WSInfer can be installed with `pip` or `conda` (from `conda-forge`).
+
+### Pip
+
+To install the latest stable version, use
 
 ```
 python -m pip install wsinfer
 ```
 
-To use the _bleeding edge_, use
+To install the _bleeding edge_ (which may have breaking changes), use
 
 ```
 python -m pip install git+https://github.com/SBU-BMI/wsinfer.git
 ```
 
-## Developers
+### Conda
+
+To install the latest stable version, use
+
+```
+conda install -c conda-forge wsinfer
+```
+
+If you use `mamba`, simply replace `conda install` with `mamba install`.
+
+### Developers
 
 Clone this GitHub repository and install the package (in editable mode with the `dev` extras).
 
@@ -42,21 +87,17 @@ cd wsinfer
 python -m pip install --editable .[dev]
 ```
 
-# Cutting a release
+# Citation
 
-When ready to cut a new release, follow these steps:
+If you find our work useful, please cite [our preprint](https://arxiv.org/abs/2309.04631)!
 
-1. Update the base image versions Dockerfiles in `dockerfiles/`. Update the version to
-the version you will release.
-2. Commit this change.
-3. Create a tag, where VERSION is a string like `v0.3.6`:
-
-    ```
-    git tag -a -m 'wsinfer version VERSION' VERSION
-    ```
-
-4. Build wheel: `python -m build`
-5. Create a fresh virtual environment and install the wheel. Make sure `wsinfer --help` works.
-6. Push code to GitHub: `git push --tags`
-6. Build and push docker images: `bash scripts/build_docker_images.sh 0.3.6 1`
-7. Push wheel to PyPI: `twine upload dist/*`
+```bibtex
+@misc{kaczmarzyk2023open,
+      title={Open and reusable deep learning for pathology with WSInfer and QuPath},
+      author={Jakub R. Kaczmarzyk and Alan O'Callaghan and Fiona Inglis and Tahsin Kurc and Rajarsi Gupta and Erich Bremer and Peter Bankhead and Joel H. Saltz},
+      year={2023},
+      eprint={2309.04631},
+      archivePrefix={arXiv},
+      primaryClass={q-bio.TO}
+}
+```
