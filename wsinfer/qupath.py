@@ -5,7 +5,6 @@ import json
 from pathlib import Path
 import subprocess
 import os
-import toml
 import paquo
 from natsort import natsorted #add in dependencies?
 
