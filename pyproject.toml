@@ -35,6 +35,7 @@ classifiers = [
 dependencies = [
     "click>=8.0,<9,!=8.1.4,!=8.1.5",
     "h5py",
+    "natsort",
     # This is when numpy.typing.NDArray was introduced.
     "numpy>=1.21.0",
     "opencv-python-headless>=4.0.0",
