@@ -109,4 +109,4 @@ def write_geojsons(csvs: list[Path], results_dir: Path, num_workers: int) -> Non
         output.mkdir(parents=True, exist_ok=True)
 
     func = partial(make_geojson, results_dir=results_dir)
-    process_map(func, csvs, max_workers=num_workers)
+    process_map(func, csvs, max_workers=num_workers, chunksize = 1)

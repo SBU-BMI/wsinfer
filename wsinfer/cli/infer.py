@@ -253,13 +253,13 @@ def _get_info_for_save(
     help="JIT-compile the model and apply inference optimizations. This imposes a"
     " startup cost but may improve performance overall.",
 )
-@click.option(
-    "--qupath",
-    is_flag=True,
-    default=False,
-    show_default=True,
-    help="Creates a QuPath project",
-)
+# @click.option(
+#     "--qupath",
+#     is_flag=True,
+#     default=False,
+#     show_default=True,
+#     help="Creates a QuPath project",
+# )
 def run(
     ctx: click.Context,
     *,
@@ -387,5 +387,5 @@ def run(
 
     csvs = list((results_dir / "model-outputs-csv").glob("*.csv"))
     write_geojsons(csvs, results_dir, num_workers)
-    if qupath:
-        make_qupath_project(wsi_dir, results_dir)
+    # if qupath:
+        # make_qupath_project(wsi_dir, results_dir)
