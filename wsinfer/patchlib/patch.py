@@ -11,6 +11,16 @@ from shapely import MultiPolygon
 from shapely import Point
 from shapely import Polygon
 from shapely import STRtree
+from contextlib import contextmanager
+import sys
+
+@contextmanager
+def temporary_recursion_limit(limit: int):
+    old_limit = sys.getrecursionlimit()
+    try:
+        yield sys.setrecursionlimit(limit)
+    finally:
+        sys.setrecursionlimit(old_limit)
 
 logger = logging.getLogger(__name__)
 
