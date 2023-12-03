@@ -8,7 +8,7 @@ import os
 import paquo
 from natsort import natsorted #add in dependencies?
 
-def configure_qupath():
+def configure_qupath() -> None:
 
     try:
         from paquo.projects import QuPathProject
@@ -35,7 +35,7 @@ def configure_qupath():
                 sys.exit(1)
 
 def add_image_and_geojson(
-    qupath_proj: QuPathProject, *, image_path: Path | str, geojson_path: Path | str
+    qupath_proj: QuPathProject, *, image_path: Path | str, geojson_path: Path | str # type: ignore
 ) -> None:
     with open(geojson_path) as f:
         # FIXME: check that a 'features' key is present and raise a useful error if not
@@ -43,7 +43,7 @@ def add_image_and_geojson(
 
     entry = qupath_proj.add_image(image_path)
     # FIXME: test that the 'load_geojson' function exists. If not, raise a useful error
-    entry.hierarchy.load_geojson(geojson_features)  # type: ignore
+    entry.hierarchy.load_geojson(geojson_features) 
 
 
 # Store a list of matched slides and geojson files. Linking the slides and geojson in
@@ -51,7 +51,7 @@ def add_image_and_geojson(
 # the order to be the same.
 
 
-def make_qupath_project(wsi_dir, results_dir):
+def make_qupath_project(wsi_dir: Path, results_dir: Path) -> None:
 
     configure_qupath() # Sets the environment variable "PAQUO_QUPATH_DIR"
     try:

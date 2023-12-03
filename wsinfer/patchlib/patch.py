@@ -15,7 +15,7 @@ from contextlib import contextmanager
 import sys
 
 @contextmanager
-def temporary_recursion_limit(limit: int):
+def temporary_recursion_limit(limit: int) -> int:
     old_limit = sys.getrecursionlimit()
     try:
         yield sys.setrecursionlimit(limit)
