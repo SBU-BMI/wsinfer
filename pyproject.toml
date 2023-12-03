@@ -39,6 +39,7 @@ dependencies = [
     "numpy>=1.21.0",
     "opencv-python-headless>=4.0.0",
     "pandas",
+    "paquo",
     "pillow",
     "scikit-image>=0.20.0",
     "shapely",
