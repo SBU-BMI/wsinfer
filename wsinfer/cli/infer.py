@@ -271,7 +271,7 @@ def run(
     batch_size: int,
     num_workers: int = 0,
     speedup: bool = False,
-    qupath: bool = False
+    qupath: bool = False,
 ) -> None:
     """Run model inference on a directory of whole slide images.
 
@@ -388,4 +388,4 @@ def run(
     csvs = list((results_dir / "model-outputs-csv").glob("*.csv"))
     write_geojsons(csvs, results_dir, num_workers)
     # if qupath:
-        # make_qupath_project(wsi_dir, results_dir)
+    # make_qupath_project(wsi_dir, results_dir)
