@@ -24,7 +24,7 @@ from ..modellib import models
 from ..modellib.run_inference import run_inference
 from ..patchlib import segment_and_patch_directory_of_slides
 from ..write_geojson import write_geojsons
-from ..qupath import make_qupath_project
+# from ..qupath import make_qupath_project
 
 
 def _num_cpus() -> int:
