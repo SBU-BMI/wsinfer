@@ -108,12 +108,10 @@ def get_multipolygon_from_binary_arr(
 
         return polygon
 
-    try:
-        polygon = merge_polygons(MultiPolygon(), 0, True)
-    except:
-        temporary_recursion_limit(len(contours))
-        # Call the function with an initial empty polygon and start from contour 0
-        polygon = merge_polygons(MultiPolygon(), 0, True)
+    temp_limit = max(sys.getrecursionlimit(), len(contours))
+    with temporary_recursion_limit(temp_limit):
+        # Call the function with an initial empty polygon and start from contour 0 
+        polygon = merge_polygons(MultiPolygon(), 0, True) 
 
     # Add back the axis in hierarchy because we squeezed it before.
     return polygon, contours_unscaled, hierarchy[np.newaxis]
