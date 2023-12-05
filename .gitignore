@@ -175,6 +175,7 @@ cython_debug/
 #QuPath Project
 QuPathProject/
 *.backup
+/wsinfer/qupath.py
 
 # Extras
 .DS_Store
