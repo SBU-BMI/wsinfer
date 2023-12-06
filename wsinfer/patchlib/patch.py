@@ -13,15 +13,17 @@ from shapely import Polygon
 from shapely import STRtree
 from contextlib import contextmanager
 import sys
+from typing import Iterator
 
 logger = logging.getLogger(__name__)
 
 
 @contextmanager
-def temporary_recursion_limit(limit: int) -> None:
+def temporary_recursion_limit(limit: int) -> Iterator[None]:
     old_limit = sys.getrecursionlimit()
     try:
-        yield sys.setrecursionlimit(limit)
+        sys.setrecursionlimit(limit) 
+        yield
     finally:
         sys.setrecursionlimit(old_limit)
 
