@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 @contextmanager
-def temporary_recursion_limit(limit: int):
+def temporary_recursion_limit(limit: int) -> None:
     old_limit = sys.getrecursionlimit()
     try:
         yield sys.setrecursionlimit(limit)
