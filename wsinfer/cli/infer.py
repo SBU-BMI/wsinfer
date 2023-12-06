@@ -377,4 +377,4 @@ def run(
     click.secho("Finished.", fg="green")
 
     csvs = list((results_dir / "model-outputs-csv").glob("*.csv"))
-    write_geojsons(csvs, results_dir, num_workers, chunksize=1)
+    write_geojsons(csvs, results_dir, num_workers)
