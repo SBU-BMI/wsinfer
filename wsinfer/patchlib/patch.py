@@ -11,8 +11,19 @@ from shapely import MultiPolygon
 from shapely import Point
 from shapely import Polygon
 from shapely import STRtree
+from contextlib import contextmanager
+import sys
 
 logger = logging.getLogger(__name__)
+
+
+@contextmanager
+def temporary_recursion_limit(limit: int):
+    old_limit = sys.getrecursionlimit()
+    try:
+        yield sys.setrecursionlimit(limit)
+    finally:
+        sys.setrecursionlimit(old_limit)
 
 
 def get_multipolygon_from_binary_arr(
@@ -96,8 +107,10 @@ def get_multipolygon_from_binary_arr(
 
         return polygon
 
-    # Call the function with an initial empty polygon and start from contour 0
-    polygon = merge_polygons(MultiPolygon(), 0, True)
+    temp_limit = max(sys.getrecursionlimit(), len(contours))
+    with temporary_recursion_limit(temp_limit):
+        # Call the function with an initial empty polygon and start from contour 0
+        polygon = merge_polygons(MultiPolygon(), 0, True)
 
     # Add back the axis in hierarchy because we squeezed it before.
     return polygon, contours_unscaled, hierarchy[np.newaxis]
