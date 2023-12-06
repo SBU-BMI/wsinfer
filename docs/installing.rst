@@ -8,34 +8,86 @@ Prerequisites
 
 WSInfer supports Python 3.8+ and has been tested on Windows, macOS, and Linux.
 
-WSInfer will install PyTorch automatically if it is not installed, but this may not
-install GPU-enabled PyTorch even if a GPU is available. For this reason, install PyTorch
-before installing WSInfer. Please see
-`PyTorch's installation instructions <https://pytorch.org/get-started/locally/>`_.
+WSInfer can be installed using :code:`pip` or :code:`conda`. WSInfer will install PyTorch automatically
+if it is not installed, but this may not install GPU-enabled PyTorch even if a GPU is available.
+For this reason, *install PyTorch before installing WSInfer*.
 
+Install PyTorch first
+^^^^^^^^^^^^^^^^^^^^^
 
-.. note::
+Please see `PyTorch's installation instructions <https://pytorch.org/get-started/locally/>`_
+for help installing PyTorch. The installation instructions differ based on your operating system
+and choice of :code:`pip` or :code:`conda`. Thankfully, the instructions provided
+by PyTorch also install the appropriate version of CUDA. We refrain from including code
+examples of installation commands because these commands can change over time. Please
+refer to `PyTorch's installation instructions <https://pytorch.org/get-started/locally/>`_
+for the most up-to-date instructions.
 
-    Install PyTorch before installing WSInfer.
+You will need a new-enough driver for your NVIDIA GPU. Please see
+`this version compatibility table <https://docs.nvidia.com/deploy/cuda-compatibility/#minor-version-compatibility>`_
+for the minimum versions required for different CUDA versions.
 
+To test whether PyTorch can detect your GPU, check that this code snippet prints :code:`True` ::
 
-Install with pip
+    python -c 'import torch; print(torch.cuda.is_available())'
+
+If your GPU is not available but you have a GPU, you can test if you installed a GPU-enabled PyTorch ::
+
+    python -c 'import torch; print(torch.version.cuda)'
+
+If that command does not print a version string (e.g., 11.7, 12.1), then you probably installed a CPU-only PyTorch.
+Re-install PyTorch with CUDA support.
+
+Another thing to test is that the environment variable :code:`CUDA_VISIBLE_DEVICES` is set. I (Jakub) have mine set to "0"
+because I have one GPU on my machine. If it is set to something other than "0", then PyTorch will not be able to
+detect the GPU.
+
+Install WSInfer
 ----------------
 
-After having installed PyTorch, install the latest release of WSInfer from `PyPI <https://pypi.org/project/wsinfer/>`_. ::
+WSInfer can be installed with :code:`pip` or :code:`conda` (from :code:`conda-forge`). In both cases, you get
+the :code:`wsinfer` command line tool and Python package.
 
-    pip install wsinfer
+Pip
+^^^
 
-This installs the :code:`wsinfer` Python package and the :code:`wsinfer` command line program. ::
+To install the latest stable version of WSInfer, use ::
+
+    python -m pip install wsinfer
+
+To check the installation, type ::
 
     wsinfer --help
 
-To install the latest unstable version of WSInfer, use ::
+To install the latest *unstable* version of WSInfer, use ::
 
-    pip install git+https://github.com/SBU-BMI/wsinfer
+    python -m pip install git+https://github.com/SBU-BMI/wsinfer
 
-Supported backends
-------------------
+Conda
+^^^^^
+
+To install the latest stable version of WSInfer with :code:`conda`, use ::
+
+    conda install -c conda-forge wsinfer
+
+If you use :code:`mamba`, replace :code:`conda install` with :code:`mamba install`.
+
+To check the installation, type ::
+
+    wsinfer --help
+
+Developers
+^^^^^^^^^^
+
+Clone the GitHub repository and install the package in editable mode with the :code:`dev` extras ::
+
+    git clone https://github.com/SBU-BMI/wsinfer.git
+    cd wsinfer
+    python -m pip install --editable .[dev]
+
+
+Supported slide backends
+------------------------
 
 WSInfer supports two backends for reading whole slide images: `OpenSlide <https://openslide.org/>`_
 and `TiffSlide <https://github.com/Bayer-Group/tiffslide>`_. When you install WSInfer, TiffSlide is also

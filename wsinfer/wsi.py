@@ -21,6 +21,10 @@ logger = logging.getLogger(__name__)
 try:
     import openslide
 
+    # Test that OpenSlide object exists. If it doesn't, an error will be thrown and
+    # caught. For some reason, it is possible that openslide-python can be installed
+    # but the OpenSlide object (and other openslide things) are not available.
+    openslide.OpenSlide
     HAS_OPENSLIDE = True
     logger.debug("Imported openslide")
 except Exception as err:

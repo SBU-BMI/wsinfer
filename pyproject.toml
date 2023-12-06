@@ -74,7 +74,7 @@ dev = [
 ]
 docs = [
     "pydata-sphinx-theme",
-    "sphinx<6.0.0",
+    "sphinx",
     "sphinx-autoapi",
     "sphinx-click",
     "sphinx-copybutton",
