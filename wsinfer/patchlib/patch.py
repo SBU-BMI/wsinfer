@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 def temporary_recursion_limit(limit: int) -> Iterator[None]:
     old_limit = sys.getrecursionlimit()
     try:
-        sys.setrecursionlimit(limit) 
+        sys.setrecursionlimit(limit)
         yield
     finally:
         sys.setrecursionlimit(old_limit)
