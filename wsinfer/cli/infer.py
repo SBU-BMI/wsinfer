@@ -271,7 +271,7 @@ def run(
     batch_size: int,
     num_workers: int = 0,
     speedup: bool = False,
-    qupath: bool = False
+    qupath: bool = False,
 ) -> None:
     """Run model inference on a directory of whole slide images.
 
