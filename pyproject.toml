@@ -71,7 +71,6 @@ dev = [
     "types-Pillow",
     "types-tqdm",
     "Flake8-pyproject",
-    "paquo"
 ]
 docs = [
     "pydata-sphinx-theme",

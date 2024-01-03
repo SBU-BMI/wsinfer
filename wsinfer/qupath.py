@@ -6,7 +6,10 @@ from pathlib import Path
 
 
 def add_image_and_geojson(
-    qupath_proj: QuPathProject, *, image_path: Path | str, geojson_path: Path | str
+    qupath_proj,
+    *,
+    image_path: Path | str,
+    geojson_path: Path | str,
 ) -> None:
     with open(geojson_path) as f:
         # FIXME: check that a 'features' key is present and raise a useful error if not
