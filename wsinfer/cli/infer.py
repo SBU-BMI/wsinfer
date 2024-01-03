@@ -258,7 +258,7 @@ def _get_info_for_save(
     is_flag=True,
     default=False,
     show_default=True,
-    help="Creates a QuPath project",
+    help="Create a QuPath project containing the inference results",
 )
 def run(
     ctx: click.Context,

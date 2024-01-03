@@ -40,7 +40,6 @@ dependencies = [
     "opencv-python-headless>=4.0.0",
     "pandas",
     "pillow",
-    "paquo",
     "scikit-image>=0.20.0",
     "shapely",
     # https://github.com/Bayer-Group/tiffslide/issues/72#issuecomment-1631015274
@@ -72,6 +71,7 @@ dev = [
     "types-Pillow",
     "types-tqdm",
     "Flake8-pyproject",
+    "paquo"
 ]
 docs = [
     "pydata-sphinx-theme",

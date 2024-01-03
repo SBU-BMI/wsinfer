@@ -20,11 +20,6 @@ def add_image_and_geojson(
         print(f"Failed to run load_geojson function with error:: {e}")
 
 
-# Store a list of matched slides and geojson files. Linking the slides and geojson in
-# this way prevents a potential mismatch by simply listing directories and relying on
-# the order to be the same.
-
-
 def make_qupath_project(wsi_dir, results_dir):
     try:
         from paquo.projects import QuPathProject
@@ -39,7 +34,7 @@ If QuPath is not installed, please install it from https://qupath.github.io/."""
         sys.exit(1)
 
     print("Found QuPath successfully!")
-    QUPATH_PROJECT_DIRECTORY = "QuPathProject"
+    QUPATH_PROJECT_DIRECTORY = results_dir / "model-outputs-qupath"
 
     csv_files = list((results_dir / "model-outputs-csv").glob("*.csv"))
     slides_and_geojsons = []
