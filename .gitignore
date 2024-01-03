@@ -173,7 +173,7 @@ cython_debug/
 /wsinfer/_version.py
 
 #QuPath Project
-/QuPathProject
+model-outputs-qupath/
 *.backup
 
 # Extras
