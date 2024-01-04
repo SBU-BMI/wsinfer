@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import itertools
 import logging
+import sys
+from contextlib import contextmanager
+from typing import TYPE_CHECKING
+from typing import Iterator
 from typing import Sequence
+from typing import cast as type_cast
 
 import cv2 as cv
 import numpy as np
@@ -11,9 +16,6 @@ from shapely import MultiPolygon
 from shapely import Point
 from shapely import Polygon
 from shapely import STRtree
-from contextlib import contextmanager
-import sys
-from typing import Iterator, cast as type_cast, TYPE_CHECKING
 
 logger = logging.getLogger(__name__)
 
