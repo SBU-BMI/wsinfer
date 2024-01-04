@@ -11,7 +11,7 @@ from skimage.morphology import remove_small_objects
 
 
 def segment_tissue(
-    im_arr: npt.NDArray[np.uint8],
+    im_arr: npt.NDArray,
     median_filter_size: int = 7,
     binary_threshold: int = 7,
     closing_kernel_size: int = 6,
@@ -69,7 +69,7 @@ def segment_tissue(
 
     # Convert to boolean dtype. This helps with static type analysis because at this
     # point, im_arr is a uint8 array.
-    im_arr_binary = im_arr > 0
+    im_arr_binary: npt.NDArray[np.bool_] = im_arr > 0  # type: ignore
 
     # Closing. This removes small holes. It might not be entirely necessary because
     # we have hole removal below.
