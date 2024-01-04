@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 def add_image_and_geojson(
-    qupath_proj: object,
+    qupath_proj: QuPathProject, # type: ignore
     *,
     image_path: Path | str,
     geojson_path: Path | str,
