@@ -13,7 +13,7 @@ from shapely import Polygon
 from shapely import STRtree
 from contextlib import contextmanager
 import sys
-from typing import Iterator
+from typing import Iterator, cast as type_cast, TYPE_CHECKING
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +52,7 @@ def get_multipolygon_from_binary_arr(
     """
     # Find contours and hierarchy
     contours: Sequence[npt.NDArray]
-    hierarchy: npt.NDArray[np.int_]
+    hierarchy: npt.NDArray
     contours, hierarchy = cv.findContours(arr, cv.RETR_CCOMP, cv.CHAIN_APPROX_SIMPLE)
     hierarchy = hierarchy.squeeze(0)
 
@@ -64,7 +64,7 @@ def get_multipolygon_from_binary_arr(
             f" by {scale}"
         )
         # Reshape to broadcast with contour coordinates.
-        scale_arr: npt.NDArray[np.float_] = np.array(scale).reshape(1, 1, 2)
+        scale_arr: npt.NDArray = np.array(scale).reshape(1, 1, 2)
         contours = tuple(c * scale_arr for c in contours_unscaled)
         del scale_arr
 
@@ -113,6 +113,10 @@ def get_multipolygon_from_binary_arr(
     with temporary_recursion_limit(temp_limit):
         # Call the function with an initial empty polygon and start from contour 0
         polygon = merge_polygons(MultiPolygon(), 0, True)
+
+    if TYPE_CHECKING:
+        hierarchy = type_cast(npt.NDArray[np.int_], hierarchy)
+        contours_unscaled = type_cast(Sequence[npt.NDArray[np.int_]], contours_unscaled)
 
     # Add back the axis in hierarchy because we squeezed it before.
     return polygon, contours_unscaled, hierarchy[np.newaxis]
