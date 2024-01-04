@@ -4,16 +4,9 @@ import sys
 import json
 from pathlib import Path
 
-try:
-    from paquo.projects import QuPathProject
-
-    HAS_PAQUO = True
-except Exception:
-    HAS_PAQUO = False
-
 
 def add_image_and_geojson(
-    qupath_proj: QuPathProject,
+    qupath_proj,
     *,
     image_path: Path | str,
     geojson_path: Path | str,
@@ -32,6 +25,13 @@ def add_image_and_geojson(
 
 
 def make_qupath_project(wsi_dir: Path, results_dir: Path) -> None:
+    try:
+        from paquo.projects import QuPathProject
+
+        HAS_PAQUO = True
+    except Exception:
+        HAS_PAQUO = False
+
     if not HAS_PAQUO:
         print(
             """Cannot find QuPath.

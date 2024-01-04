@@ -126,6 +126,7 @@ module = [
     "skimage.morphology",
     "tifffile",
     "zarr.storage",
+    "paquo.*"
 ]
 ignore_missing_imports = "True"
 
