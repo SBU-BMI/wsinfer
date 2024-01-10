@@ -42,6 +42,12 @@ To get help, report issues or request features, please
 repository. If you would like to make your patch classification model available in WSInfer, please
 get in touch with us! You can `submit a new GitHub issue <https://github.com/SBU-BMI/wsinfer/issues/new>`_.
 
+.. admonition:: Citation
+
+  If you find our work useful, please cite our paper https://doi.org/10.1038/s41698-024-00499-9.
+
+  Kaczmarzyk, J.R., O'Callaghan, A., Inglis, F. et al. Open and reusable deep learning for pathology with WSInfer and QuPath. *npj Precis. Onc.* **8**, 9 (2024). https://doi.org/10.1038/s41698-024-00499-9
+
 .. |img-tissue| image:: _static/brca-tissue.png
   :alt: TCGA BRCA sample slide
 .. |img-heatmap| image:: _static/brca-heatmap.png
