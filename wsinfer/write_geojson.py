@@ -45,7 +45,7 @@ def _row_to_geojson(row: pd.Series, prob_cols: list[str]) -> dict:
             # measurements is a list of {"name": str, "value": float} dicts.
             # https://qupath.github.io/javadoc/docs/qupath/lib/measurements/MeasurementList.html
             "measurements": measurements,
-            "objectType": "tile"
+            "objectType": "tile",
             # classification is a dict of "name": str and optionally "color": int.
             # https://qupath.github.io/javadoc/docs/qupath/lib/objects/classes/PathClass.html
             # We do not include classification because we do not enforce a single class

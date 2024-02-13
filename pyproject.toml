@@ -92,7 +92,7 @@ Repository = "https://github.com/SBU-BMI/wsinfer"
 wsinfer = "wsinfer.cli.cli:cli"
 
 [tool.setuptools.package-data]
-wsinfer = ["py.typed", "patchlib/presets/*.csv", "schemas/*.json"]
+wsinfer = ["py.typed", "schemas/*.json"]
 
 [tool.setuptools.packages.find]
 include = ["wsinfer*"]
@@ -100,7 +100,7 @@ include = ["wsinfer*"]
 # Flake8-pyproject (https://pypi.org/project/Flake8-pyproject/)
 [tool.flake8]
 max-line-length = 88
-extend-ignore = ['E203']
+extend-ignore = ['E203', 'E701']
 exclude = "wsinfer/_version.py"
 
 [tool.mypy]
