@@ -11,8 +11,7 @@ from wsinfer_zoo.client import Model
 
 
 @dataclasses.dataclass
-class LocalModelTorchScript(Model):
-    ...
+class LocalModelTorchScript(Model): ...
 
 
 def get_registered_model(name: str) -> HFModelTorchScript:

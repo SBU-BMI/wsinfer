@@ -11,8 +11,7 @@ class UnknownArchitectureError(WsinferException):
     """Architecture is unknown and cannot be found."""
 
 
-class WholeSlideImageDirectoryNotFound(WsinferException, FileNotFoundError):
-    ...
+class WholeSlideImageDirectoryNotFound(WsinferException, FileNotFoundError): ...
 
 
 class DuplicateFilePrefixesFound(WsinferException):
@@ -23,24 +22,19 @@ class DuplicateFilePrefixesFound(WsinferException):
     """
 
 
-class WholeSlideImagesNotFound(WsinferException, FileNotFoundError):
-    ...
+class WholeSlideImagesNotFound(WsinferException, FileNotFoundError): ...
 
 
-class ResultsDirectoryNotFound(WsinferException, FileNotFoundError):
-    ...
+class ResultsDirectoryNotFound(WsinferException, FileNotFoundError): ...
 
 
-class PatchDirectoryNotFound(WsinferException, FileNotFoundError):
-    ...
+class PatchDirectoryNotFound(WsinferException, FileNotFoundError): ...
 
 
-class CannotReadSpacing(WsinferException):
-    ...
+class CannotReadSpacing(WsinferException): ...
 
 
-class NoBackendException(WsinferException):
-    ...
+class NoBackendException(WsinferException): ...
 
 
 class BackendNotAvailable(WsinferException):
