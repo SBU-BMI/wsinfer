@@ -11,6 +11,13 @@ https://openslide.cs.cmu.edu/download/openslide-testdata/Aperio/.
 
 The rest of this page assumes that slides are saved to the directory :code:`slides`.
 
+.. admonition:: Citation
+
+  If you find our work useful, please cite our paper https://doi.org/10.1038/s41698-024-00499-9.
+
+  Kaczmarzyk, J.R., O'Callaghan, A., Inglis, F. et al. Open and reusable deep learning for pathology with WSInfer and QuPath. *npj Precis. Onc.* **8**, 9 (2024). https://doi.org/10.1038/s41698-024-00499-9
+
+
 Video walkthrough
 -----------------
 

@@ -80,6 +80,7 @@ docs = [
     "sphinx-copybutton",
 ]
 openslide = ["openslide-python"]
+qupath = ["paquo"]
 
 [project.urls]
 Homepage = "https://wsinfer.readthedocs.io"
@@ -125,6 +126,7 @@ module = [
     "skimage.morphology",
     "tifffile",
     "zarr.storage",
+    "paquo.*"
 ]
 ignore_missing_imports = "True"
 

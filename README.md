@@ -10,6 +10,7 @@ Original H&E                        |  Heatmap of Tumor Probability
 [![Documentation Status](https://readthedocs.org/projects/wsinfer/badge/?version=latest)](https://wsinfer.readthedocs.io/en/latest/?badge=latest)
 [![Version on PyPI](https://img.shields.io/pypi/v/wsinfer.svg)](https://pypi.org/project/wsinfer/)
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/wsinfer)](https://pypi.org/project/wsinfer/)
+[![Published in npj Precision Oncology](https://img.shields.io/badge/Published-npj_Precision_Oncology-blue)](https://doi.org/10.1038/s41698-024-00499-9)
 
 See https://wsinfer.readthedocs.io for documentation.
 
@@ -89,15 +90,23 @@ python -m pip install --editable .[dev]
 
 # Citation
 
-If you find our work useful, please cite [our preprint](https://arxiv.org/abs/2309.04631)!
+If you find our work useful, please cite [our paper](https://doi.org/10.1038/s41698-024-00499-9)!
+
+> Kaczmarzyk, J.R., O’Callaghan, A., Inglis, F. et al. Open and reusable deep learning for pathology with WSInfer and QuPath. *npj Precis. Onc.* **8**, 9 (2024). https://doi.org/10.1038/s41698-024-00499-9
 
 ```bibtex
-@misc{kaczmarzyk2023open,
-      title={Open and reusable deep learning for pathology with WSInfer and QuPath},
-      author={Jakub R. Kaczmarzyk and Alan O'Callaghan and Fiona Inglis and Tahsin Kurc and Rajarsi Gupta and Erich Bremer and Peter Bankhead and Joel H. Saltz},
-      year={2023},
-      eprint={2309.04631},
-      archivePrefix={arXiv},
-      primaryClass={q-bio.TO}
+@article{kaczmarzyk2024open,
+  title={Open and reusable deep learning for pathology with WSInfer and QuPath},
+  author={Kaczmarzyk, Jakub R. and O'Callaghan, Alan and Inglis, Fiona and Gat, Swarad and Kurc, Tahsin and Gupta, Rajarsi and Bremer, Erich and Bankhead, Peter and Saltz, Joel H.},
+  journal={npj Precision Oncology},
+  volume={8},
+  number={1},
+  pages={9},
+  year={2024},
+  month={Jan},
+  day=10,
+  doi={10.1038/s41698-024-00499-9},
+  issn={2397-768X},
+  url={https://doi.org/10.1038/s41698-024-00499-9}
 }
 ```

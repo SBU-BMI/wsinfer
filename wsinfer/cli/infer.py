@@ -24,6 +24,7 @@ from ..modellib import models
 from ..modellib.run_inference import run_inference
 from ..patchlib import segment_and_patch_directory_of_slides
 from ..write_geojson import write_geojsons
+from ..qupath import make_qupath_project
 
 
 def _num_cpus() -> int:
@@ -252,6 +253,13 @@ def _get_info_for_save(
     help="JIT-compile the model and apply inference optimizations. This imposes a"
     " startup cost but may improve performance overall.",
 )
+@click.option(
+    "--qupath",
+    is_flag=True,
+    default=False,
+    show_default=True,
+    help="Create a QuPath project containing the inference results",
+)
 def run(
     ctx: click.Context,
     *,
@@ -263,6 +271,7 @@ def run(
     batch_size: int,
     num_workers: int = 0,
     speedup: bool = False,
+    qupath: bool = False,
 ) -> None:
     """Run model inference on a directory of whole slide images.
 
@@ -378,3 +387,5 @@ def run(
 
     csvs = list((results_dir / "model-outputs-csv").glob("*.csv"))
     write_geojsons(csvs, results_dir, num_workers)
+    if qupath:
+        make_qupath_project(wsi_dir, results_dir)
