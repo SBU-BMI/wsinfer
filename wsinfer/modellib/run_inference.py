@@ -4,6 +4,7 @@ From the original paper (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7369575/):
 > In the prediction (test) phase, no data augmentation was applied except for the
 > normalization of the color channels.
 """
+
 from __future__ import annotations
 
 import os

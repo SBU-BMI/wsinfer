@@ -47,13 +47,11 @@ if not HAS_TIFFSLIDE and not HAS_OPENSLIDE:
 
 
 @overload
-def set_backend(name: Literal["openslide"]) -> type[openslide.OpenSlide]:
-    ...
+def set_backend(name: Literal["openslide"]) -> type[openslide.OpenSlide]: ...
 
 
 @overload
-def set_backend(name: Literal["tiffslide"]) -> type[tiffslide.TiffSlide]:
-    ...
+def set_backend(name: Literal["tiffslide"]) -> type[tiffslide.TiffSlide]: ...
 
 
 def set_backend(
