@@ -92,7 +92,7 @@ Repository = "https://github.com/SBU-BMI/wsinfer"
 wsinfer = "wsinfer.cli.cli:cli"
 
 [tool.setuptools.package-data]
-wsinfer = ["py.typed", "patchlib/presets/*.csv", "schemas/*.json"]
+wsinfer = ["py.typed", "schemas/*.json"]
 
 [tool.setuptools.packages.find]
 include = ["wsinfer*"]
