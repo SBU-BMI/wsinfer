@@ -188,7 +188,7 @@ def _get_info_for_save(
 @click.option(
     "-i",
     "--wsi-dir",
-    type=click.Path(exists=True, file_okay=False, path_type=Path, resolve_path=True),
+    type=click.Path(exists=True, file_okay=False, path_type=Path),
     required=True,
     help="Directory containing whole slide images. This directory can *only* contain"
     " whole slide images.",
@@ -196,7 +196,7 @@ def _get_info_for_save(
 @click.option(
     "-o",
     "--results-dir",
-    type=click.Path(file_okay=False, path_type=Path, resolve_path=True),
+    type=click.Path(file_okay=False, path_type=Path),
     required=True,
     help="Directory to store results. If directory exists, will skip"
     " whole slides for which outputs exist.",
@@ -212,7 +212,7 @@ def _get_info_for_save(
 @click.option(
     "-c",
     "--config",
-    type=click.Path(exists=True, dir_okay=False, path_type=Path, resolve_path=True),
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
     help=(
         "Path to configuration for the trained model. Use this option if the"
         " model weights are not registered in wsinfer. Mutually exclusive with"
@@ -222,7 +222,7 @@ def _get_info_for_save(
 @click.option(
     "-p",
     "--model-path",
-    type=click.Path(exists=True, dir_okay=False, path_type=Path, resolve_path=True),
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
     help=(
         "Path to the pretrained model. Use only when --config is passed. Mutually "
         "exclusive with --model."
@@ -348,9 +348,6 @@ def run(
         raise click.UsageError(
             "--config and --model-path must both be set if one is set."
         )
-
-    wsi_dir = wsi_dir.resolve()
-    results_dir = results_dir.resolve()
 
     if not wsi_dir.exists():
         raise FileNotFoundError(f"Whole slide image directory not found: {wsi_dir}")

@@ -532,3 +532,28 @@ def test_issue_203(tiff_image: Path) -> None:
         img = oslide.read_region((w, h), level=0, size=(256, 256))
         assert img.size == (256, 256)
         assert np.allclose(np.array(img), 0)
+
+
+def test_issue_214(tmp_path: Path, tiff_image: Path) -> None:
+    """Test that symlinked slides don't mess things up."""
+    link = tmp_path / "forlinks" / "arbitrary-link-name.tiff"
+    link.parent.mkdir(parents=True)
+    link.symlink_to(tiff_image)
+
+    runner = CliRunner()
+    results_dir = tmp_path / "inference"
+    result = runner.invoke(
+        cli,
+        [
+            "run",
+            "--wsi-dir",
+            str(link.parent),
+            "--results-dir",
+            str(results_dir),
+            "--model",
+            "breast-tumor-resnet34.tcga-brca",
+        ],
+    )
+    assert result.exit_code == 0
+    assert (results_dir / "patches" / link.with_suffix(".h5").name).exists()
+    assert (results_dir / "model-outputs-csv" / link.with_suffix(".csv").name).exists()

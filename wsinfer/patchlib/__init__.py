@@ -85,8 +85,8 @@ def segment_and_patch_one_slide(
     None
     """
 
-    save_dir = Path(save_dir).resolve()
-    slide_path = Path(slide_path).resolve()
+    save_dir = Path(save_dir)
+    slide_path = Path(slide_path)
     slide_prefix = slide_path.stem
 
     logger.info(f"Segmenting and patching slide {slide_path}")
