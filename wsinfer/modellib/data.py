@@ -79,7 +79,8 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
         assert Path(patch_path).exists(), "patch path not found"
 
         self.patches = _read_patch_coords(self.patch_path)
-
+        if self.patches.size == 0:
+            raise ValueError(f"No patches were found in {self.patch_path}")
         assert self.patches.ndim == 2, "expected 2D array of patch coordinates"
         # x, y, width, height
         assert self.patches.shape[1] == 4, "expected second dimension to have len 4"
