@@ -6,7 +6,6 @@ import platform
 import sys
 import time
 from pathlib import Path
-from unittest.mock import patch as mock_patch, MagicMock
 
 import geojson as geojsonlib
 import h5py
