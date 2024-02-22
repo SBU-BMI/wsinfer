@@ -145,7 +145,7 @@ def test_cli_run_with_registered_models(
     geojson_dir = results_dir / "model-outputs-geojson"
     # result = runner.invoke(cli, ["togeojson", str(results_dir), str(geojson_dir)])
     assert result.exit_code == 0
-    with open(geojson_dir / "purple.json") as f:
+    with open(geojson_dir / "purple.geojson") as f:
         d: geojsonlib.GeoJSON = geojsonlib.load(f)
     assert d.is_valid, "geojson not valid!"
     assert len(d["features"]) == len(df_ref)
