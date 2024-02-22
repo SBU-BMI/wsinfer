@@ -23,8 +23,8 @@ from wsinfer_zoo.client import ModelConfiguration
 from ..modellib import models
 from ..modellib.run_inference import run_inference
 from ..patchlib import segment_and_patch_directory_of_slides
-from ..write_geojson import write_geojsons
 from ..qupath import make_qupath_project
+from ..write_geojson import write_geojsons
 
 
 def _num_cpus() -> int:
@@ -260,6 +260,49 @@ def _get_info_for_save(
     show_default=True,
     help="Create a QuPath project containing the inference results",
 )
+# Options for segmentation.
+@click.option(
+    "--seg-thumbsize",
+    default=(2048, 2048),
+    type=(int, int),
+    help="The size of the slide thumbnail (in pixels) used for tissue segmentation."
+    " The aspect ratio is preserved, and the longest side will have length"
+    " max(thumbsize).",
+)
+@click.option(
+    "--seg-median-filter-size",
+    default=7,
+    type=click.IntRange(min=3),
+    help="The kernel size for median filtering. Must be greater than 1 and odd.",
+)
+@click.option(
+    "--seg-binary-threshold",
+    default=7,
+    type=click.IntRange(min=1),
+    help="The threshold for image binarization.",
+)
+@click.option(
+    "--seg-closing-kernel-size",
+    default=6,
+    type=click.IntRange(min=1),
+    help="The kernel size for binary closing (morphological operation).",
+)
+@click.option(
+    "--seg-min-object-size-um2",
+    default=200**2,
+    type=click.FloatRange(min=0),
+    help="The minimum size of an object to keep during tissue detection. If a"
+    " contiguous object is smaller than this area, it replaced with background."
+    " The default is 200um x 200um. The units of this argument are microns squared.",
+)
+@click.option(
+    "--seg-min-hole-size-um2",
+    default=190**2,
+    type=click.FloatRange(min=0),
+    help="The minimum size of a hole to keep as a hole. If a hole is smaller than this"
+    " area, it is filled with foreground. The default is 190um x 190um. The units of"
+    " this argument are microns squared.",
+)
 def run(
     ctx: click.Context,
     *,
@@ -272,6 +315,12 @@ def run(
     num_workers: int = 0,
     speedup: bool = False,
     qupath: bool = False,
+    seg_thumbsize: tuple[int, int],
+    seg_median_filter_size: int,
+    seg_binary_threshold: int,
+    seg_closing_kernel_size: int,
+    seg_min_object_size_um2: float,
+    seg_min_hole_size_um2: float,
 ) -> None:
     """Run model inference on a directory of whole slide images.
 
@@ -341,21 +390,27 @@ def run(
 
     click.secho("\nFinding patch coordinates...\n", fg="green")
 
-    # FIXME: add presets for different tissue types?
-
     segment_and_patch_directory_of_slides(
         wsi_dir=wsi_dir,
         save_dir=results_dir,
         patch_size_px=model_obj.config.patch_size_pixels,
         patch_spacing_um_px=model_obj.config.spacing_um_px,
-        thumbsize=(2048, 2048),
-        # TODO: these can be made arguments to the CLI.
-        median_filter_size=7,
-        binary_threshold=7,
-        closing_kernel_size=6,
-        min_object_size_um2=200**2,
-        min_hole_size_um2=190**2,
+        thumbsize=seg_thumbsize,
+        median_filter_size=seg_median_filter_size,
+        binary_threshold=seg_binary_threshold,
+        closing_kernel_size=seg_closing_kernel_size,
+        min_object_size_um2=seg_min_object_size_um2,
+        min_hole_size_um2=seg_min_hole_size_um2,
     )
+
+    if not results_dir.joinpath("patches").exists():
+        raise click.ClickException(
+            "No patches were created. Please see the logs above and check for errors."
+            " It is possible that no tissue was detected in the slides. If that is the"
+            " case, please try to use different --seg-* parameters, which will change"
+            " how the segmentation is done. For example, a lower binary threshold may"
+            " be set."
+        )
 
     click.secho("\nRunning model inference.\n", fg="green")
     failed_patching, failed_inference = run_inference(
