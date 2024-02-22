@@ -71,7 +71,7 @@ def make_geojson(csv: Path, results_dir: Path) -> None:
     if not prob_cols:
         raise KeyError("Did not find any columns with prob_ prefix.")
     geojson = _dataframe_to_geojson(df, prob_cols)
-    with open(results_dir / "model-outputs-geojson" / f"{filename}.json", "w") as f:
+    with open(results_dir / "model-outputs-geojson" / f"{filename}.geojson", "w") as f:
         json.dump(geojson, f)
 
 
@@ -95,7 +95,7 @@ def write_geojsons(csvs: list[Path], results_dir: Path, num_workers: int) -> Non
             "that contains model-outputs, masks, and patches."
         )
     if output.exists():
-        geojsons = list((results_dir / "model-outputs-geojson").glob("*.json"))
+        geojsons = list((results_dir / "model-outputs-geojson").glob("*.geojson"))
 
         # Makes a list of filenames for both geojsons and csvs
         geojson_filenames = [filename.stem for filename in geojsons]

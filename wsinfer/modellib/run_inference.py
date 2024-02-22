@@ -83,7 +83,12 @@ def run_inference(
     # Check patches directory.
     patch_dir = results_dir / "patches"
     if not patch_dir.exists():
-        raise errors.PatchDirectoryNotFound("Results dir must include 'patches' dir")
+        raise errors.PatchDirectoryNotFound(
+            "The 'patches' directory was not found in results directory. This can"
+            " happen for a few reasons: 1) no tissue was detected in the slides,"
+            " 2) the physical spacing (MPP) could not be read from any of the slides"
+            ", or 3) something else... Please read the logs above for potential errors."
+        )
     # Create the patch paths based on the whole slide image paths. In effect, only
     # create patch paths if the whole slide image patch exists.
     patch_paths = [patch_dir / p.with_suffix(".h5").name for p in wsi_paths]
@@ -145,8 +150,6 @@ def run_inference(
             dset = WholeSlideImagePatches(
                 wsi_path=wsi_path,
                 patch_path=patch_path,
-                um_px=model_info.config.spacing_um_px,
-                patch_size=model_info.config.patch_size_pixels,
                 transform=transform,
             )
         except Exception:

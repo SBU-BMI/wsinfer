@@ -60,10 +60,6 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
         Path to whole slide image file.
     patch_path : str, Path
         Path to npy file with coordinates of input image.
-    um_px : float
-        Scale of the resulting patches. For example, 0.5 for ~20x magnification.
-    patch_size : int
-        The size of patches in pixels.
     transform : callable, optional
         A callable to modify a retrieved patch. The callable must accept a
         PIL.Image.Image instance and return a torch.Tensor.
@@ -73,21 +69,18 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
         self,
         wsi_path: str | Path,
         patch_path: str | Path,
-        um_px: float,
-        patch_size: int,
         transform: Callable[[Image.Image], torch.Tensor] | None = None,
     ):
         self.wsi_path = wsi_path
         self.patch_path = patch_path
-        self.um_px = float(um_px)
-        self.patch_size = int(patch_size)
         self.transform = transform
 
         assert Path(wsi_path).exists(), "wsi path not found"
         assert Path(patch_path).exists(), "patch path not found"
 
         self.patches = _read_patch_coords(self.patch_path)
-
+        if self.patches.size == 0:
+            raise ValueError(f"No patches were found in {self.patch_path}")
         assert self.patches.ndim == 2, "expected 2D array of patch coordinates"
         # x, y, width, height
         assert self.patches.shape[1] == 4, "expected second dimension to have len 4"

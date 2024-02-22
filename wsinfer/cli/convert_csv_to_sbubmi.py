@@ -249,21 +249,17 @@ def write_color_txt(
 @click.command()
 @click.argument(
     "results_dir",
-    type=click.Path(
-        exists=True, file_okay=False, dir_okay=True, path_type=Path, resolve_path=True
-    ),
+    type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
 )
 @click.argument(
     "output",
-    type=click.Path(exists=False, path_type=Path, resolve_path=True),
+    type=click.Path(exists=False, path_type=Path),
 )
 @click.option(
     "--wsi-dir",
     required=True,
     help="Directory with whole slide images.",
-    type=click.Path(
-        exists=True, file_okay=False, dir_okay=True, path_type=Path, resolve_path=True
-    ),
+    type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
 )
 @click.option("--execution-id", required=True, help="Unique execution ID for this run.")
 @click.option("--study-id", required=True, help="Study ID, like TCGA-BRCA.")

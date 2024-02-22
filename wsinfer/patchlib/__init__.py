@@ -14,7 +14,7 @@ from ..wsi import WSI
 from ..wsi import _validate_wsi_directory
 from ..wsi import get_avg_mpp
 from .patch import get_multipolygon_from_binary_arr
-from .patch import get_nonoverlapping_patch_coordinates_within_polygon
+from .patch import get_patch_coordinates_within_polygon
 from .segment import segment_tissue
 
 logger = logging.getLogger(__name__)
@@ -34,6 +34,7 @@ def segment_and_patch_one_slide(
     closing_kernel_size: int = 6,
     min_object_size_um2: float = 200**2,
     min_hole_size_um2: float = 190**2,
+    overlap: float = 0.0,
 ) -> None:
     """Get non-overlapping patch coordinates in tissue regions of a whole slide image.
 
@@ -85,8 +86,8 @@ def segment_and_patch_one_slide(
     None
     """
 
-    save_dir = Path(save_dir).resolve()
-    slide_path = Path(slide_path).resolve()
+    save_dir = Path(save_dir)
+    slide_path = Path(slide_path)
     slide_prefix = slide_path.stem
 
     logger.info(f"Segmenting and patching slide {slide_path}")
@@ -121,7 +122,9 @@ def segment_and_patch_one_slide(
     if len(thumbsize) != 2:
         raise ValueError(f"Length of 'thumbsize' must be 2 but got {len(thumbsize)}")
     thumb: Image.Image = slide.get_thumbnail(thumbsize)
-    # TODO: allow the min hole size and min object size to be set in physical units.
+    if thumb.mode != "RGB":
+        logger.warning(f"Converting mode of thumbnail from {thumb.mode} to RGB")
+        thumb = thumb.convert("RGB")
 
     # thumb has ~12 MPP.
     thumb_mpp = (mpp * (np.array(slide.dimensions) / thumb.size)).mean()
@@ -158,33 +161,40 @@ def segment_and_patch_one_slide(
         slide.dimensions[0] / thumb.size[0],
         slide.dimensions[1] / thumb.size[1],
     )
-    polygon, contours, hierarchy = get_multipolygon_from_binary_arr(
-        arr.astype("uint8") * 255, scale=scale
-    )
+    _res = get_multipolygon_from_binary_arr(arr.astype("uint8") * 255, scale=scale)
+    if _res is None:
+        logger.warning(f"No tissue was found in slide {slide_path}")
+        return None
+    polygon, contours, hierarchy = _res
 
     # Get the coordinates of patches inside the tissue polygon.
     slide_width, slide_height = slide.dimensions
     half_patch_size = round(patch_size / 2)
 
     # Nx4 --> N x (minx, miny, width, height)
-    coords = get_nonoverlapping_patch_coordinates_within_polygon(
+    coords = get_patch_coordinates_within_polygon(
         slide_width=slide_width,
         slide_height=slide_height,
         patch_size=patch_size,
         half_patch_size=half_patch_size,
         polygon=polygon,
+        overlap=overlap,
     )
     logger.info(f"Found {len(coords)} patches within tissue")
 
-    # Save coordinates to HDF5.
+    # Save coordinates to HDF5, if at least one patch was found.
     patch_path.parent.mkdir(exist_ok=True, parents=True)
-    save_hdf5(
-        path=patch_path,
-        coords=coords,
-        patch_size=patch_size,
-        patch_spacing_um_px=patch_spacing_um_px,
-        compression="gzip",
-    )
+    if coords.size > 0:
+        logger.info(f"Writing patches to {patch_path}")
+        save_hdf5(
+            path=patch_path,
+            coords=coords,
+            patch_size=patch_size,
+            patch_spacing_um_px=patch_spacing_um_px,
+            compression="gzip",
+        )
+    else:
+        logger.warning(f"No patches found for slide {slide_path}")
 
     # Save thumbnail with drawn contours.
     logger.info(f"Writing tissue thumbnail with contours to disk: {mask_path}")
@@ -291,6 +301,7 @@ def segment_and_patch_directory_of_slides(
     closing_kernel_size: int = 6,
     min_object_size_um2: float = 200**2,
     min_hole_size_um2: float = 190**2,
+    overlap: float = 0.0,
 ) -> None:
     """Get non-overlapping patch coordinates in tissue regions for a directory of whole
     slide images.
@@ -365,6 +376,7 @@ def segment_and_patch_directory_of_slides(
                 closing_kernel_size=closing_kernel_size,
                 min_object_size_um2=min_object_size_um2,
                 min_hole_size_um2=min_hole_size_um2,
+                overlap=overlap,
             )
         except Exception as e:
             logger.error(f"Failed to segment and patch slide\n{slide_path}", exc_info=e)

@@ -24,6 +24,7 @@ from wsinfer.modellib.run_inference import jit_compile
 from wsinfer.wsi import HAS_OPENSLIDE
 from wsinfer.wsi import HAS_TIFFSLIDE
 
+
 @pytest.fixture
 def tiff_image(tmp_path: Path) -> Path:
     x = np.empty((4096, 4096, 3), dtype="uint8")
@@ -82,7 +83,7 @@ def test_cli_run_with_registered_models(
     backend: str,
     tiff_image: Path,
     tmp_path: Path,
-):
+) -> None:
     """A regression test of the command 'wsinfer run'."""
 
     reference_csv = Path(__file__).parent / "reference" / model / "purple.csv"
@@ -144,14 +145,14 @@ def test_cli_run_with_registered_models(
     geojson_dir = results_dir / "model-outputs-geojson"
     # result = runner.invoke(cli, ["togeojson", str(results_dir), str(geojson_dir)])
     assert result.exit_code == 0
-    with open(geojson_dir / "purple.json") as f:
+    with open(geojson_dir / "purple.geojson") as f:
         d: geojsonlib.GeoJSON = geojsonlib.load(f)
     assert d.is_valid, "geojson not valid!"
     assert len(d["features"]) == len(df_ref)
 
     for geojson_row in d["features"]:
         assert geojson_row["type"] == "Feature"
-        isinstance(geojson_row["id"] , str)
+        isinstance(geojson_row["id"], str)
         assert geojson_row["geometry"]["type"] == "Polygon"
     res = []
     for i, prob_col in enumerate(prob_cols):
@@ -178,7 +179,7 @@ def test_cli_run_with_registered_models(
         assert [df_coords] == geojson_row["geometry"]["coordinates"]
 
 
-def test_cli_run_with_local_model(tmp_path: Path, tiff_image: Path):
+def test_cli_run_with_local_model(tmp_path: Path, tiff_image: Path) -> None:
     model = "breast-tumor-resnet34.tcga-brca"
     reference_csv = Path(__file__).parent / "reference" / model / "purple.csv"
     if not reference_csv.exists():
@@ -246,7 +247,7 @@ def test_cli_run_with_local_model(tmp_path: Path, tiff_image: Path):
         ), f"Column {prob_col} not allclose at atol=1e-07"
 
 
-def test_cli_run_no_model_or_config(tmp_path: Path):
+def test_cli_run_no_model_or_config(tmp_path: Path) -> None:
     """Test that --model or (--config and --model-path) is required."""
     wsi_dir = tmp_path / "slides"
     wsi_dir.mkdir()
@@ -265,7 +266,7 @@ def test_cli_run_no_model_or_config(tmp_path: Path):
     assert "one of --model or (--config and --model-path) is required" in result.output
 
 
-def test_cli_run_model_and_config(tmp_path: Path):
+def test_cli_run_model_and_config(tmp_path: Path) -> None:
     """Test that (model and weights) or config is required."""
     wsi_dir = tmp_path / "slides"
     wsi_dir.mkdir()
@@ -298,7 +299,7 @@ def test_cli_run_model_and_config(tmp_path: Path):
 
 
 @pytest.mark.xfail
-def test_convert_to_sbu():
+def test_convert_to_sbu() -> None:
     # TODO: create a synthetic output and then convert it. Check that it is valid.
     assert False
 
@@ -330,7 +331,7 @@ def test_patch_cli(
     backend: str,
     tmp_path: Path,
     tiff_image: Path,
-):
+) -> None:
     """Test of 'wsinfer patch'."""
     orig_slide_size = 4096
     orig_slide_spacing = 0.25
@@ -380,7 +381,7 @@ def test_patch_cli(
 
 
 # FIXME: parametrize this test across our models.
-def test_jit_compile():
+def test_jit_compile() -> None:
     w = get_registered_model("breast-tumor-resnet34.tcga-brca")
     model = get_pretrained_torch_module(w)
 
@@ -411,7 +412,7 @@ def test_jit_compile():
         )
 
 
-def test_issue_89():
+def test_issue_89() -> None:
     """Do not fail if 'git' is not installed."""
     model_obj = get_registered_model("breast-tumor-resnet34.tcga-brca")
     d = _get_info_for_save(model_obj)
@@ -433,7 +434,7 @@ def test_issue_89():
         os.environ["PATH"] = orig_path  # reset path
 
 
-def test_issue_94(tmp_path: Path, tiff_image: Path):
+def test_issue_94(tmp_path: Path, tiff_image: Path) -> None:
     """Gracefully handle unreadable slides."""
 
     # We have a valid tiff in 'tiff_image.parent'. We put in an unreadable file too.
@@ -461,7 +462,7 @@ def test_issue_94(tmp_path: Path, tiff_image: Path):
     assert not results_dir.joinpath("model-outputs-csv").joinpath("bad.csv").exists()
 
 
-def test_issue_97(tmp_path: Path, tiff_image: Path):
+def test_issue_97(tmp_path: Path, tiff_image: Path) -> None:
     """Write a run_metadata file per run."""
 
     runner = CliRunner()
@@ -502,7 +503,7 @@ def test_issue_97(tmp_path: Path, tiff_image: Path):
     assert len(metas) == 2
 
 
-def test_issue_125(tmp_path: Path):
+def test_issue_125(tmp_path: Path) -> None:
     """Test that path in model config can be saved when a pathlib.Path object."""
 
     w = get_registered_model("breast-tumor-resnet34.tcga-brca")
@@ -510,3 +511,49 @@ def test_issue_125(tmp_path: Path):
     info = _get_info_for_save(w)
     with open(tmp_path / "foo.json", "w") as f:
         json.dump(info, f)
+
+
+def test_issue_203(tiff_image: Path) -> None:
+    """Test that openslide and tiffslide pad an image if an out-of-bounds region
+    is requested.
+    """
+    import openslide
+    import tiffslide
+
+    with tiffslide.TiffSlide(tiff_image) as tslide:
+        w, h = tslide.dimensions
+        img = tslide.read_region((w, h), level=0, size=(256, 256))
+        assert img.size == (256, 256)
+        assert np.allclose(np.array(img), 0)
+    del tslide, img
+
+    with openslide.OpenSlide(tiff_image) as oslide:
+        w, h = oslide.dimensions
+        img = oslide.read_region((w, h), level=0, size=(256, 256))
+        assert img.size == (256, 256)
+        assert np.allclose(np.array(img), 0)
+
+
+def test_issue_214(tmp_path: Path, tiff_image: Path) -> None:
+    """Test that symlinked slides don't mess things up."""
+    link = tmp_path / "forlinks" / "arbitrary-link-name.tiff"
+    link.parent.mkdir(parents=True)
+    link.symlink_to(tiff_image)
+
+    runner = CliRunner()
+    results_dir = tmp_path / "inference"
+    result = runner.invoke(
+        cli,
+        [
+            "run",
+            "--wsi-dir",
+            str(link.parent),
+            "--results-dir",
+            str(results_dir),
+            "--model",
+            "breast-tumor-resnet34.tcga-brca",
+        ],
+    )
+    assert result.exit_code == 0
+    assert (results_dir / "patches" / link.with_suffix(".h5").name).exists()
+    assert (results_dir / "model-outputs-csv" / link.with_suffix(".csv").name).exists()

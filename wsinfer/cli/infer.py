@@ -188,7 +188,7 @@ def _get_info_for_save(
 @click.option(
     "-i",
     "--wsi-dir",
-    type=click.Path(exists=True, file_okay=False, path_type=Path, resolve_path=True),
+    type=click.Path(exists=True, file_okay=False, path_type=Path),
     required=True,
     help="Directory containing whole slide images. This directory can *only* contain"
     " whole slide images.",
@@ -196,7 +196,7 @@ def _get_info_for_save(
 @click.option(
     "-o",
     "--results-dir",
-    type=click.Path(file_okay=False, path_type=Path, resolve_path=True),
+    type=click.Path(file_okay=False, path_type=Path),
     required=True,
     help="Directory to store results. If directory exists, will skip"
     " whole slides for which outputs exist.",
@@ -212,7 +212,7 @@ def _get_info_for_save(
 @click.option(
     "-c",
     "--config",
-    type=click.Path(exists=True, dir_okay=False, path_type=Path, resolve_path=True),
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
     help=(
         "Path to configuration for the trained model. Use this option if the"
         " model weights are not registered in wsinfer. Mutually exclusive with"
@@ -222,7 +222,7 @@ def _get_info_for_save(
 @click.option(
     "-p",
     "--model-path",
-    type=click.Path(exists=True, dir_okay=False, path_type=Path, resolve_path=True),
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
     help=(
         "Path to the pretrained model. Use only when --config is passed. Mutually "
         "exclusive with --model."
@@ -303,6 +303,16 @@ def _get_info_for_save(
     " area, it is filled with foreground. The default is 190um x 190um. The units of"
     " this argument are microns squared.",
 )
+@click.option(
+    "--patch-overlap-ratio",
+    default=0.0,
+    type=click.FloatRange(min=None, max=1, max_open=True),
+    help="The ratio of overlap among patches. The default value of 0 produces"
+    " non-overlapping patches. A value in (0, 1) will produce overlapping patches."
+    " Negative values will add space between patches. A value of -1 would skip"
+    " every other patch. A value of 0.5 will provide 50%% of overlap between patches."
+    " Values must be in (-inf, 1).",
+)
 def run(
     ctx: click.Context,
     *,
@@ -321,6 +331,7 @@ def run(
     seg_closing_kernel_size: int,
     seg_min_object_size_um2: float,
     seg_min_hole_size_um2: float,
+    patch_overlap_ratio: float = 0.0,
 ) -> None:
     """Run model inference on a directory of whole slide images.
 
@@ -348,9 +359,6 @@ def run(
         raise click.UsageError(
             "--config and --model-path must both be set if one is set."
         )
-
-    wsi_dir = wsi_dir.resolve()
-    results_dir = results_dir.resolve()
 
     if not wsi_dir.exists():
         raise FileNotFoundError(f"Whole slide image directory not found: {wsi_dir}")
@@ -401,6 +409,7 @@ def run(
         closing_kernel_size=seg_closing_kernel_size,
         min_object_size_um2=seg_min_object_size_um2,
         min_hole_size_um2=seg_min_hole_size_um2,
+        overlap=patch_overlap_ratio,
     )
 
     if not results_dir.joinpath("patches").exists():
@@ -438,9 +447,12 @@ def run(
     with open(run_metadata_outpath, "w") as f:
         json.dump(run_metadata, f, indent=2)
 
-    click.secho("Finished.", fg="green")
-
+    click.echo("Writing inference results to GeoJSON files")
     csvs = list((results_dir / "model-outputs-csv").glob("*.csv"))
     write_geojsons(csvs, results_dir, num_workers)
+
     if qupath:
+        click.echo("Creating QuPath project with results")
         make_qupath_project(wsi_dir, results_dir)
+
+    click.secho("Finished.", fg="green")
