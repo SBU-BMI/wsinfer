@@ -6,6 +6,7 @@ import platform
 import sys
 import time
 from pathlib import Path
+from unittest.mock import patch as mock_patch, MagicMock
 
 import geojson as geojsonlib
 import h5py
@@ -23,6 +24,7 @@ from wsinfer.modellib.models import get_registered_model
 from wsinfer.modellib.run_inference import jit_compile
 from wsinfer.wsi import HAS_OPENSLIDE
 from wsinfer.wsi import HAS_TIFFSLIDE
+
 
 @pytest.fixture
 def tiff_image(tmp_path: Path) -> Path:
@@ -82,7 +84,7 @@ def test_cli_run_with_registered_models(
     backend: str,
     tiff_image: Path,
     tmp_path: Path,
-):
+) -> None:
     """A regression test of the command 'wsinfer run'."""
 
     reference_csv = Path(__file__).parent / "reference" / model / "purple.csv"
@@ -151,7 +153,7 @@ def test_cli_run_with_registered_models(
 
     for geojson_row in d["features"]:
         assert geojson_row["type"] == "Feature"
-        isinstance(geojson_row["id"] , str)
+        isinstance(geojson_row["id"], str)
         assert geojson_row["geometry"]["type"] == "Polygon"
     res = []
     for i, prob_col in enumerate(prob_cols):
@@ -178,7 +180,7 @@ def test_cli_run_with_registered_models(
         assert [df_coords] == geojson_row["geometry"]["coordinates"]
 
 
-def test_cli_run_with_local_model(tmp_path: Path, tiff_image: Path):
+def test_cli_run_with_local_model(tmp_path: Path, tiff_image: Path) -> None:
     model = "breast-tumor-resnet34.tcga-brca"
     reference_csv = Path(__file__).parent / "reference" / model / "purple.csv"
     if not reference_csv.exists():
@@ -246,7 +248,7 @@ def test_cli_run_with_local_model(tmp_path: Path, tiff_image: Path):
         ), f"Column {prob_col} not allclose at atol=1e-07"
 
 
-def test_cli_run_no_model_or_config(tmp_path: Path):
+def test_cli_run_no_model_or_config(tmp_path: Path) -> None:
     """Test that --model or (--config and --model-path) is required."""
     wsi_dir = tmp_path / "slides"
     wsi_dir.mkdir()
@@ -265,7 +267,7 @@ def test_cli_run_no_model_or_config(tmp_path: Path):
     assert "one of --model or (--config and --model-path) is required" in result.output
 
 
-def test_cli_run_model_and_config(tmp_path: Path):
+def test_cli_run_model_and_config(tmp_path: Path) -> None:
     """Test that (model and weights) or config is required."""
     wsi_dir = tmp_path / "slides"
     wsi_dir.mkdir()
@@ -298,7 +300,7 @@ def test_cli_run_model_and_config(tmp_path: Path):
 
 
 @pytest.mark.xfail
-def test_convert_to_sbu():
+def test_convert_to_sbu() -> None:
     # TODO: create a synthetic output and then convert it. Check that it is valid.
     assert False
 
@@ -330,7 +332,7 @@ def test_patch_cli(
     backend: str,
     tmp_path: Path,
     tiff_image: Path,
-):
+) -> None:
     """Test of 'wsinfer patch'."""
     orig_slide_size = 4096
     orig_slide_spacing = 0.25
@@ -380,7 +382,7 @@ def test_patch_cli(
 
 
 # FIXME: parametrize this test across our models.
-def test_jit_compile():
+def test_jit_compile() -> None:
     w = get_registered_model("breast-tumor-resnet34.tcga-brca")
     model = get_pretrained_torch_module(w)
 
@@ -411,7 +413,7 @@ def test_jit_compile():
         )
 
 
-def test_issue_89():
+def test_issue_89() -> None:
     """Do not fail if 'git' is not installed."""
     model_obj = get_registered_model("breast-tumor-resnet34.tcga-brca")
     d = _get_info_for_save(model_obj)
@@ -433,7 +435,7 @@ def test_issue_89():
         os.environ["PATH"] = orig_path  # reset path
 
 
-def test_issue_94(tmp_path: Path, tiff_image: Path):
+def test_issue_94(tmp_path: Path, tiff_image: Path) -> None:
     """Gracefully handle unreadable slides."""
 
     # We have a valid tiff in 'tiff_image.parent'. We put in an unreadable file too.
@@ -461,7 +463,7 @@ def test_issue_94(tmp_path: Path, tiff_image: Path):
     assert not results_dir.joinpath("model-outputs-csv").joinpath("bad.csv").exists()
 
 
-def test_issue_97(tmp_path: Path, tiff_image: Path):
+def test_issue_97(tmp_path: Path, tiff_image: Path) -> None:
     """Write a run_metadata file per run."""
 
     runner = CliRunner()
@@ -502,7 +504,7 @@ def test_issue_97(tmp_path: Path, tiff_image: Path):
     assert len(metas) == 2
 
 
-def test_issue_125(tmp_path: Path):
+def test_issue_125(tmp_path: Path) -> None:
     """Test that path in model config can be saved when a pathlib.Path object."""
 
     w = get_registered_model("breast-tumor-resnet34.tcga-brca")
