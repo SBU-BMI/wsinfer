@@ -447,9 +447,12 @@ def run(
     with open(run_metadata_outpath, "w") as f:
         json.dump(run_metadata, f, indent=2)
 
-    click.secho("Finished.", fg="green")
-
+    click.echo("Writing inference results to GeoJSON files")
     csvs = list((results_dir / "model-outputs-csv").glob("*.csv"))
     write_geojsons(csvs, results_dir, num_workers)
+
     if qupath:
+        click.echo("Creating QuPath project with results")
         make_qupath_project(wsi_dir, results_dir)
+
+    click.secho("Finished.", fg="green")
