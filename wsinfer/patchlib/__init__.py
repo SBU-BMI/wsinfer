@@ -121,7 +121,9 @@ def segment_and_patch_one_slide(
     if len(thumbsize) != 2:
         raise ValueError(f"Length of 'thumbsize' must be 2 but got {len(thumbsize)}")
     thumb: Image.Image = slide.get_thumbnail(thumbsize)
-    # TODO: allow the min hole size and min object size to be set in physical units.
+    if thumb.mode != "RGB":
+        logger.warning(f"Converting mode of thumbnail from {thumb.mode} to RGB")
+        thumb = thumb.convert("RGB")
 
     # thumb has ~12 MPP.
     thumb_mpp = (mpp * (np.array(slide.dimensions) / thumb.size)).mean()
