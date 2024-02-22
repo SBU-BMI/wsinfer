@@ -65,7 +65,7 @@ def _print_system_info() -> None:
 
     click.secho(f"\nRunning wsinfer version {__version__}", fg="green")
     print("\nIf you run into issues, please submit a new issue at")
-    print("https://github.com/kaczmarj/patch-classification-pipeline/issues/new")
+    print("https://github.com/SBU-BMI/wsinfer/issues/new")
     print("\nSystem information")
     print("------------------")
     print(f"Timestamp: {_get_timestamp()}")
