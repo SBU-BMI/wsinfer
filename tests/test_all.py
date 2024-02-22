@@ -512,3 +512,24 @@ def test_issue_125(tmp_path: Path) -> None:
     info = _get_info_for_save(w)
     with open(tmp_path / "foo.json", "w") as f:
         json.dump(info, f)
+
+
+def test_issue_203(tiff_image: Path) -> None:
+    """Test that openslide and tiffslide pad an image if an out-of-bounds region
+    is requested.
+    """
+    import openslide
+    import tiffslide
+
+    with tiffslide.TiffSlide(tiff_image) as tslide:
+        w, h = tslide.dimensions
+        img = tslide.read_region((w, h), level=0, size=(256, 256))
+        assert img.size == (256, 256)
+        assert np.allclose(np.array(img), 0)
+    del tslide, img
+
+    with openslide.OpenSlide(tiff_image) as oslide:
+        w, h = oslide.dimensions
+        img = oslide.read_region((w, h), level=0, size=(256, 256))
+        assert img.size == (256, 256)
+        assert np.allclose(np.array(img), 0)
