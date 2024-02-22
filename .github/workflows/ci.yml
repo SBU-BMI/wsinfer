@@ -134,7 +134,7 @@ jobs:
           sudo apt install -y libopenslide0
           python -m pip install --upgrade pip setuptools wheel
           python -m pip install torch torchvision --extra-index-url https://download.pytorch.org/whl/cpu openslide-python tiffslide
-          python -m pip install .[dev]
+          python -m pip install -e .[all]
       - name: Check types
         run: python -m mypy --install-types --non-interactive wsinfer/ tests/
 

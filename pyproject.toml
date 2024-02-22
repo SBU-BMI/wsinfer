@@ -83,6 +83,7 @@ docs = [
 ]
 openslide = ["openslide-python"]
 qupath = ["paquo"]
+all = ["wsinfer[dev,docs,openslide,qupath]"]
 
 [project.urls]
 Homepage = "https://wsinfer.readthedocs.io"
