@@ -5,7 +5,8 @@ import sys
 from pathlib import Path
 
 try:
-    from paquo.projects import QuPathProject
+    from paquo.projects import QuPathProject, QuPathProjectImageEntry
+    from paquo.images import QuPathPathObjectHierarchy
 
     HAS_PAQUO = True
 except Exception:
@@ -25,8 +26,16 @@ def add_image_and_geojson(
             print(f"Unable to find features key:: {e}")
 
     entry = qupath_proj.add_image(image_path)
+    if not isinstance(entry, QuPathProjectImageEntry):
+        print("!!!!!!!!!!!!!!!!!!!!!")
+        print(
+            "Runtime error, please contact developer, explaining that the entry when"
+            " adding an image returns a list of image entry objects."
+        )
+        return
     try:
-        entry.hierarchy.load_geojson(geojson_features)
+        hierarchy: QuPathPathObjectHierarchy = entry.hierarchy
+        hierarchy.load_geojson(geojson_features)
     except Exception as e:
         print(f"Failed to run load_geojson function with error:: {e}")
 

@@ -167,8 +167,8 @@ def test_cli_run_with_registered_models(
 
     # Check the coordinate values.
     for df_row, geojson_row in zip(df.itertuples(), d["features"]):
-        maxx = df_row.minx + df_row.width
-        maxy = df_row.miny + df_row.height
+        maxx = df_row.minx + df_row.width  # type: ignore
+        maxy = df_row.miny + df_row.height  # type: ignore
         df_coords = [
             [maxx, df_row.miny],
             [maxx, maxy],

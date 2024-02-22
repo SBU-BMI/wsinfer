@@ -143,11 +143,10 @@ def write_heatmap_and_meta_json_lines(
 
     # Write heatmap JSON lines file.
     df = pd.read_csv(input)
-    features = df.apply(row_to_json, axis=1)
-    features = features.tolist()
-    features = (json.dumps(row) for row in features)
+    features = df.apply(row_to_json, axis=1).tolist()
+    features_gen = (json.dumps(row) for row in features)
     with open(output_heatmap, "w") as f:
-        f.writelines(line + "\n" for line in features)
+        f.writelines(line + "\n" for line in features_gen)
 
     # Write meta file.
     meta_dict = {
