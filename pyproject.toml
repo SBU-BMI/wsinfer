@@ -28,6 +28,7 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Scientific/Engineering :: Image Recognition",
     "Topic :: Scientific/Engineering :: Medical Science Apps.",
@@ -62,15 +63,16 @@ dynamic = ["version"]
 [project.optional-dependencies]
 dev = [
     "black",
-    "flake8",
     "geojson",
-    "isort",
     "mypy",
+    "pandas-stubs",
+    "pre-commit",
     "pytest",
+    "ruff",
     "tiffslide",
+    "types-jsonschema",
     "types-Pillow",
     "types-tqdm",
-    "Flake8-pyproject",
 ]
 docs = [
     "pydata-sphinx-theme",
@@ -81,6 +83,7 @@ docs = [
 ]
 openslide = ["openslide-python"]
 qupath = ["paquo"]
+all = ["wsinfer[dev,docs,openslide,qupath]"]
 
 [project.urls]
 Homepage = "https://wsinfer.readthedocs.io"
@@ -97,11 +100,8 @@ wsinfer = ["py.typed", "schemas/*.json"]
 [tool.setuptools.packages.find]
 include = ["wsinfer*"]
 
-# Flake8-pyproject (https://pypi.org/project/Flake8-pyproject/)
-[tool.flake8]
-max-line-length = 88
-extend-ignore = ['E203', 'E701']
-exclude = "wsinfer/_version.py"
+[tool.setuptools_scm]
+write_to = "wsinfer/_version.py"
 
 [tool.mypy]
 disallow_untyped_defs = true
@@ -115,24 +115,20 @@ show_error_codes = true
 [[tool.mypy.overrides]]
 module = [
     "h5py",
-    "cv2",
     "geojson",
     "torchvision.*",
     "openslide",
-    "pandas",
-    "safetensors.*",
-    "scipy.stats",
     "shapely.*",
-    "skimage.morphology",
-    "tifffile",
     "zarr.storage",
-    "paquo.*"
 ]
-ignore_missing_imports = "True"
+ignore_missing_imports = true
 
-[tool.setuptools_scm]
-write_to = "wsinfer/_version.py"
+[tool.ruff]
+extend-exclude = ["_version.py", "scripts/"]
 
-[tool.isort]
-profile = "black"
-force_single_line = "True"
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "B", "I"]
+unfixable = ["B"]
+
+[tool.ruff.lint.isort]
+force-single-line = true

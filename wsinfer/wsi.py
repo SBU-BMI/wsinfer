@@ -24,7 +24,7 @@ try:
     # Test that OpenSlide object exists. If it doesn't, an error will be thrown and
     # caught. For some reason, it is possible that openslide-python can be installed
     # but the OpenSlide object (and other openslide things) are not available.
-    openslide.OpenSlide
+    openslide.OpenSlide  # noqa: B018
     HAS_OPENSLIDE = True
     logger.debug("Imported openslide")
 except Exception as err:
@@ -47,11 +47,13 @@ if not HAS_TIFFSLIDE and not HAS_OPENSLIDE:
 
 
 @overload
-def set_backend(name: Literal["openslide"]) -> type[openslide.OpenSlide]: ...
+def set_backend(name: Literal["openslide"]) -> type[openslide.OpenSlide]:
+    ...
 
 
 @overload
-def set_backend(name: Literal["tiffslide"]) -> type[tiffslide.TiffSlide]: ...
+def set_backend(name: Literal["tiffslide"]) -> type[tiffslide.TiffSlide]:
+    ...
 
 
 def set_backend(

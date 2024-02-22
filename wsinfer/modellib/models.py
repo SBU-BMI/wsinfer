@@ -11,7 +11,8 @@ from wsinfer_zoo.client import Model
 
 
 @dataclasses.dataclass
-class LocalModelTorchScript(Model): ...
+class LocalModelTorchScript(Model):
+    ...
 
 
 def get_registered_model(name: str) -> HFModelTorchScript:
@@ -61,7 +62,7 @@ def jit_compile(
         try:
             return torch.compile(model)
         except Exception:
-            warnings.warn(w)
+            warnings.warn(w, stacklevel=1)
             return noncompiled
     # For pytorch 1.x, use torch.jit.script.
     else:
@@ -70,7 +71,7 @@ def jit_compile(
             with torch.no_grad():
                 mjit(test_input)
         except Exception:
-            warnings.warn(w)
+            warnings.warn(w, stacklevel=1)
             return noncompiled
         # Now that we have scripted the model, try to optimize it further. If that
         # fails, return the scripted model.

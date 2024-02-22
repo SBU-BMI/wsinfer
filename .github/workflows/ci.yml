@@ -43,8 +43,6 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           python -m pip install --pre torch torchvision --extra-index-url https://download.pytorch.org/whl/nightly/cpu openslide-python tiffslide
           python -m pip install --editable .[dev]
-      - name: Check types
-        run: python -m mypy --install-types --non-interactive wsinfer/
       - name: Run tests
         run: python -m pytest --verbose tests/
 
@@ -71,7 +69,6 @@ jobs:
           test -f results/model-outputs-csv/JP2K-33003-1.csv
           test $(wc -l < results/model-outputs-csv/JP2K-33003-1.csv) -eq 675
 
-  # This is run on multiple operating systems.
   test-package:
     strategy:
         matrix:
@@ -121,7 +118,7 @@ jobs:
           Test-Path -Path results/model-outputs-csv/JP2K-33003-1.csv -PathType Leaf
           # test $(python -c "print(sum(1 for _ in open('results/model-outputs/JP2K-33003-1.csv')))") -eq 675
 
-  style-and-types:
+  mypy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -135,13 +132,9 @@ jobs:
           sudo apt install -y libopenslide0
           python -m pip install --upgrade pip setuptools wheel
           python -m pip install torch torchvision --extra-index-url https://download.pytorch.org/whl/cpu openslide-python tiffslide
-          python -m pip install .[dev]
-      - name: Check style (flake8)
-        run: python -m flake8 wsinfer/
-      - name: Check style (black)
-        run: python -m black --check wsinfer/
+          python -m pip install -e .[all]
       - name: Check types
-        run: python -m mypy --install-types --non-interactive wsinfer/
+        run: python -m mypy --install-types --non-interactive wsinfer/ tests/
 
   docs:
     runs-on: ubuntu-latest
