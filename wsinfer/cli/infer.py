@@ -303,6 +303,16 @@ def _get_info_for_save(
     " area, it is filled with foreground. The default is 190um x 190um. The units of"
     " this argument are microns squared.",
 )
+@click.option(
+    "--patch-overlap-ratio",
+    default=0.0,
+    type=click.FloatRange(min=None, max=1, max_open=True),
+    help="The ratio of overlap among patches. The default value of 0 produces"
+    " non-overlapping patches. A value in (0, 1) will produce overlapping patches."
+    " Negative values will add space between patches. A value of -1 would skip"
+    " every other patch. A value of 0.5 will provide 50%% of overlap between patches."
+    " Values must be in (-inf, 1).",
+)
 def run(
     ctx: click.Context,
     *,
@@ -321,6 +331,7 @@ def run(
     seg_closing_kernel_size: int,
     seg_min_object_size_um2: float,
     seg_min_hole_size_um2: float,
+    patch_overlap_ratio: float = 0.0,
 ) -> None:
     """Run model inference on a directory of whole slide images.
 
@@ -398,6 +409,7 @@ def run(
         closing_kernel_size=seg_closing_kernel_size,
         min_object_size_um2=seg_min_object_size_um2,
         min_hole_size_um2=seg_min_hole_size_um2,
+        overlap=patch_overlap_ratio,
     )
 
     if not results_dir.joinpath("patches").exists():

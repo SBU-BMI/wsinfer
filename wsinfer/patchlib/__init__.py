@@ -14,7 +14,7 @@ from ..wsi import WSI
 from ..wsi import _validate_wsi_directory
 from ..wsi import get_avg_mpp
 from .patch import get_multipolygon_from_binary_arr
-from .patch import get_nonoverlapping_patch_coordinates_within_polygon
+from .patch import get_patch_coordinates_within_polygon
 from .segment import segment_tissue
 
 logger = logging.getLogger(__name__)
@@ -34,6 +34,7 @@ def segment_and_patch_one_slide(
     closing_kernel_size: int = 6,
     min_object_size_um2: float = 200**2,
     min_hole_size_um2: float = 190**2,
+    overlap: float = 0.0,
 ) -> None:
     """Get non-overlapping patch coordinates in tissue regions of a whole slide image.
 
@@ -171,12 +172,13 @@ def segment_and_patch_one_slide(
     half_patch_size = round(patch_size / 2)
 
     # Nx4 --> N x (minx, miny, width, height)
-    coords = get_nonoverlapping_patch_coordinates_within_polygon(
+    coords = get_patch_coordinates_within_polygon(
         slide_width=slide_width,
         slide_height=slide_height,
         patch_size=patch_size,
         half_patch_size=half_patch_size,
         polygon=polygon,
+        overlap=overlap,
     )
     logger.info(f"Found {len(coords)} patches within tissue")
 
@@ -299,6 +301,7 @@ def segment_and_patch_directory_of_slides(
     closing_kernel_size: int = 6,
     min_object_size_um2: float = 200**2,
     min_hole_size_um2: float = 190**2,
+    overlap: float = 0.0,
 ) -> None:
     """Get non-overlapping patch coordinates in tissue regions for a directory of whole
     slide images.
@@ -373,6 +376,7 @@ def segment_and_patch_directory_of_slides(
                 closing_kernel_size=closing_kernel_size,
                 min_object_size_um2=min_object_size_um2,
                 min_hole_size_um2=min_hole_size_um2,
+                overlap=overlap,
             )
         except Exception as e:
             logger.error(f"Failed to segment and patch slide\n{slide_path}", exc_info=e)

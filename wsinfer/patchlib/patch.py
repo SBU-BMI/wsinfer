@@ -128,12 +128,13 @@ def get_multipolygon_from_binary_arr(
     return polygon, contours_unscaled, hierarchy[np.newaxis]
 
 
-def get_nonoverlapping_patch_coordinates_within_polygon(
+def get_patch_coordinates_within_polygon(
     slide_width: int,
     slide_height: int,
     patch_size: int,
     half_patch_size: int,
     polygon: Polygon,
+    overlap: float = 0.0,
 ) -> npt.NDArray[np.int_]:
     """Get coordinates of patches within a polygon.
 
@@ -149,6 +150,12 @@ def get_nonoverlapping_patch_coordinates_within_polygon(
         Half of the length of a patch in pixels.
     polygon : Polygon
         A shapely Polygon representing the presence of tissue.
+    overlap : float
+        The proportion of the patch_size to overlap. A value of 0.5
+        would have an overlap of 50%. A value of 0.2 would have an
+        overlap of 20%. Negative values will add space between patches.
+        A value of -1 would skip every other patch. Value must be in (-inf, 1).
+        The default value of 0.0 produces non-overlapping patches.
 
     Returns
     -------
@@ -157,12 +164,19 @@ def get_nonoverlapping_patch_coordinates_within_polygon(
         contains the coordinates of the top-left of a tile: (minx, miny).
     """
 
+    if overlap >= 1:
+        raise ValueError(f"overlap must be in (-inf, 1) but got {overlap}")
+
+    # Handle potentially overlapping slides.
+    step_size = round((1 - overlap) * patch_size)
+    logger.info(f"Patches are {patch_size} px, with step size of {step_size} px.")
+
     # Make an array of Nx2, where each row is (x, y) centroid of the patch.
     tile_centroids_arr: npt.NDArray[np.int_] = np.array(
         list(
             itertools.product(
-                range(0 + half_patch_size, slide_width, patch_size),
-                range(0 + half_patch_size, slide_height, patch_size),
+                range(0 + half_patch_size, slide_width, step_size),
+                range(0 + half_patch_size, slide_height, step_size),
             )
         )
     )
