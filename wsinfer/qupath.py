@@ -5,8 +5,9 @@ import sys
 from pathlib import Path
 
 try:
-    from paquo.projects import QuPathProject, QuPathProjectImageEntry
     from paquo.images import QuPathPathObjectHierarchy
+    from paquo.projects import QuPathProject
+    from paquo.projects import QuPathProjectImageEntry
 
     HAS_PAQUO = True
 except Exception:

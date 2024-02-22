@@ -155,7 +155,7 @@ def test_cli_run_with_registered_models(
         isinstance(geojson_row["id"], str)
         assert geojson_row["geometry"]["type"] == "Polygon"
     res = []
-    for i, prob_col in enumerate(prob_cols):
+    for prob_col in prob_cols:
         res.append(
             np.array(
                 [dd["properties"]["measurements"][prob_col] for dd in d["features"]]
@@ -301,7 +301,7 @@ def test_cli_run_model_and_config(tmp_path: Path) -> None:
 @pytest.mark.xfail
 def test_convert_to_sbu() -> None:
     # TODO: create a synthetic output and then convert it. Check that it is valid.
-    assert False
+    raise AssertionError()
 
 
 @pytest.mark.parametrize(
