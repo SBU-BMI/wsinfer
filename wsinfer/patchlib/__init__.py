@@ -158,9 +158,11 @@ def segment_and_patch_one_slide(
         slide.dimensions[0] / thumb.size[0],
         slide.dimensions[1] / thumb.size[1],
     )
-    polygon, contours, hierarchy = get_multipolygon_from_binary_arr(
-        arr.astype("uint8") * 255, scale=scale
-    )
+    _res = get_multipolygon_from_binary_arr(arr.astype("uint8") * 255, scale=scale)
+    if _res is None:
+        logger.warning(f"No tissue was found in slide {slide_path}")
+        return None
+    polygon, contours, hierarchy = _res
 
     # Get the coordinates of patches inside the tissue polygon.
     slide_width, slide_height = slide.dimensions
@@ -176,15 +178,19 @@ def segment_and_patch_one_slide(
     )
     logger.info(f"Found {len(coords)} patches within tissue")
 
-    # Save coordinates to HDF5.
+    # Save coordinates to HDF5, if at least one patch was found.
     patch_path.parent.mkdir(exist_ok=True, parents=True)
-    save_hdf5(
-        path=patch_path,
-        coords=coords,
-        patch_size=patch_size,
-        patch_spacing_um_px=patch_spacing_um_px,
-        compression="gzip",
-    )
+    if coords.size > 0:
+        logger.info(f"Writing patches to {patch_path}")
+        save_hdf5(
+            path=patch_path,
+            coords=coords,
+            patch_size=patch_size,
+            patch_spacing_um_px=patch_spacing_um_px,
+            compression="gzip",
+        )
+    else:
+        logger.warning(f"No patches found for slide {slide_path}")
 
     # Save thumbnail with drawn contours.
     logger.info(f"Writing tissue thumbnail with contours to disk: {mask_path}")

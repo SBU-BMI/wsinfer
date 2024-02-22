@@ -32,7 +32,7 @@ def temporary_recursion_limit(limit: int) -> Iterator[None]:
 
 def get_multipolygon_from_binary_arr(
     arr: npt.NDArray[np.int_], scale: tuple[float, float] | None = None
-) -> tuple[MultiPolygon, Sequence[npt.NDArray[np.int_]], npt.NDArray[np.int_]]:
+) -> tuple[MultiPolygon, Sequence[npt.NDArray[np.int_]], npt.NDArray[np.int_]] | None:
     """Create a Shapely Polygon from a binary array.
 
     Parameters
@@ -54,8 +54,10 @@ def get_multipolygon_from_binary_arr(
     """
     # Find contours and hierarchy
     contours: Sequence[npt.NDArray]
-    hierarchy: npt.NDArray
+    hierarchy: npt.NDArray | None
     contours, hierarchy = cv.findContours(arr, cv.RETR_CCOMP, cv.CHAIN_APPROX_SIMPLE)
+    if hierarchy is None:
+        return None
     hierarchy = hierarchy.squeeze(0)
 
     logger.info(f"Detected {len(contours)} contours")
