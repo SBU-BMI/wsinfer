@@ -150,8 +150,6 @@ def run_inference(
             dset = WholeSlideImagePatches(
                 wsi_path=wsi_path,
                 patch_path=patch_path,
-                um_px=model_info.config.spacing_um_px,
-                patch_size=model_info.config.patch_size_pixels,
                 transform=transform,
             )
         except Exception:
