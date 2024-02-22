@@ -100,6 +100,8 @@ def get_multipolygon_from_binary_arr(
                 polygon = polygon.difference(new_poly)
 
         # Check if current polygon has a child
+        if hierarchy is None:
+            raise NotImplementedError()
         child_idx = hierarchy[idx][2]
         if child_idx >= 0:
             # Call this function recursively, negate `add` parameter
