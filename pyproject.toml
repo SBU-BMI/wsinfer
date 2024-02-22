@@ -66,6 +66,7 @@ dev = [
     "geojson",
     "mypy",
     "pandas-stubs",
+    "pre-commit",
     "pytest",
     "ruff",
     "tiffslide",

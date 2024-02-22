@@ -84,6 +84,9 @@ Clone the GitHub repository and install the package in editable mode with the :c
     git clone https://github.com/SBU-BMI/wsinfer.git
     cd wsinfer
     python -m pip install --editable .[dev]
+    pre-commit install
+
+We use :code:`pre-commit` to automatically run various checks during :code:`git commit`.
 
 
 Supported slide backends

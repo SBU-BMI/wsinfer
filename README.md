@@ -86,7 +86,10 @@ Clone this GitHub repository and install the package (in editable mode with the 
 git clone https://github.com/SBU-BMI/wsinfer.git
 cd wsinfer
 python -m pip install --editable .[dev]
+pre-commit install
 ```
+
+We use `pre-commit` to automatically run various checks during `git commit`.
 
 # Citation
 
