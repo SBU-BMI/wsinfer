@@ -12,6 +12,9 @@ Original H&E                        |  Heatmap of Tumor Probability
 [![Supported Python versions](https://img.shields.io/pypi/pyversions/wsinfer)](https://pypi.org/project/wsinfer/)
 [![Published in npj Precision Oncology](https://img.shields.io/badge/Published-npj_Precision_Oncology-blue)](https://doi.org/10.1038/s41698-024-00499-9)
 
+> [!CAUTION]
+> WSInfer is an academic project intended for research use only.
+
 See https://wsinfer.readthedocs.io for documentation.
 
 The main feature of WSInfer is a minimal command-line interface for running deep learning inference
