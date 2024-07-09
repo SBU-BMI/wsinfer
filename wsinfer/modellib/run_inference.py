@@ -171,8 +171,8 @@ def run_inference(
 
         # Store the coordinates and model probabiltiies of each patch in this slide.
         # This lets us know where the probabiltiies map to in the slide.
-        slide_coords: list[npt.NDArray[np.int_]] = []
-        slide_probs: list[npt.NDArray[np.float_]] = []
+        slide_coords: list[npt.NDArray[np.integer]] = []
+        slide_probs: list[npt.NDArray[np.floating]] = []
         for batch_imgs, batch_coords in tqdm.tqdm(loader):
             assert batch_imgs.shape[0] == batch_coords.shape[0], "length mismatch"
             with torch.no_grad():

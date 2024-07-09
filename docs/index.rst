@@ -23,6 +23,10 @@ WSInfer: blazingly fast inference on whole slide images
 on whole slide images. It includes several built-in models, and it can be used with any
 PyTorch model as well. The built-in models :ref:`are listed below <available-models>`.
 
+.. caution::
+
+  WSInfer is an academic project intended for research use only.
+
 Running inference on whole slide images is done with a single command line:
 
 ::

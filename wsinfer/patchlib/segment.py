@@ -66,10 +66,7 @@ def segment_tissue(
     _, im_arr = cv.threshold(
         im_arr, thresh=binary_threshold, maxval=255, type=cv.THRESH_BINARY
     )
-
-    # Convert to boolean dtype. This helps with static type analysis because at this
-    # point, im_arr is a uint8 array.
-    im_arr_binary: npt.NDArray[np.bool_] = im_arr > 0  # type: ignore
+    im_arr_binary: npt.NDArray[np.bool_] = im_arr > 0
 
     # Closing. This removes small holes. It might not be entirely necessary because
     # we have hole removal below.
