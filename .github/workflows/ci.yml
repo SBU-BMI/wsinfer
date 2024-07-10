@@ -41,7 +41,8 @@ jobs:
           sudo apt update
           sudo apt install -y libopenslide0
           python -m pip install --upgrade pip setuptools wheel
-          python -m pip install --pre torch torchvision --extra-index-url https://download.pytorch.org/whl/nightly/cpu openslide-python tiffslide
+          python -m pip install --pre torch torchvision --index-url https://download.pytorch.org/whl/nightly/cpu
+          python -m pip install openslide-python tiffslide
           python -m pip install --editable .[dev]
       - name: Run tests
         run: python -m pytest --verbose tests/
