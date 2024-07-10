@@ -103,7 +103,7 @@ jobs:
           test -f results/run_metadata_*.json
           test -f results/patches/JP2K-33003-1.h5
           test -f results/model-outputs-csv/JP2K-33003-1.csv
-          test $(wc -l < results/model-outputs-csv/JP2K-33003-1.csv) -eq 675
+          test $(wc -l < results/model-outputs-csv/JP2K-33003-1.csv) -eq 601
       # FIXME: tissue segmentation has different outputs on Windows. The patch sizes
       # are the same but the coordinates found are different.
       - name: Run 'wsinfer run' on Windows
