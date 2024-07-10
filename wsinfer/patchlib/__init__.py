@@ -10,9 +10,9 @@ import numpy as np
 import numpy.typing as npt
 from PIL import Image
 
-from ..wsi import WSI
 from ..wsi import _validate_wsi_directory
 from ..wsi import get_avg_mpp
+from ..wsi import get_wsi_cls
 from .patch import get_multipolygon_from_binary_arr
 from .patch import get_patch_coordinates_within_polygon
 from .segment import segment_tissue
@@ -103,7 +103,7 @@ def segment_and_patch_one_slide(
         logger.info(f"mask_path={mask_path}")
         return None
 
-    slide = WSI(slide_path)
+    slide = get_wsi_cls()(slide_path)
     mpp = get_avg_mpp(slide_path)
     logger.info(f"Slide has WxH {slide.dimensions} and MPP={mpp}")
 

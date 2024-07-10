@@ -10,7 +10,7 @@ import numpy.typing as npt
 import torch
 from PIL import Image
 
-from wsinfer.wsi import WSI
+from wsinfer.wsi import get_wsi_cls
 
 
 def _read_patch_coords(path: str | Path) -> npt.NDArray[np.int_]:
@@ -87,7 +87,8 @@ class WholeSlideImagePatches(torch.utils.data.Dataset):
 
     def worker_init(self, worker_id: int | None = None) -> None:
         del worker_id
-        self.slide = WSI(self.wsi_path)
+        wsi_reader = get_wsi_cls()
+        self.slide = wsi_reader(self.wsi_path)
 
     def __len__(self) -> int:
         return self.patches.shape[0]
