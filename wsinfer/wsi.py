@@ -3,9 +3,7 @@ from __future__ import annotations
 import logging
 from fractions import Fraction
 from pathlib import Path
-from typing import Literal
 from typing import Protocol
-from typing import overload
 
 import tifffile
 from PIL import Image
