@@ -36,7 +36,7 @@ import numpy.typing as npt
 import pandas as pd
 import tqdm
 
-from ..wsi import WSI
+from ..wsi import get_wsi_cls
 from ..wsi import CanReadRegion
 
 
@@ -353,7 +353,8 @@ def tosbu(
             click.secho(f"WSI file not found: {wsi_file}", bg="red")
             click.secho("Skipping...", bg="red")
             continue
-        slide = WSI(wsi_file)
+        wsi_reader = get_wsi_cls()
+        slide = wsi_reader(wsi_file)
 
         slide_width, slide_height = slide.level_dimensions[0]
 

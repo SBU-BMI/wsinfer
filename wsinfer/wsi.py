@@ -17,6 +17,9 @@ from .errors import NoBackendException
 
 logger = logging.getLogger(__name__)
 
+_BACKEND: str = "tiffslide"
+
+_allowed_backends = {"openslide", "tiffslide"}
 
 try:
     import openslide
@@ -46,48 +49,46 @@ if not HAS_TIFFSLIDE and not HAS_OPENSLIDE:
     )
 
 
-@overload
-def set_backend(name: Literal["openslide"]) -> type[openslide.OpenSlide]:
-    ...
-
-
-@overload
-def set_backend(name: Literal["tiffslide"]) -> type[tiffslide.TiffSlide]:
-    ...
-
-
-def set_backend(
-    name: Literal["openslide"] | Literal["tiffslide"],
-) -> type[tiffslide.TiffSlide] | type[openslide.OpenSlide]:
-    global WSI
-    if name not in ["openslide", "tiffslide"]:
-        raise ValueError(f"Unknown backend: {name}")
-    logger.info(f"Setting backend to {name}")
-    if name == "openslide":
-        if not HAS_OPENSLIDE:
-            raise BackendNotAvailable(
-                "OpenSlide is not available. Please install the OpenSlide compiled"
-                " library and the Python package 'openslide-python'."
-                " See https://openslide.org/ for more information."
-            )
-        WSI = openslide.OpenSlide
+def set_backend(name: str) -> None:
+    global _BACKEND
+    if name not in _allowed_backends:
+        raise ValueError(f"Unknown backend: '{name}'")
+    if name == "openslide" and not HAS_OPENSLIDE:
+        raise BackendNotAvailable(
+            "OpenSlide is not available. Please install the OpenSlide compiled"
+            " library and the Python package 'openslide-python'."
+            " See https://openslide.org/ for more information."
+        )
     elif name == "tiffslide":
         if not HAS_TIFFSLIDE:
             raise BackendNotAvailable(
                 "TiffSlide is not available. Please install 'tiffslide'."
             )
-        WSI = tiffslide.TiffSlide
+
+    logger.debug(f"Set backend to {name}")
+
+    _BACKEND = name
+
+
+def get_wsi_cls() -> type[openslide.OpenSlide] | type[tiffslide.TiffSlide]:
+    if _BACKEND not in _allowed_backends:
+        raise ValueError(
+            f"Unknown backend: '{_BACKEND}'. Please contact the developer!"
+        )
+    if _BACKEND == "openslide":
+        return openslide.OpenSlide  # type: ignore
+    elif _BACKEND == "tiffslide":
+        return tiffslide.TiffSlide
     else:
-        raise ValueError(f"Unknown backend: {name}")
-    return WSI
+        raise ValueError("Contact the developer, slide backend not known")
 
 
 # Set the slide backend based on the environment.
-WSI: type[openslide.OpenSlide] | type[tiffslide.TiffSlide]
-if HAS_OPENSLIDE:
-    WSI = set_backend("openslide")
-elif HAS_TIFFSLIDE:
-    WSI = set_backend("tiffslide")
+# Prioritize TiffSlide if the user has it installed.
+if HAS_TIFFSLIDE:
+    set_backend("tiffslide")
+elif HAS_OPENSLIDE:
+    set_backend("openslide")
 else:
     raise NoBackendException("No backend found! Please install openslide or tiffslide")
 
