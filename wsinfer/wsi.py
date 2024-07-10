@@ -192,6 +192,8 @@ def _get_mpp_tiffslide(
     slide_path: str | Path,
 ) -> tuple[float, float]:
     """Read MPP using TiffSlide."""
+    logger.debug("Attempting to read MPP using TiffSlide")
+
     if not HAS_TIFFSLIDE:
         logger.critical(
             "Cannot read MPP with TiffSlide because TiffSlide is not available"
@@ -223,6 +225,7 @@ def _get_mpp_tiffslide(
 # https://github.com/bayer-science-for-a-better-life/tiffslide/blob/8bea5a4c8e1429071ade6d4c40169ce153786d19/tiffslide/tiffslide.py#L712-L745
 def _get_mpp_tifffile(slide_path: str | Path) -> tuple[float, float]:
     """Read MPP using Tifffile."""
+    logger.debug("Attempting to read MPP using tifffile")
     with tifffile.TiffFile(slide_path) as tif:
         series0 = tif.series[0]
         page0 = series0[0]
@@ -267,20 +270,23 @@ def get_avg_mpp(slide_path: Path | str) -> float:
     mppx: float
     mppy: float
 
-    if HAS_OPENSLIDE:
+    if _BACKEND == "openslide":
         try:
             mppx, mppy = _get_mpp_openslide(slide_path)
             return (mppx + mppy) / 2
         except CannotReadSpacing:
-            # At this point, we want to continue to other implementations.
             pass
-    if HAS_TIFFSLIDE:
+    if _BACKEND == "tiffslide":
         try:
             mppx, mppy = _get_mpp_tiffslide(slide_path)
             return (mppx + mppy) / 2
         except CannotReadSpacing:
-            # Our last hope to read the mpp is tifffile.
             pass
+
+    logger.debug(f"Failed to read MPP using {_BACKEND}.")
+    logger.debug("Trying to read MPP with tifffile as last resort.")
+
+    # If tiffslide/openslide don't work, try tifffile.
     try:
         mppx, mppy = _get_mpp_tifffile(slide_path)
         return (mppx + mppy) / 2
